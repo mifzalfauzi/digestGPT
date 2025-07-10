@@ -9,10 +9,11 @@ import {
   ChevronDown, 
   ChevronUp, 
   Info,
-  Sparkles 
+  Sparkles,
+  MessageCircle 
 } from 'lucide-react'
 
-function KeyConceptsDisplay({ concepts = [] }) {
+function KeyConceptsDisplay({ concepts = [], onExplainConcept }) {
   const [selectedConcept, setSelectedConcept] = useState(null)
 
   const handleConceptClick = (concept, index) => {
@@ -106,6 +107,20 @@ function KeyConceptsDisplay({ concepts = [] }) {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {onExplainConcept && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onExplainConcept(concept.term)
+                        }}
+                        className="h-8 w-8 p-0 hover:bg-amber-100 dark:hover:bg-amber-900/30 hover:scale-110 transition-all duration-200"
+                        title={`Ask AI to explain "${concept.term}" in detail`}
+                      >
+                        <MessageCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                      </Button>
+                    )}
                     <Badge variant="outline" className="text-xs">
                       Concept
                     </Badge>
