@@ -1,12 +1,13 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { Badge } from './ui/badge'
 import { Separator } from './ui/separator'
 import { Brain, Upload, FileText, Home, MessageCircle, Settings, HelpCircle, Sparkles, Activity } from 'lucide-react'
-import ThemeToggle from './ThemeToggle'
+import SettingsPanel from './SettingsPanel'
 
 function ModernSidebar({ onNewDocument, currentDocument, onHome }) {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   return (
     <div className="w-72 bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 border-r border-slate-200 dark:border-gray-700 h-full flex flex-col shadow-xl">
       {/* Modern Logo Section */}
@@ -120,13 +121,12 @@ function ModernSidebar({ onNewDocument, currentDocument, onHome }) {
       </div>
 
       {/* Modern Footer */}
-      <div className="p-4 border-t border-slate-200 dark:border-gray-700 bg-slate-50/50 dark:bg-gray-800/50 space-y-2">
-        <ThemeToggle />
-        
+      <div className="p-4 border-t border-slate-200 dark:border-gray-700 bg-slate-50/50 dark:bg-gray-800/50 space-y-2">        
         <div className="flex gap-2">
           <Button 
             variant="ghost" 
             size="sm"
+            onClick={() => setIsSettingsOpen(true)}
             className="flex-1 justify-start gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700"
           >
             <Settings className="h-3.5 w-3.5" />
@@ -148,6 +148,12 @@ function ModernSidebar({ onNewDocument, currentDocument, onHome }) {
           </p>
         </div>
       </div>
+      
+      {/* Settings Panel */}
+      <SettingsPanel 
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </div>
   )
 }
