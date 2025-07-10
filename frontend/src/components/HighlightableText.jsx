@@ -128,6 +128,7 @@ function HighlightableText({ text, highlights = [], activeHighlight = null, onHi
                   highlightRefs.current[part.id] = el
                 }
               }}
+              data-highlight-id={part.id}
               className={getHighlightClass(part.isActive, part.highlightData?.type)}
               title={part.highlightData?.tooltip}
               onClick={() => handleHighlightClick(part.highlightData)}

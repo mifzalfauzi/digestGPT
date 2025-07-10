@@ -23,7 +23,7 @@ import {
 } from 'lucide-react'
 import HighlightableText from './HighlightableText'
 
-function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighlight }) {
+function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighlight, showSummary = true }) {
   const [insights, setInsights] = useState([])
   const [risks, setRisks] = useState([])
   const [summary, setSummary] = useState('')
@@ -157,65 +157,67 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
 
   return (
     <div className="space-y-6 p-6">
-      {/* Executive Summary */}
-      <Card className="border-0 shadow-xl bg-gradient-to-br from-slate-50 to-white dark:from-gray-800 dark:to-gray-900">
-        <CardHeader className="pb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl shadow-lg">
-              <Brain className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
-                Executive Summary
-              </CardTitle>
-              <p className="text-sm text-slate-600 dark:text-gray-400 mt-1">
-                AI-powered analysis powered by Claude 4 Sonnet
-              </p>
-            </div>
-           
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="bg-gradient-to-r from-purple-50/80 to-blue-50/80 dark:from-purple-950/30 dark:to-blue-950/30 rounded-2xl p-6 border border-purple-200/50 dark:border-purple-800/30">
-            <p className="text-slate-800 dark:text-slate-100 leading-relaxed text-base font-medium">
-              {summary || 'Comprehensive analysis will appear here after document processing...'}
-            </p>
-          </div>
-          
-          {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-4 mt-6">
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-4 border border-emerald-200/50 dark:border-emerald-800/30">
-              <div className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                <span className="text-sm font-medium text-emerald-800 dark:text-emerald-200">Key Insights</span>
+      {/* Executive Summary - Only show if showSummary is true */}
+      {showSummary && (
+        <Card className="border-0 shadow-xl bg-gradient-to-br from-slate-50 to-white dark:from-gray-800 dark:to-gray-900">
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl shadow-lg">
+                <Brain className="h-6 w-6 text-white" />
               </div>
-              <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-100 mt-1">
-                {insights.length}
+              <div>
+                <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
+                  Executive Summary
+                </CardTitle>
+                <p className="text-sm text-slate-600 dark:text-gray-400 mt-1">
+                  AI-powered analysis powered by Claude 4 Sonnet
+                </p>
+              </div>
+             
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-gradient-to-r from-purple-50/80 to-blue-50/80 dark:from-purple-950/30 dark:to-blue-950/30 rounded-2xl p-6 border border-purple-200/50 dark:border-purple-800/30">
+              <p className="text-slate-800 dark:text-slate-100 leading-relaxed text-base font-medium">
+                {summary || 'Comprehensive analysis will appear here after document processing...'}
               </p>
             </div>
             
-            <div className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 rounded-xl p-4 border border-red-200/50 dark:border-red-800/30">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                <span className="text-sm font-medium text-red-800 dark:text-red-200">Risk Flags</span>
+            {/* Quick Stats */}
+            <div className="grid grid-cols-3 gap-4 mt-6">
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-4 border border-emerald-200/50 dark:border-emerald-800/30">
+                <div className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-sm font-medium text-emerald-800 dark:text-emerald-200">Key Insights</span>
+                </div>
+                <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-100 mt-1">
+                  {insights.length}
+                </p>
               </div>
-              <p className="text-2xl font-bold text-red-900 dark:text-red-100 mt-1">
-                {risks.length}
-              </p>
-            </div>
-            
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/30">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                <span className="text-sm font-medium text-blue-800 dark:text-blue-200">Completion</span>
+              
+              <div className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 rounded-xl p-4 border border-red-200/50 dark:border-red-800/30">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                  <span className="text-sm font-medium text-red-800 dark:text-red-200">Risk Flags</span>
+                </div>
+                <p className="text-2xl font-bold text-red-900 dark:text-red-100 mt-1">
+                  {risks.length}
+                </p>
               </div>
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100 mt-1">
-                100%
-              </p>
+              
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/30">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <span className="text-sm font-medium text-blue-800 dark:text-blue-200">Completion</span>
+                </div>
+                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100 mt-1">
+                  100%
+                </p>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Key Insights Section */}
       <Card className="border-0 shadow-xl">
