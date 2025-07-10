@@ -27,6 +27,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   const [insights, setInsights] = useState([])
   const [risks, setRisks] = useState([])
   const [summary, setSummary] = useState('')
+  const [keyConcepts, setKeyConcepts] = useState([])
   const [highlights, setHighlights] = useState([])
 
   useEffect(() => {
@@ -73,6 +74,16 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       category: getRiskCategory(typeof risk === 'string' ? risk : risk.text)
     }))
     setRisks(processedRisks)
+
+    // Process key concepts
+    const processedConcepts = (analysisData.key_concepts || []).map((concept, index) => ({
+      id: `concept-${index}`,
+      term: typeof concept === 'string' ? concept : concept.term,
+      explanation: typeof concept === 'object' ? concept.explanation : 'No explanation provided'
+    }))
+    setKeyConcepts(processedConcepts)
+
+    console.log('Processed key concepts:', processedConcepts)
 
     // Create highlights for text interaction
     const newHighlights = [
@@ -184,34 +195,44 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
             </div>
             
             {/* Quick Stats */}
-            <div className="grid grid-cols-3 gap-4 mt-6">
+            <div className="grid grid-cols-4 gap-3 mt-6">
               <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-4 border border-emerald-200/50 dark:border-emerald-800/30">
                 <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                  <span className="text-sm font-medium text-emerald-800 dark:text-emerald-200">Key Insights</span>
+                  <Target className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs font-medium text-emerald-800 dark:text-emerald-200">Insights</span>
                 </div>
-                <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-100 mt-1">
+                <p className="text-xl font-bold text-emerald-900 dark:text-emerald-100 mt-1">
                   {insights.length}
                 </p>
               </div>
               
               <div className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 rounded-xl p-4 border border-red-200/50 dark:border-red-800/30">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                  <span className="text-sm font-medium text-red-800 dark:text-red-200">Risk Flags</span>
+                  <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                  <span className="text-xs font-medium text-red-800 dark:text-red-200">Risks</span>
                 </div>
-                <p className="text-2xl font-bold text-red-900 dark:text-red-100 mt-1">
+                <p className="text-xl font-bold text-red-900 dark:text-red-100 mt-1">
                   {risks.length}
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 rounded-xl p-4 border border-amber-200/50 dark:border-amber-800/30">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <span className="text-xs font-medium text-amber-800 dark:text-amber-200">Concepts</span>
+                </div>
+                <p className="text-xl font-bold text-amber-900 dark:text-amber-100 mt-1">
+                  {keyConcepts.length}
                 </p>
               </div>
               
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/30">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  <span className="text-sm font-medium text-blue-800 dark:text-blue-200">Completion</span>
+                  <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-xs font-medium text-blue-800 dark:text-blue-200">Status</span>
                 </div>
-                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100 mt-1">
-                  100%
+                <p className="text-xl font-bold text-blue-900 dark:text-blue-100 mt-1">
+                  Done
                 </p>
               </div>
             </div>

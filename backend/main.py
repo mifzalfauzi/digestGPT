@@ -107,8 +107,11 @@ Given this document, do the following:
 1. Explain what the document is about in 1–2 sentences.
 2. Summarize key important points as bullet points.
 3. Highlight any risky or confusing parts with 🚩 emoji and explain why.
+4. Identify key concepts/terms that are central to understanding this document.
 
 For each key point and risk flag, please also include a short quote (5-15 words) from the original document that supports your analysis.
+
+For key concepts, provide the term and a brief explanation of what it means in the context of this document.
 
 IMPORTANT: You must respond with ONLY valid JSON. Do not include any text before or after the JSON. Do not wrap the JSON in markdown code blocks. Just return pure JSON.
 
@@ -133,6 +136,16 @@ Use this exact JSON structure:
         {{
             "text": "🚩 Risk 2: explanation",
             "quote": "relevant quote from document"
+        }}
+    ],
+    "key_concepts": [
+        {{
+            "term": "Important Term 1",
+            "explanation": "What this term means in the context of this document"
+        }},
+        {{
+            "term": "Important Term 2",
+            "explanation": "What this term means in the context of this document"
         }}
     ]
 }}
@@ -347,7 +360,8 @@ async def analyze_file(file: UploadFile = File(...)):
             "document_id": document_id,
             "filename": file.filename,
             "document_text": text,
-            "analysis": analysis
+            "analysis": analysis,
+            "analyzed_at": datetime.now().isoformat()
         }
     
     except HTTPException:
@@ -386,7 +400,8 @@ async def analyze_text(text: str = Form(...)):
             "success": True,
             "document_id": document_id,
             "document_text": text,
-            "analysis": analysis
+            "analysis": analysis,
+            "analyzed_at": datetime.now().isoformat()
         }
     
     except HTTPException:

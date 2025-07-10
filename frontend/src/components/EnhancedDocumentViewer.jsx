@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
-import { Eye, FileText, Brain, TrendingUp, Clock, Sparkles, Target, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { Eye, FileText, Brain, TrendingUp, Clock, Sparkles, Target, AlertTriangle, CheckCircle2, BookOpen } from 'lucide-react'
 import ProfessionalAnalysisDisplay from './ProfessionalAnalysisDisplay'
+import KeyConceptsDisplay from './KeyConceptsDisplay'
 import HighlightableText from './HighlightableText'
 
 function EnhancedDocumentViewer({ results, file, inputMode }) {
@@ -217,39 +218,79 @@ function EnhancedDocumentViewer({ results, file, inputMode }) {
                   </div>
                   
                   {/* Quick Stats */}
-                  <div className="grid grid-cols-3 gap-4 mt-6">
+                  <div className="grid grid-cols-4 gap-3 mt-6">
                     <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-4 border border-emerald-200/50 dark:border-emerald-800/30">
                       <div className="flex items-center gap-2">
-                        <Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                        <span className="text-sm font-medium text-emerald-800 dark:text-emerald-200">Key Insights</span>
+                        <Target className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                        <span className="text-xs font-medium text-emerald-800 dark:text-emerald-200">Insights</span>
                       </div>
-                      <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-100 mt-1">
+                      <p className="text-xl font-bold text-emerald-900 dark:text-emerald-100 mt-1">
                         {results?.analysis?.key_points?.length || 0}
                       </p>
                     </div>
                     
                     <div className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 rounded-xl p-4 border border-red-200/50 dark:border-red-800/30">
                       <div className="flex items-center gap-2">
-                        <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                        <span className="text-sm font-medium text-red-800 dark:text-red-200">Risk Flags</span>
+                        <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                        <span className="text-xs font-medium text-red-800 dark:text-red-200">Risks</span>
                       </div>
-                      <p className="text-2xl font-bold text-red-900 dark:text-red-100 mt-1">
+                      <p className="text-xl font-bold text-red-900 dark:text-red-100 mt-1">
                         {results?.analysis?.risk_flags?.length || 0}
+                      </p>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 rounded-xl p-4 border border-amber-200/50 dark:border-amber-800/30">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        <span className="text-xs font-medium text-amber-800 dark:text-amber-200">Concepts</span>
+                      </div>
+                      <p className="text-xl font-bold text-amber-900 dark:text-amber-100 mt-1">
+                        {results?.analysis?.key_concepts?.length || 0}
                       </p>
                     </div>
                     
                     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/30">
                       <div className="flex items-center gap-2">
-                        <CheckCircle2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                        <span className="text-sm font-medium text-blue-800 dark:text-blue-200">Completion</span>
+                        <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <span className="text-xs font-medium text-blue-800 dark:text-blue-200">Status</span>
                       </div>
-                      <p className="text-2xl font-bold text-blue-900 dark:text-blue-100 mt-1">
-                        100%
+                      <p className="text-xl font-bold text-blue-900 dark:text-blue-100 mt-1">
+                        Done
                       </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
+              
+              {/* Key Concepts Section */}
+              <div className="mt-6">
+                <KeyConceptsDisplay 
+                  concepts={results?.analysis?.key_concepts || []}
+                />
+              </div>
+
+              {/* Analyzed Time */}
+              {results?.analyzed_at && (
+                <div className="mt-6">
+                  <Card className="border-0 shadow-lg bg-gradient-to-r from-slate-50/80 to-gray-50/80 dark:from-gray-800/80 dark:to-gray-900/80">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-center gap-3">
+                        <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
+                          <Clock className="h-4 w-4 text-white" />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-medium text-slate-700 dark:text-gray-300">
+                            Document Analyzed
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
+                            {new Date(results.analyzed_at).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </TabsContent>
 
             {/* Insights & Risks Tab */}
