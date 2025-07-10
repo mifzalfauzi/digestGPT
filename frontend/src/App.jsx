@@ -1,7 +1,15 @@
 import React, { useState } from 'react'
 import axios from 'axios'
+import { Button } from './components/ui/button'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './components/ui/card'
+import { Input } from './components/ui/input'
+import { Textarea } from './components/ui/textarea'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs'
+import { Alert, AlertDescription } from './components/ui/alert'
+import { Separator } from './components/ui/separator'
+import { Badge } from './components/ui/badge'
+import { Upload, FileText, Brain, AlertTriangle, Loader2 } from 'lucide-react'
 import ChatInterface from './ChatInterface'
-import './App.css'
 
 function App() {
   const [file, setFile] = useState(null)
@@ -97,145 +105,206 @@ function App() {
   }
 
   return (
-    <div className="app">
-      <header className="header">
-        <h1>🧠 DigestGPT</h1>
-        <p>Analyze your documents with AI-powered insights</p>
-      </header>
-
-      <main className="main">
-        <div className="container">
-          {/* Input Mode Toggle */}
-          <div className="input-mode-toggle">
-            <button 
-              className={inputMode === 'file' ? 'active' : ''} 
-              onClick={() => setInputMode('file')}
-            >
-              📁 Upload File
-            </button>
-            <button 
-              className={inputMode === 'text' ? 'active' : ''} 
-              onClick={() => setInputMode('text')}
-            >
-              📝 Paste Text
-            </button>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Brain className="h-12 w-12 text-primary" />
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              DigestGPT
+            </h1>
           </div>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Analyze your documents with AI-powered insights. Upload PDFs, DOCX files, or paste text to get summaries, key points, and risk assessments.
+          </p>
+        </div>
 
-          <form onSubmit={handleSubmit} className="upload-form">
-            {inputMode === 'file' ? (
-              <div className="file-upload-section">
-                <div className="file-upload">
-                  <input
-                    type="file"
-                    id="file-input"
-                    accept=".pdf,.docx"
-                    onChange={handleFileChange}
-                    className="file-input"
-                  />
-                  <label htmlFor="file-input" className="file-label">
-                    {file ? (
-                      <span>📄 {file.name}</span>
+        <Card className="max-w-4xl mx-auto">
+          <CardHeader>
+            <CardTitle>Document Analysis</CardTitle>
+            <CardDescription>
+              Choose how you'd like to analyze your document
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs value={inputMode} onValueChange={setInputMode} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="file" className="flex items-center gap-2">
+                  <Upload className="h-4 w-4" />
+                  Upload File
+                </TabsTrigger>
+                <TabsTrigger value="text" className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Paste Text
+                </TabsTrigger>
+              </TabsList>
+
+              <form onSubmit={handleSubmit} className="mt-4">
+                <TabsContent value="file" className="space-y-4">
+                  <div className="space-y-4">
+                    <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
+                      <Input
+                        type="file"
+                        id="file-input"
+                        accept=".pdf,.docx"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                      <label htmlFor="file-input" className="cursor-pointer block">
+                        {file ? (
+                          <div className="space-y-2">
+                            <FileText className="h-12 w-12 mx-auto text-primary" />
+                            <p className="text-sm font-medium">{file.name}</p>
+                            <p className="text-xs text-muted-foreground">Click to change file</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
+                            <p className="text-sm font-medium">Choose PDF or DOCX file</p>
+                            <p className="text-xs text-muted-foreground">or drag and drop</p>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Supported formats: PDF, DOCX (max 10MB)
+                    </p>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="text" className="space-y-4">
+                  <div className="space-y-4">
+                    <Textarea
+                      value={textInput}
+                      onChange={(e) => setTextInput(e.target.value)}
+                      placeholder="Paste your document text here..."
+                      className="min-h-[200px]"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Maximum 50,000 characters
+                    </p>
+                  </div>
+                </TabsContent>
+
+                <div className="flex gap-2 mt-6">
+                  <Button 
+                    type="submit" 
+                    disabled={loading || (inputMode === 'file' && !file) || (inputMode === 'text' && !textInput.trim())}
+                    className="flex-1"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Analyzing...
+                      </>
                     ) : (
-                      <span>📁 Choose PDF or DOCX file</span>
+                      <>
+                        <Brain className="h-4 w-4 mr-2" />
+                        Analyze Document
+                      </>
                     )}
-                  </label>
+                  </Button>
+                  
+                  {(file || textInput || results) && (
+                    <Button type="button" onClick={resetForm} variant="outline">
+                      Reset
+                    </Button>
+                  )}
                 </div>
-                <p className="file-info">Supported formats: PDF, DOCX (max 10MB)</p>
-              </div>
-            ) : (
-              <div className="text-input-section">
-                <textarea
-                  value={textInput}
-                  onChange={(e) => setTextInput(e.target.value)}
-                  placeholder="Paste your document text here..."
-                  className="text-input"
-                  rows={10}
-                />
-                <p className="text-info">Maximum 50,000 characters</p>
-              </div>
-            )}
+              </form>
+            </Tabs>
+          </CardContent>
+        </Card>
 
-            <div className="button-group">
-              <button 
-                type="submit" 
-                disabled={loading || (inputMode === 'file' && !file) || (inputMode === 'text' && !textInput.trim())}
-                className="submit-btn"
-              >
-                {loading ? (
-                  <>
-                    <div className="spinner"></div>
-                    Analyzing...
-                  </>
-                ) : (
-                  '🔍 Analyze Document'
-                )}
-              </button>
-              
-              {(file || textInput || results) && (
-                <button type="button" onClick={resetForm} className="reset-btn">
-                  🔄 Reset
-                </button>
-              )}
-            </div>
-          </form>
+        {error && (
+          <Alert variant="destructive" className="max-w-4xl mx-auto mt-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-          {error && (
-            <div className="error">
-              ⚠️ {error}
-            </div>
-          )}
-
-          {results && (
-            <div className="results">
-              <h2>📊 Analysis Results</h2>
-              
+        {results && (
+          <Card className="max-w-4xl mx-auto mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5" />
+                Analysis Results
+              </CardTitle>
               {results.filename && (
-                <div className="filename">
-                  <strong>📄 File:</strong> {results.filename}
-                </div>
+                <CardDescription>
+                  <FileText className="h-4 w-4 inline mr-1" />
+                  {results.filename}
+                </CardDescription>
               )}
-
-              <div className="analysis-section">
-                <h3>📋 Summary</h3>
-                <p className="summary">{results.analysis.summary}</p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Summary */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  📋 Summary
+                </h3>
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-sm leading-relaxed">{results.analysis.summary}</p>
+                  </CardContent>
+                </Card>
               </div>
 
+              {/* Key Points */}
               {results.analysis.key_points && results.analysis.key_points.length > 0 && (
-                <div className="analysis-section">
-                  <h3>🔑 Key Points</h3>
-                  <ul className="key-points">
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    🔑 Key Points
+                  </h3>
+                  <div className="space-y-2">
                     {results.analysis.key_points.map((point, index) => (
-                      <li key={index}>{point}</li>
+                      <Card key={index}>
+                        <CardContent className="pt-4">
+                          <p className="text-sm leading-relaxed">{point}</p>
+                        </CardContent>
+                      </Card>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
 
+              {/* Risk Flags */}
               {results.analysis.risk_flags && results.analysis.risk_flags.length > 0 && (
-                <div className="analysis-section">
-                  <h3>🚩 Risk Flags</h3>
-                  <ul className="risk-flags">
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    🚩 Risk Flags
+                  </h3>
+                  <div className="space-y-2">
                     {results.analysis.risk_flags.map((flag, index) => (
-                      <li key={index} className="risk-item">{flag}</li>
+                      <Alert key={index} variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>{flag}</AlertDescription>
+                      </Alert>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
-            </div>
-          )}
+            </CardContent>
+          </Card>
+        )}
 
-          {results && documentId && (
+        {results && documentId && (
+          <div className="max-w-4xl mx-auto mt-6">
             <ChatInterface 
               documentId={documentId} 
               filename={results.filename || "Pasted Text"}
             />
-          )}
-        </div>
-      </main>
+          </div>
+        )}
 
-      <footer className="footer">
-        <p>Powered by Anthropic Claude • Built with React & FastAPI</p>
-      </footer>
+        {/* Footer */}
+        <div className="text-center mt-12 pt-8 border-t">
+          <p className="text-sm text-muted-foreground">
+            Powered by Anthropic Claude • Built with React & FastAPI
+          </p>
+        </div>
+      </div>
     </div>
   )
 }

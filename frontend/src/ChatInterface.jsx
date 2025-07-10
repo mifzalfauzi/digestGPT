@@ -1,6 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react'
 import axios from 'axios'
-import './ChatInterface.css'
+import { Button } from './components/ui/button'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './components/ui/card'
+import { Textarea } from './components/ui/textarea'
+import { ScrollArea } from './components/ui/scroll-area'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './components/ui/collapsible'
+import { Separator } from './components/ui/separator'
+import { Badge } from './components/ui/badge'
+import { MessageCircle, Send, Trash2, ChevronDown, ChevronUp, Bot, User, AlertCircle } from 'lucide-react'
 
 function ChatInterface({ documentId, filename }) {
   const [messages, setMessages] = useState([])
@@ -77,97 +84,160 @@ function ChatInterface({ documentId, filename }) {
   }
 
   return (
-    <div className={`chat-interface ${isExpanded ? 'expanded' : ''}`}>
-      <div className="chat-header">
-        <div className="chat-title">
-          <h3>💬 Chat about: {filename}</h3>
-          <p>Ask questions about your document</p>
-        </div>
-        <div className="chat-controls">
-          <button 
-            className="chat-clear-btn" 
-            onClick={clearChat}
-            disabled={messages.length === 0}
-          >
-            🗑️ Clear
-          </button>
-          <button className="chat-expand-btn" onClick={toggleExpand}>
-            {isExpanded ? '🔽' : '🔼'}
-          </button>
-        </div>
-      </div>
-
-      {isExpanded && (
-        <div className="chat-content">
-          <div className="chat-messages">
-            {messages.length === 0 ? (
-              <div className="chat-welcome">
-                <p>👋 Hi! I'm ready to answer questions about your document.</p>
-                <p>Try asking:</p>
-                <ul>
-                  <li>"What are the main points?"</li>
-                  <li>"Can you explain section X?"</li>
-                  <li>"What should I be concerned about?"</li>
-                </ul>
-              </div>
-            ) : (
-              messages.map((message, index) => (
-                <div key={index} className={`message ${message.type}`}>
-                  <div className="message-content">
-                    {message.type === 'user' && <strong>You:</strong>}
-                    {message.type === 'ai' && <strong>🤖 Claude:</strong>}
-                    {message.type === 'error' && <strong>⚠️ Error:</strong>}
-                    <span>{message.content}</span>
-                  </div>
-                  <div className="message-time">
-                    {new Date(message.timestamp).toLocaleTimeString()}
-                  </div>
-                </div>
-              ))
-            )}
-            
-            {isLoading && (
-              <div className="message ai loading">
-                <div className="message-content">
-                  <strong>🤖 Claude:</strong>
-                  <span>
-                    <div className="typing-indicator">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </div>
-                    Thinking...
-                  </span>
+    <Card className="w-full">
+      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+        <CollapsibleTrigger asChild>
+          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-5 w-5 text-primary" />
+                <div>
+                  <CardTitle className="text-lg">Chat about: {filename}</CardTitle>
+                  <CardDescription>Ask questions about your document</CardDescription>
                 </div>
               </div>
-            )}
-            
-            <div ref={messagesEndRef} />
-          </div>
-
-          <form onSubmit={handleSendMessage} className="chat-input-form">
-            <div className="chat-input-container">
-              <textarea
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ask a question about your document..."
-                className="chat-input"
-                rows={1}
-                disabled={isLoading}
-              />
-              <button 
-                type="submit" 
-                className="chat-send-btn"
-                disabled={!inputMessage.trim() || isLoading}
-              >
-                <span>📤</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    clearChat()
+                  }}
+                  disabled={messages.length === 0}
+                  className="h-8 w-8 p-0"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+                {isExpanded ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </div>
             </div>
-          </form>
-        </div>
-      )}
-    </div>
+          </CardHeader>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent>
+          <CardContent className="pt-0">
+            <ScrollArea className="h-96 w-full rounded-md border p-4">
+              {messages.length === 0 ? (
+                <div className="text-center py-8 space-y-4">
+                  <div className="flex justify-center">
+                    <div className="rounded-full bg-primary/10 p-3">
+                      <Bot className="h-8 w-8 text-primary" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Hi! I'm ready to answer questions about your document.</p>
+                    <p className="text-xs text-muted-foreground">Try asking:</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    <Badge variant="outline">"What are the main points?"</Badge>
+                    <Badge variant="outline">"Can you explain section X?"</Badge>
+                    <Badge variant="outline">"What should I be concerned about?"</Badge>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((message, index) => (
+                    <div key={index} className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      {message.type !== 'user' && (
+                        <div className="flex-shrink-0">
+                          {message.type === 'ai' ? (
+                            <div className="rounded-full bg-primary/10 p-2">
+                              <Bot className="h-4 w-4 text-primary" />
+                            </div>
+                          ) : (
+                            <div className="rounded-full bg-destructive/10 p-2">
+                              <AlertCircle className="h-4 w-4 text-destructive" />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <div className={`max-w-[80%] ${message.type === 'user' ? 'order-first' : ''}`}>
+                        <div className={`rounded-lg p-3 text-sm ${
+                          message.type === 'user' 
+                            ? 'bg-primary text-primary-foreground ml-auto' 
+                            : message.type === 'error'
+                            ? 'bg-destructive/10 text-destructive border border-destructive/20'
+                            : 'bg-muted'
+                        }`}>
+                          <p className="whitespace-pre-wrap">{message.content}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1 px-3">
+                          {new Date(message.timestamp).toLocaleTimeString()}
+                        </p>
+                      </div>
+                      {message.type === 'user' && (
+                        <div className="flex-shrink-0">
+                          <div className="rounded-full bg-primary p-2">
+                            <User className="h-4 w-4 text-primary-foreground" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {isLoading && (
+                    <div className="flex gap-3 justify-start">
+                      <div className="flex-shrink-0">
+                        <div className="rounded-full bg-primary/10 p-2">
+                          <Bot className="h-4 w-4 text-primary" />
+                        </div>
+                      </div>
+                      <div className="max-w-[80%]">
+                        <div className="rounded-lg p-3 text-sm bg-muted">
+                          <div className="flex items-center gap-2">
+                            <div className="flex space-x-1">
+                              <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                              <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                              <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                            </div>
+                            <span>Thinking...</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+            </ScrollArea>
+
+            <Separator className="my-4" />
+
+            <form onSubmit={handleSendMessage} className="space-y-4">
+              <div className="flex gap-2">
+                <Textarea
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleSendMessage(e)
+                    }
+                  }}
+                  placeholder="Ask a question about your document..."
+                  className="min-h-[60px] flex-1"
+                  disabled={isLoading}
+                />
+                <Button 
+                  type="submit" 
+                  size="icon"
+                  disabled={!inputMessage.trim() || isLoading}
+                  className="h-[60px] w-12"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
   )
 }
 
