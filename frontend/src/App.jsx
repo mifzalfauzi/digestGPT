@@ -167,7 +167,7 @@ function App() {
                 </Button>
                 
                 <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  DigestGPT
+                  DocuChat
                 </h1>
                 
                 {/* Mobile Panel Switcher */}

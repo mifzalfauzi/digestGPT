@@ -10,7 +10,7 @@ function Sidebar({ onNewDocument, currentDocument, onHome }) {
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3">
           <Brain className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">DigestGPT</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">DocuChat</h1>
         </div>
       </div>
 

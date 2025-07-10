@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# DigestGPT Development Startup Script
+# DocuChat Development Startup Script
 
-echo "🧠 Starting DigestGPT Development Environment"
+echo "🧠 Starting DocuChat Development Environment"
 echo "============================================="
 
 # Check if .env file exists in backend
@@ -50,7 +50,7 @@ npm run dev &
 FRONTEND_PID=$!
 
 echo ""
-echo "✅ DigestGPT is starting up!"
+echo "✅ DocuChat is starting up!"
 echo "📍 Backend:  http://localhost:8000"
 echo "📍 Frontend: http://localhost:3000"
 echo ""

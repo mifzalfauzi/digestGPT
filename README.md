@@ -1,4 +1,4 @@
-# 🧠 DigestGPT - AI Document Analyzer
+# 🧠 DocuChat - AI Document Analyzer
 
 A full-stack web application that uses Anthropic's Claude to analyze PDF and DOCX documents, providing summaries, key points, and risk flags.
 
@@ -197,7 +197,7 @@ npm run build
 ## 📝 File Structure
 
 ```
-digestgpt/
+docuchat/
 ├── backend/
 │   ├── main.py              # FastAPI application
 │   ├── config.py            # Configuration settings
@@ -231,7 +231,7 @@ This project is open source and available under the [MIT License](LICENSE).
 ## 🆘 Support
 
 For issues and questions:
-- Check the [Issues](https://github.com/yourusername/digestgpt/issues) page
+- Check the [Issues](https://github.com/yourusername/docuchat/issues) page
 - Review the deployment guides above
 - Ensure your Anthropic API key is properly configured
 

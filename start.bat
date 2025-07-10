@@ -1,5 +1,5 @@
 @echo off
-echo 🧠 Starting DigestGPT Development Environment
+echo 🧠 Starting DocuChat Development Environment
 echo =============================================
 
 REM Check if .env file exists in backend
@@ -46,7 +46,7 @@ echo 🚀 Starting frontend server...
 start /B npm run dev
 
 echo.
-echo ✅ DigestGPT is starting up!
+echo ✅ DocuChat is starting up!
 echo 📍 Backend:  http://localhost:8000
 echo 📍 Frontend: http://localhost:3000
 echo.

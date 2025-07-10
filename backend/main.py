@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-app = FastAPI(title="DigestGPT API", description="Document analysis API using Claude")
+app = FastAPI(title="DocuChat API", description="Document analysis API using Claude")
 
 # Configure CORS
 app.add_middleware(
@@ -314,7 +314,7 @@ Please respond naturally and refer to specific parts of the document when releva
 @app.get("/")
 async def root():
     """Health check endpoint"""
-    return {"message": "DigestGPT API is running"}
+    return {"message": "DocuChat API is running"}
 
 @app.post("/analyze-file")
 async def analyze_file(file: UploadFile = File(...)):

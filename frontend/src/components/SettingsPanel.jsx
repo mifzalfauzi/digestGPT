@@ -49,7 +49,7 @@ function SettingsPanel({ isOpen, onClose }) {
                   Settings
                 </CardTitle>
                 <p className="text-sm text-slate-600 dark:text-gray-400 mt-1">
-                  Customize your DigestGPT experience
+                  Customize your DocuChat experience
                 </p>
               </div>
             </div>

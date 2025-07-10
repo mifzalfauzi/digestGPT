@@ -21,7 +21,7 @@ function ModernSidebar({ onNewDocument, currentDocument, onHome, onClose }) {
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                DigestGPT
+                DocuChat
               </h1>
               <p className="text-xs text-slate-500 dark:text-gray-400 font-medium">
                 AI Document Analysis

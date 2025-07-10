@@ -1,6 +1,6 @@
 # 🚀 Deployment Guide
 
-This guide provides detailed instructions for deploying DigestGPT to production using Render.com for the backend and Vercel for the frontend.
+This guide provides detailed instructions for deploying DocuChat to production using Render.com for the backend and Vercel for the frontend.
 
 ## 📋 Prerequisites
 
@@ -20,7 +20,7 @@ This guide provides detailed instructions for deploying DigestGPT to production 
 ```yaml
 services:
   - type: web
-    name: digestgpt-backend
+    name: docuchat-backend
     env: python
     buildCommand: "pip install -r requirements.txt"
     startCommand: "uvicorn main:app --host 0.0.0.0 --port $PORT"
@@ -44,7 +44,7 @@ services:
    - Connect your GitHub repository
 
 3. **Configure the Service**:
-   - **Name**: `digestgpt-backend`
+   - **Name**: `docuchat-backend`
    - **Root Directory**: `backend`
    - **Environment**: `Python 3`
    - **Build Command**: `pip install -r requirements.txt`
@@ -60,12 +60,12 @@ services:
 
 6. **Wait for deployment** - Render will build and deploy your backend
 
-7. **Note your backend URL** - it will be something like `https://digestgpt-backend.onrender.com`
+7. **Note your backend URL** - it will be something like `https://docuchat-backend.onrender.com`
 
 ### Step 3: Verify Backend Deployment
 
 Visit your backend URL and check:
-- `GET /` should return `{"message": "DigestGPT API is running"}`
+- `GET /` should return `{"message": "DocuChat API is running"}`
 - `GET /docs` should show the FastAPI documentation
 
 ## 🌐 Frontend Deployment (Vercel)
@@ -104,7 +104,7 @@ Visit your backend URL and check:
 
 4. **Deploy**: Click "Deploy"
 
-5. **Note your frontend URL** - it will be something like `https://digestgpt.vercel.app`
+5. **Note your frontend URL** - it will be something like `https://docuchat.vercel.app`
 
 #### Option B: Using Vercel CLI
 
