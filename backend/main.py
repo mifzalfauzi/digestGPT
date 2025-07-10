@@ -110,7 +110,9 @@ Given this document, do the following:
 
 For each key point and risk flag, please also include a short quote (5-15 words) from the original document that supports your analysis.
 
-Please format your response as JSON with the following structure:
+IMPORTANT: You must respond with ONLY valid JSON. Do not include any text before or after the JSON. Do not wrap the JSON in markdown code blocks. Just return pure JSON.
+
+Use this exact JSON structure:
 {{
     "summary": "Brief explanation of what the document is about",
     "key_points": [
@@ -140,7 +142,7 @@ Document text:
     
     try:
         response = client.messages.create(
-            model="claude-3-5-sonnet-20241022",
+            model="claude-sonnet-4-20250514",
             max_tokens=1000,
             temperature=0.3,
             messages=[
@@ -148,17 +150,49 @@ Document text:
             ]
         )
         
-        # Parse the JSON response
-        result = json.loads(response.content[0].text)
-        return result
-    except json.JSONDecodeError:
-        # Fallback if Claude doesn't return valid JSON
-        content = response.content[0].text
+        # Get the raw response content
+        content = response.content[0].text.strip()
+        print(f"Raw Claude response: {content}")  # Debug log
+        
+        # Try to find and extract JSON from the response
+        json_start = content.find('{')
+        json_end = content.rfind('}') + 1
+        
+        if json_start != -1 and json_end > json_start:
+            json_content = content[json_start:json_end]
+            try:
+                result = json.loads(json_content)
+                print(f"Parsed JSON successfully: {result}")  # Debug log
+                return result
+            except json.JSONDecodeError as e:
+                print(f"JSON parsing failed: {e}")  # Debug log
+                # Try to clean up the JSON
+                json_content = json_content.replace('```json', '').replace('```', '').strip()
+                try:
+                    result = json.loads(json_content)
+                    print(f"Parsed cleaned JSON successfully: {result}")  # Debug log
+                    return result
+                except json.JSONDecodeError:
+                    pass
+        
+        # If we can't parse JSON, create a structured fallback
+        print(f"Using fallback parsing for content: {content[:200]}...")  # Debug log
         return {
-            "summary": "Document analysis completed",
-            "key_points": [{"text": content, "quote": ""}],
-            "risk_flags": []
+            "summary": "Document analysis completed. Raw response could not be parsed as JSON.",
+            "key_points": [
+                {
+                    "text": "Analysis completed but response format was unexpected. Please try again or contact support.",
+                    "quote": "N/A"
+                }
+            ],
+            "risk_flags": [
+                {
+                    "text": "🚩 Unable to parse AI response properly. This may indicate a technical issue.",
+                    "quote": "N/A"
+                }
+            ]
         }
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Anthropic API error: {str(e)}")
 
@@ -241,7 +275,7 @@ Please respond naturally and refer to specific parts of the document when releva
 
     try:
         response = client.messages.create(
-            model="claude-3-5-sonnet-20241022",
+            model="claude-sonnet-4-20250514",
             max_tokens=1000,
             temperature=0.3,
             messages=[

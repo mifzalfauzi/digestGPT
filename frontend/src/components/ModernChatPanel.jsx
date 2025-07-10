@@ -138,7 +138,7 @@ function ModernChatPanel({ documentId, filename }) {
               <div className="flex items-center gap-2">
                 <Badge className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
                   <Brain className="h-2.5 w-2.5 mr-1" />
-                  Claude AI
+                  Claude 4 Sonnet
                 </Badge>
                 <span className="text-sm text-slate-500 dark:text-gray-400">•</span>
                 <p className="text-sm text-slate-500 dark:text-gray-400 truncate max-w-[200px]">
@@ -383,7 +383,7 @@ function ModernChatPanel({ documentId, filename }) {
             <span>Press Enter to send, Shift+Enter for new line</span>
             <div className="flex items-center gap-1">
               <Sparkles className="h-3 w-3" />
-              <span>Powered by Claude AI</span>
+              <span>Powered by Claude 4 Sonnet</span>
             </div>
           </div>
         </form>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 
-function HighlightableText({ text, highlights = [], activeHighlight = null, onHighlightClick }) {
+function HighlightableText({ text, highlights = [], activeHighlight = null, onHighlightClick, highlightRefs }) {
   const [renderedText, setRenderedText] = useState([])
 
   useEffect(() => {
@@ -123,6 +123,11 @@ function HighlightableText({ text, highlights = [], activeHighlight = null, onHi
           return (
             <span
               key={part.id}
+              ref={el => {
+                if (el && highlightRefs && part.id) {
+                  highlightRefs.current[part.id] = el
+                }
+              }}
               className={getHighlightClass(part.isActive, part.highlightData?.type)}
               title={part.highlightData?.tooltip}
               onClick={() => handleHighlightClick(part.highlightData)}

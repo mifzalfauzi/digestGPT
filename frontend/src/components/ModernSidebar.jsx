@@ -144,7 +144,7 @@ function ModernSidebar({ onNewDocument, currentDocument, onHome }) {
         
         <div className="text-center pt-2 border-t border-slate-200 dark:border-gray-700">
           <p className="text-xs text-slate-400 dark:text-gray-500">
-            Powered by <span className="font-medium text-blue-600 dark:text-blue-400">Claude AI</span>
+            Powered by <span className="font-medium text-blue-600 dark:text-blue-400">Claude 4 Sonnet</span>
           </p>
         </div>
       </div>

@@ -26,11 +26,11 @@ function SettingsPanel({ isOpen, onClose }) {
   }
 
   const modelInfo = {
-    name: "Claude 3.5 Sonnet",
+    name: "Claude 4 Sonnet",
     provider: "Anthropic",
-    version: "Latest",
-    capabilities: ["Document Analysis", "Natural Language", "Code Understanding", "Multi-modal"],
-    features: ["Advanced Reasoning", "Context Awareness", "Safety Focused"]
+    version: "2025-05-14",
+    capabilities: ["Document Analysis", "Natural Language", "Multi-modal", "Advanced Reasoning"],
+    features: ["Enhanced Intelligence", "Context Awareness", "Latest Generation"]
   }
 
   if (!isOpen) return null

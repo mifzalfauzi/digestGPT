@@ -3,7 +3,7 @@ import axios from 'axios'
 import ModernSidebar from './components/ModernSidebar'
 import ModernUploadInterface from './components/ModernUploadInterface'
 import ModernChatPanel from './components/ModernChatPanel'
-import ModernDocumentViewer from './components/ModernDocumentViewer'
+import EnhancedDocumentViewer from './components/EnhancedDocumentViewer'
 import { ThemeProvider } from './components/ThemeProvider'
 
 function App() {
@@ -167,14 +167,14 @@ function App() {
               )}
                 </div>
 
-            {/* Right Panel - Document Viewer */}
+            {/* Right Panel - Enhanced Document Viewer */}
             <div className="w-1/3 min-w-[420px]">
-              <ModernDocumentViewer 
+              <EnhancedDocumentViewer 
                 results={results}
                 file={file}
                 inputMode={inputMode}
-            />
-          </div>
+              />
+            </div>
           </>
         )}
       </div>
