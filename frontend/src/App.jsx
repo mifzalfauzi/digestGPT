@@ -1,15 +1,10 @@
 import React, { useState } from 'react'
 import axios from 'axios'
-import { Button } from './components/ui/button'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './components/ui/card'
-import { Input } from './components/ui/input'
-import { Textarea } from './components/ui/textarea'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs'
-import { Alert, AlertDescription } from './components/ui/alert'
-import { Separator } from './components/ui/separator'
-import { Badge } from './components/ui/badge'
-import { Upload, FileText, Brain, AlertTriangle, Loader2 } from 'lucide-react'
-import ChatInterface from './ChatInterface'
+import ModernSidebar from './components/ModernSidebar'
+import ModernUploadInterface from './components/ModernUploadInterface'
+import ModernChatPanel from './components/ModernChatPanel'
+import ModernDocumentViewer from './components/ModernDocumentViewer'
+import { ThemeProvider } from './components/ThemeProvider'
 
 function App() {
   const [file, setFile] = useState(null)
@@ -19,6 +14,7 @@ function App() {
   const [error, setError] = useState('')
   const [inputMode, setInputMode] = useState('file') // 'file' or 'text'
   const [documentId, setDocumentId] = useState(null)
+  const [currentView, setCurrentView] = useState('upload') // 'upload' or 'workspace'
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0]
@@ -79,8 +75,10 @@ function App() {
         })
       }
       
+      console.log('API Response:', response.data) // Debug log
       setResults(response.data)
       setDocumentId(response.data.document_id)
+      setCurrentView('workspace')
     } catch (err) {
       console.error('Error:', err)
       if (err.response?.data?.detail) {
@@ -93,219 +91,94 @@ function App() {
     }
   }
 
-  const resetForm = () => {
+  const resetToHome = () => {
     setFile(null)
     setTextInput('')
     setResults(null)
     setError('')
     setDocumentId(null)
+    setCurrentView('upload')
     // Reset file input
     const fileInput = document.getElementById('file-input')
     if (fileInput) fileInput.value = ''
   }
 
+  const handleNewDocument = () => {
+    resetToHome()
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Brain className="h-12 w-12 text-primary" />
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              DigestGPT
-            </h1>
+    <ThemeProvider>
+      <div className="h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/20 flex">
+        {currentView === 'upload' ? (
+          /* Modern Upload View */
+          <div className="flex-1 flex items-center justify-center p-8 relative overflow-hidden">
+            {/* Background Elements */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-100/20 via-purple-100/20 to-pink-100/20 dark:from-blue-900/10 dark:via-purple-900/10 dark:to-pink-900/10"></div>
+            <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-200/30 dark:bg-blue-800/20 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-purple-200/30 dark:bg-purple-800/20 rounded-full blur-3xl"></div>
+            
+            <div className="relative z-10 w-full">
+              <ModernUploadInterface
+                file={file}
+                textInput={textInput}
+                setTextInput={setTextInput}
+                inputMode={inputMode}
+                setInputMode={setInputMode}
+                handleFileChange={handleFileChange}
+                handleSubmit={handleSubmit}
+                loading={loading}
+                error={error}
+              />
+            </div>
           </div>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Analyze your documents with AI-powered insights. Upload PDFs, DOCX files, or paste text to get summaries, key points, and risk assessments.
-          </p>
-        </div>
+        ) : (
+          /* Modern Workspace View */
+          <>
+            {/* Left Sidebar */}
+            <ModernSidebar 
+              onNewDocument={handleNewDocument}
+              onHome={resetToHome}
+              currentDocument={results?.filename || "Pasted Text"}
+            />
 
-        <Card className="max-w-4xl mx-auto">
-          <CardHeader>
-            <CardTitle>Document Analysis</CardTitle>
-            <CardDescription>
-              Choose how you'd like to analyze your document
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={inputMode} onValueChange={setInputMode} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="file" className="flex items-center gap-2">
-                  <Upload className="h-4 w-4" />
-                  Upload File
-                </TabsTrigger>
-                <TabsTrigger value="text" className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Paste Text
-                </TabsTrigger>
-              </TabsList>
-
-              <form onSubmit={handleSubmit} className="mt-4">
-                <TabsContent value="file" className="space-y-4">
-                  <div className="space-y-4">
-                    <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
-                      <Input
-                        type="file"
-                        id="file-input"
-                        accept=".pdf,.docx"
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-                      <label htmlFor="file-input" className="cursor-pointer block">
-                        {file ? (
-                          <div className="space-y-2">
-                            <FileText className="h-12 w-12 mx-auto text-primary" />
-                            <p className="text-sm font-medium">{file.name}</p>
-                            <p className="text-xs text-muted-foreground">Click to change file</p>
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
-                            <p className="text-sm font-medium">Choose PDF or DOCX file</p>
-                            <p className="text-xs text-muted-foreground">or drag and drop</p>
-                          </div>
-                        )}
-                      </label>
+            {/* Center Panel - Chat */}
+            <div className="flex-1 min-w-0">
+              {documentId ? (
+                <ModernChatPanel 
+                  documentId={documentId}
+                  filename={results?.filename || "Pasted Text"}
+                />
+              ) : (
+                <div className="h-full flex items-center justify-center bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800">
+                  <div className="text-center space-y-4">
+                    <div className="p-4 bg-blue-100 dark:bg-blue-900/40 rounded-full w-fit mx-auto">
+                      <svg className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
                     </div>
-                    <p className="text-xs text-muted-foreground text-center">
-                      Supported formats: PDF, DOCX (max 10MB)
-                    </p>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="text" className="space-y-4">
-                  <div className="space-y-4">
-                    <Textarea
-                      value={textInput}
-                      onChange={(e) => setTextInput(e.target.value)}
-                      placeholder="Paste your document text here..."
-                      className="min-h-[200px]"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Maximum 50,000 characters
-                    </p>
-                  </div>
-                </TabsContent>
-
-                <div className="flex gap-2 mt-6">
-                  <Button 
-                    type="submit" 
-                    disabled={loading || (inputMode === 'file' && !file) || (inputMode === 'text' && !textInput.trim())}
-                    className="flex-1"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Analyzing...
-                      </>
-                    ) : (
-                      <>
-                        <Brain className="h-4 w-4 mr-2" />
-                        Analyze Document
-                      </>
-                    )}
-                  </Button>
-                  
-                  {(file || textInput || results) && (
-                    <Button type="button" onClick={resetForm} variant="outline">
-                      Reset
-                    </Button>
-                  )}
-                </div>
-              </form>
-            </Tabs>
-          </CardContent>
-        </Card>
-
-        {error && (
-          <Alert variant="destructive" className="max-w-4xl mx-auto mt-4">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {results && (
-          <Card className="max-w-4xl mx-auto mt-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Brain className="h-5 w-5" />
-                Analysis Results
-              </CardTitle>
-              {results.filename && (
-                <CardDescription>
-                  <FileText className="h-4 w-4 inline mr-1" />
-                  {results.filename}
-                </CardDescription>
-              )}
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Summary */}
-              <div className="space-y-3">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  📋 Summary
-                </h3>
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm leading-relaxed">{results.analysis.summary}</p>
-                  </CardContent>
-                </Card>
+                    <div className="space-y-2">
+                      <p className="text-lg font-semibold text-slate-700 dark:text-gray-300">Processing Document</p>
+                      <p className="text-sm text-slate-500 dark:text-gray-400">AI analysis in progress...</p>
               </div>
-
-              {/* Key Points */}
-              {results.analysis.key_points && results.analysis.key_points.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    🔑 Key Points
-                  </h3>
-                  <div className="space-y-2">
-                    {results.analysis.key_points.map((point, index) => (
-                      <Card key={index}>
-                        <CardContent className="pt-4">
-                          <p className="text-sm leading-relaxed">{point}</p>
-                        </CardContent>
-                      </Card>
-                    ))}
                   </div>
                 </div>
               )}
-
-              {/* Risk Flags */}
-              {results.analysis.risk_flags && results.analysis.risk_flags.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    🚩 Risk Flags
-                  </h3>
-                  <div className="space-y-2">
-                    {results.analysis.risk_flags.map((flag, index) => (
-                      <Alert key={index} variant="destructive">
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertDescription>{flag}</AlertDescription>
-                      </Alert>
-                    ))}
-                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
 
-        {results && documentId && (
-          <div className="max-w-4xl mx-auto mt-6">
-            <ChatInterface 
-              documentId={documentId} 
-              filename={results.filename || "Pasted Text"}
+            {/* Right Panel - Document Viewer */}
+            <div className="w-1/3 min-w-[420px]">
+              <ModernDocumentViewer 
+                results={results}
+                file={file}
+                inputMode={inputMode}
             />
           </div>
+          </>
         )}
-
-        {/* Footer */}
-        <div className="text-center mt-12 pt-8 border-t">
-          <p className="text-sm text-muted-foreground">
-            Powered by Anthropic Claude • Built with React & FastAPI
-          </p>
-        </div>
       </div>
-    </div>
+    </ThemeProvider>
   )
 }
 

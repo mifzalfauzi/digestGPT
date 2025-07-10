@@ -9,11 +9,11 @@ import { Separator } from './components/ui/separator'
 import { Badge } from './components/ui/badge'
 import { MessageCircle, Send, Trash2, ChevronDown, ChevronUp, Bot, User, AlertCircle } from 'lucide-react'
 
-function ChatInterface({ documentId, filename }) {
+function ChatInterface({ documentId, filename, autoExpand = false }) {
   const [messages, setMessages] = useState([])
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(autoExpand)
   const messagesEndRef = useRef(null)
 
   const scrollToBottom = () => {
@@ -23,6 +23,10 @@ function ChatInterface({ documentId, filename }) {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  useEffect(() => {
+    setIsExpanded(autoExpand)
+  }, [autoExpand])
 
   const handleSendMessage = async (e) => {
     e.preventDefault()

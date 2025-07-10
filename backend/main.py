@@ -108,11 +108,31 @@ Given this document, do the following:
 2. Summarize key important points as bullet points.
 3. Highlight any risky or confusing parts with 🚩 emoji and explain why.
 
+For each key point and risk flag, please also include a short quote (5-15 words) from the original document that supports your analysis.
+
 Please format your response as JSON with the following structure:
 {{
     "summary": "Brief explanation of what the document is about",
-    "key_points": ["Point 1", "Point 2", "Point 3"],
-    "risk_flags": ["🚩 Risk 1: explanation", "🚩 Risk 2: explanation"]
+    "key_points": [
+        {{
+            "text": "Point 1 description",
+            "quote": "relevant quote from document"
+        }},
+        {{
+            "text": "Point 2 description", 
+            "quote": "relevant quote from document"
+        }}
+    ],
+    "risk_flags": [
+        {{
+            "text": "🚩 Risk 1: explanation",
+            "quote": "relevant quote from document"
+        }},
+        {{
+            "text": "🚩 Risk 2: explanation",
+            "quote": "relevant quote from document"
+        }}
+    ]
 }}
 
 Document text:
@@ -136,11 +156,45 @@ Document text:
         content = response.content[0].text
         return {
             "summary": "Document analysis completed",
-            "key_points": [content],
+            "key_points": [{"text": content, "quote": ""}],
             "risk_flags": []
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Anthropic API error: {str(e)}")
+
+def find_quote_position(text: str, quote: str) -> Dict:
+    """Find the position of a quote in the document text"""
+    if not quote or not quote.strip():
+        return {"start": -1, "end": -1, "found": False}
+    
+    # Clean up the quote for better matching
+    clean_quote = quote.strip().lower()
+    clean_text = text.lower()
+    
+    # Try exact match first
+    start_pos = clean_text.find(clean_quote)
+    if start_pos != -1:
+        return {
+            "start": start_pos,
+            "end": start_pos + len(clean_quote),
+            "found": True
+        }
+    
+    # Try partial matching with individual words
+    words = clean_quote.split()
+    if len(words) > 3:
+        # Try matching with first and last few words
+        partial_quote = f"{words[0]} {words[1]}.*{words[-2]} {words[-1]}"
+        import re
+        match = re.search(partial_quote, clean_text)
+        if match:
+            return {
+                "start": match.start(),
+                "end": match.end(),
+                "found": True
+            }
+    
+    return {"start": -1, "end": -1, "found": False}
 
 def store_document(text: str, filename: str = None) -> str:
     """Store document text and return a unique document ID"""
@@ -243,10 +297,22 @@ async def analyze_file(file: UploadFile = File(...)):
         # Analyze with Claude
         analysis = await analyze_document_with_claude(text)
         
+        # Add position information for highlighting
+        for key_point in analysis.get("key_points", []):
+            if isinstance(key_point, dict) and "quote" in key_point:
+                position = find_quote_position(text, key_point["quote"])
+                key_point["position"] = position
+        
+        for risk_flag in analysis.get("risk_flags", []):
+            if isinstance(risk_flag, dict) and "quote" in risk_flag:
+                position = find_quote_position(text, risk_flag["quote"])
+                risk_flag["position"] = position
+        
         return {
             "success": True,
             "document_id": document_id,
             "filename": file.filename,
+            "document_text": text,
             "analysis": analysis
         }
     
@@ -271,9 +337,21 @@ async def analyze_text(text: str = Form(...)):
         # Analyze with Claude
         analysis = await analyze_document_with_claude(text)
         
+        # Add position information for highlighting
+        for key_point in analysis.get("key_points", []):
+            if isinstance(key_point, dict) and "quote" in key_point:
+                position = find_quote_position(text, key_point["quote"])
+                key_point["position"] = position
+        
+        for risk_flag in analysis.get("risk_flags", []):
+            if isinstance(risk_flag, dict) and "quote" in risk_flag:
+                position = find_quote_position(text, risk_flag["quote"])
+                risk_flag["position"] = position
+        
         return {
             "success": True,
             "document_id": document_id,
+            "document_text": text,
             "analysis": analysis
         }
     
