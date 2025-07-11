@@ -321,13 +321,13 @@ This business plan effectively balances ambitious growth objectives with compreh
 
   return (
     <ThemeProvider>
-      <div className="h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col overflow-hidden" style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}>
+      <div className="h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">
         
         {currentView === 'upload' ? (
           /* ===== UPLOAD VIEW ===== */
-          <div className="flex h-full">
-            {/* Always show sidebar in upload view */}
-            <div className="hidden lg:block">
+          <div className="h-full flex">
+            {/* Fixed Sidebar for Desktop */}
+            <div className="hidden lg:block fixed left-0 top-0 h-full w-64 z-30">
               <ModernSidebar 
                 onNewDocument={handleNewDocument}
                 onHome={resetToHome}
@@ -338,14 +338,14 @@ This business plan effectively balances ambitious growth objectives with compreh
             </div>
             
             {/* Main Upload Content */}
-            <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden">
+            <div className="flex-1 lg:ml-64 flex items-center justify-center p-4 sm:p-6 lg:p-8 relative min-h-full overflow-y-auto">
               {/* Background Elements */}
               <div className="absolute inset-0 bg-gradient-to-br from-blue-100/20 via-purple-100/20 to-pink-100/20 dark:from-blue-900/10 dark:via-purple-900/10 dark:to-pink-900/10"></div>
               <div className="absolute top-1/4 left-1/4 w-32 h-32 sm:w-48 sm:h-48 lg:w-64 lg:h-64 bg-blue-200/30 dark:bg-blue-800/20 rounded-full blur-3xl"></div>
               <div className="absolute bottom-1/4 right-1/4 w-32 h-32 sm:w-48 sm:h-48 lg:w-64 lg:h-64 bg-purple-200/30 dark:bg-purple-800/20 rounded-full blur-3xl"></div>
               
               {/* Mobile Menu Button */}
-              <div className="lg:hidden absolute top-4 left-4 z-10">
+              <div className="lg:hidden fixed top-4 left-4 z-40">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -422,9 +422,20 @@ This business plan effectively balances ambitious growth objectives with compreh
           </div>
         ) : (
           /* ===== WORKSPACE VIEW ===== */
-          <div className="flex flex-col lg:flex-row h-full">
+          <>
+            {/* Fixed Sidebar for Desktop */}
+            <div className="hidden lg:block fixed left-0 top-0 h-full w-64 z-30">
+              <ModernSidebar 
+                onNewDocument={handleNewDocument}
+                onHome={resetToHome}
+                currentDocument={results?.filename || "Demo Document"}
+                isDemoMode={isDemoMode}
+                bypassAPI={bypassAPI}
+              />
+            </div>
+
             {/* Mobile Header - Fixed at top */}
-            <div className="lg:hidden flex-shrink-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-b border-slate-200 dark:border-gray-700 shadow-sm">
+            <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-b border-slate-200 dark:border-gray-700 shadow-sm">
               <div className="flex items-center justify-between p-3">
                 <Button
                   variant="ghost"
@@ -465,70 +476,53 @@ This business plan effectively balances ambitious growth objectives with compreh
               </div>
             </div>
 
-            {/* Desktop Sidebar - Fixed */}
-            <div className="hidden lg:block lg:w-64 flex-shrink-0">
-              <div className="h-full">
-                <ModernSidebar 
-                  onNewDocument={handleNewDocument}
-                  onHome={resetToHome}
-                  currentDocument={results?.filename || "Demo Document"}
-                  isDemoMode={isDemoMode}
-                  bypassAPI={bypassAPI}
-                />
-              </div>
-            </div>
-
-            {/* Main Content Area - Scrollable */}
-            <div className="flex-1 lg:flex min-h-0 overflow-hidden">
+            {/* Main Content Area - Properly positioned */}
+            <div className="lg:ml-64 pt-16 lg:pt-0 h-full flex">
               {/* Chat Panel */}
               <div className={`
-                flex-1 min-w-0 h-full
+                flex-1 h-full
                 ${activePanel === 'chat' ? 'block' : 'hidden lg:block'}
               `}>
-                <div className="h-full">
-                  {documentId ? (
-                    <ModernChatPanel 
-                      documentId={documentId}
-                      filename={results?.filename || "Demo Document"}
-                      onSetInputMessage={setChatSetInputMessage}
-                      isDemoMode={isDemoMode}
-                      bypassAPI={bypassAPI}
-                    />
-                  ) : (
-                    <div className="h-full flex items-center justify-center bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 p-4">
-                      <div className="text-center space-y-4 max-w-md">
-                        <div className="p-4 bg-blue-100 dark:bg-blue-900/40 rounded-full w-fit mx-auto">
-                          <svg className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                        </div>
-                        <div className="space-y-2">
-                          <p className="text-lg font-semibold text-slate-700 dark:text-gray-300">Processing Document</p>
-                          <p className="text-sm text-slate-500 dark:text-gray-400">AI analysis in progress...</p>
-                        </div>
+                {documentId ? (
+                  <ModernChatPanel 
+                    documentId={documentId}
+                    filename={results?.filename || "Demo Document"}
+                    onSetInputMessage={setChatSetInputMessage}
+                    isDemoMode={isDemoMode}
+                    bypassAPI={bypassAPI}
+                  />
+                ) : (
+                  <div className="h-full flex items-center justify-center bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 p-4">
+                    <div className="text-center space-y-4 max-w-md">
+                      <div className="p-4 bg-blue-100 dark:bg-blue-900/40 rounded-full w-fit mx-auto">
+                        <svg className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-lg font-semibold text-slate-700 dark:text-gray-300">Processing Document</p>
+                        <p className="text-sm text-slate-500 dark:text-gray-400">AI analysis in progress...</p>
                       </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Document Viewer Panel */}
               <div className={`
-                w-full lg:w-2/5 xl:w-1/2 min-w-0 h-full
+                w-full lg:w-2/5 xl:w-1/2 h-full
                 ${activePanel === 'document' ? 'block' : 'hidden lg:block'}
                 lg:border-l border-slate-200 dark:border-gray-700
               `}>
-                <div className="h-full">
-                  <EnhancedDocumentViewer 
-                    results={results}
-                    file={file}
-                    inputMode={inputMode}
-                    onExplainConcept={handleExplainConcept}
-                    isDemoMode={isDemoMode}
-                    bypassAPI={bypassAPI}
-                  />
-                </div>
+                <EnhancedDocumentViewer 
+                  results={results}
+                  file={file}
+                  inputMode={inputMode}
+                  onExplainConcept={handleExplainConcept}
+                  isDemoMode={isDemoMode}
+                  bypassAPI={bypassAPI}
+                />
               </div>
             </div>
             
@@ -551,7 +545,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                 </div>
               </>
             )}
-          </div>
+          </>
         )}
       </div>
     </ThemeProvider>

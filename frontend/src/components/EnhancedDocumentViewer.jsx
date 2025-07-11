@@ -357,7 +357,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                       </div>
                       <div className="min-w-0">
                         <CardTitle className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                          Interactive Document 
+                          Interactive Document
                           {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
                           {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal">(Preview)</span>}
                         </CardTitle>
