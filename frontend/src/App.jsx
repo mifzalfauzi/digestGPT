@@ -6,7 +6,7 @@ import ModernChatPanel from './components/ModernChatPanel'
 import EnhancedDocumentViewer from './components/EnhancedDocumentViewer'
 import { ThemeProvider } from './components/ThemeProvider'
 import { Button } from './components/ui/button'
-import { Menu, X, MessageCircle, FileText, Eye, Upload } from 'lucide-react'
+import { Menu, X, MessageCircle, FileText, Eye, Upload, GripVertical } from 'lucide-react'
 
 function App() {
   const [file, setFile] = useState(null)
@@ -24,6 +24,10 @@ function App() {
   // Responsive state
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activePanel, setActivePanel] = useState('chat') // 'chat' or 'document' for mobile
+
+  // Resizable panel state
+  const [rightPanelWidth, setRightPanelWidth] = useState(40) // percentage
+  const [isResizing, setIsResizing] = useState(false)
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0]
@@ -319,6 +323,38 @@ This business plan effectively balances ambitious growth objectives with compreh
     })
   }
 
+  // Handle mouse down on resize handle
+  const handleMouseDown = (e) => {
+    e.preventDefault()
+    setIsResizing(true)
+    
+    const handleMouseMove = (e) => {
+      const container = e.currentTarget.parentElement || document.querySelector('.workspace-container')
+      if (!container) return
+      
+      const containerRect = container.getBoundingClientRect()
+      const containerWidth = containerRect.width
+      const mouseX = e.clientX - containerRect.left
+      
+      // Calculate percentage (minimum 20%, maximum 80%)
+      const percentage = Math.min(Math.max((containerWidth - mouseX) / containerWidth * 100, 30), 70)
+      setRightPanelWidth(percentage)
+    }
+    
+    const handleMouseUp = () => {
+      setIsResizing(false)
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+    
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+  }
+
   return (
     <ThemeProvider>
       <div className="h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">
@@ -476,13 +512,19 @@ This business plan effectively balances ambitious growth objectives with compreh
               </div>
             </div>
 
-            {/* Main Content Area - Properly positioned */}
-            <div className="lg:ml-64 pt-16 lg:pt-0 h-full flex">
+            {/* Main Content Area - Properly positioned with resizable panels */}
+            <div className="lg:ml-64 pt-16 lg:pt-0 h-full flex workspace-container">
               {/* Chat Panel */}
-              <div className={`
-                flex-1 h-full
-                ${activePanel === 'chat' ? 'block' : 'hidden lg:block'}
-              `}>
+              <div 
+                className={`
+                  h-full
+                  ${activePanel === 'chat' ? 'block' : 'hidden lg:block'}
+                `}
+                style={{ 
+                  width: `${100 - rightPanelWidth}%`,
+                  minWidth: '20%'
+                }}
+              >
                 {documentId ? (
                   <ModernChatPanel 
                     documentId={documentId}
@@ -509,12 +551,39 @@ This business plan effectively balances ambitious growth objectives with compreh
                 )}
               </div>
 
+              {/* Resize Handle - Desktop only */}
+              <div className="hidden lg:block relative">
+                <div 
+                  className={`
+                    w-1 h-full bg-slate-200 dark:bg-gray-700 hover:bg-blue-400 dark:hover:bg-blue-500 
+                    cursor-col-resize transition-colors duration-200 relative group
+                    ${isResizing ? 'bg-blue-500 dark:bg-blue-400' : ''}
+                  `}
+                  onMouseDown={handleMouseDown}
+                >
+                  {/* Visible handle indicator */}
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
+                               bg-slate-400 dark:bg-gray-500 group-hover:bg-blue-500 dark:group-hover:bg-blue-400 
+                               rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <GripVertical className="h-4 w-4 text-white" />
+                  </div>
+                  
+                  {/* Extended hover area */}
+                  <div className="absolute inset-y-0 -left-2 -right-2 cursor-col-resize" />
+                </div>
+              </div>
+
               {/* Document Viewer Panel */}
-              <div className={`
-                w-full lg:w-2/5 xl:w-1/2 h-full
-                ${activePanel === 'document' ? 'block' : 'hidden lg:block'}
-                lg:border-l border-slate-200 dark:border-gray-700
-              `}>
+              <div 
+                className={`
+                  h-full border-l border-slate-200 dark:border-gray-700
+                  ${activePanel === 'document' ? 'block' : 'hidden lg:block'}
+                `}
+                style={{ 
+                  width: `${rightPanelWidth}%`,
+                  minWidth: '20%'
+                }}
+              >
                 <EnhancedDocumentViewer 
                   results={results}
                   file={file}

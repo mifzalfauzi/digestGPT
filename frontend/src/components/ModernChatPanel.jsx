@@ -189,7 +189,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800">
             {/* Modern Header - Responsive - Fixed at top */}
-      <div className="flex-shrink-0 px-2 sm:px-3 lg:px-4 py-2 sm:py-3 border-b border-slate-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+      <div className="flex-shrink-0 px-2 sm:px-3 lg:px-4 py-2 sm:py-3 border-slate-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <div className="relative">
@@ -433,7 +433,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
       </div>
 
       {/* Modern Input - Fixed at bottom */}
-      <div className="flex-shrink-0 p-2 sm:p-3 lg:p-4 border-t border-slate-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+      <div className="flex-shrink-0 p-2 sm:p-3 lg:p-4 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
         <form onSubmit={handleSendMessage} className="space-y-2 sm:space-y-3">
           <div className="relative">
             <Textarea
