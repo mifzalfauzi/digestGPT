@@ -234,7 +234,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
 
             {/* AI Analysis Summary Tab */}
             <TabsContent value="analysis" className="h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4">
-              <Card className="border-0 mt-3 shadow-xl bg-gradient-to-br from-slate-50 to-white dark:from-gray-800 dark:to-gray-900">
+              <Card className="border-0 mt-3 shadow-lg">
                 <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                     <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl shadow-lg">

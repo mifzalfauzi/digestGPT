@@ -153,7 +153,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       case 'compliance': return 'red'
       case 'security': return 'red'
       case 'operational': return 'yellow'
-      default: return 'gray'
+      default: return 'blue'
     }
   }
 
