@@ -144,21 +144,21 @@ This business plan effectively balances growth ambitions with comprehensive risk
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800">
             {/* Enhanced Header - Fixed at top */}
-      <div className="flex-shrink-0 px-2 sm:px-3 lg:px-4 py-2 sm:py-3 border-b border-slate-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+      <div className="flex-shrink-0 px-2 sm:px-3 lg:px-4 py-2 sm:py-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 lg:gap-0">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/40 dark:to-purple-900/40 rounded-xl">
-              <Brain className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400" />
+            <div className="p-1 sm:p-1.5 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/40 dark:to-purple-900/40 rounded-xl">
+              <Brain className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+              <h2 className="text-xs sm:text-sm lg:text-base font-bold text-slate-900 dark:text-white">
                 Dashboard 
                 {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
                 {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal">(Preview)</span>}
               </h2>
               {results?.filename && (
                 <div className="flex items-center gap-1 mt-1">
-                  <FileText className="h-2.5 w-2.5 text-slate-500 flex-shrink-0" />
+                  <FileText className="h-2 w-2 sm:h-2.5 sm:w-2.5 text-slate-500 flex-shrink-0" />
                   <p className="text-xs text-slate-500 dark:text-gray-400 truncate">
                     {results.filename}
                   </p>
@@ -169,7 +169,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                       ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
                       : 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white'
                   }`}>
-                    <Sparkles className="h-2 w-2 mr-0.5" />
+                    <Sparkles className="h-1.5 w-1.5 sm:h-2 sm:w-2 mr-0.5" />
                     <span className="hidden sm:inline">
                       {isDemoMode ? 'Demo Data' : bypassAPI ? 'Preview Data' : 'Analyzed'}
                     </span>
@@ -188,28 +188,28 @@ This business plan effectively balances growth ambitions with comprehensive risk
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           <div className="flex-shrink-0 px-2 sm:px-3 lg:px-4 pt-2 sm:pt-3">
-            <TabsList className={`grid w-full ${isPDF ? 'grid-cols-4' : 'grid-cols-3'} bg-slate-100 dark:bg-gray-700 p-1 rounded-xl h-auto`}>
-            <TabsTrigger value="analysis" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1.5 px-1 sm:px-2 text-xs">
-                <Brain className="h-3 w-3 flex-shrink-0" />
-                <span className="hidden lg:inline">Analysis</span>
-                <span className="lg:hidden">AI</span>
+            <TabsList className={`grid w-full ${isPDF ? 'grid-cols-4' : 'grid-cols-3'} bg-slate-100 dark:bg-gray-700 p-0.5 sm:p-1 rounded-xl h-auto`}>
+            <TabsTrigger value="analysis" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
+                <Brain className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                <span className="hidden md:inline">Analysis</span>
+                <span className="md:hidden">AI</span>
               </TabsTrigger>
-              <TabsTrigger value="insights" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1.5 px-1 sm:px-2 text-xs">
-                <TrendingUp className="h-3 w-3 flex-shrink-0" />
-                <span className="hidden lg:inline">Insights & Risks</span>
-                <span className="lg:hidden">Insights</span>
+              <TabsTrigger value="insights" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
+                <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                <span className="hidden md:inline">Insights & Risks</span>
+                <span className="md:hidden">Insights</span>
               </TabsTrigger>
               {isPDF && (
-                <TabsTrigger value="pdf" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1.5 px-1 sm:px-2 text-xs">
-                  <FileText className="h-3 w-3 flex-shrink-0" />
+                <TabsTrigger value="pdf" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
+                  <FileText className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
                   <span className="hidden sm:inline">PDF Viewer</span>
                   <span className="sm:hidden">PDF</span>
                 </TabsTrigger>
               )}
-              <TabsTrigger value="document" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1.5 px-1 sm:px-2 text-xs">
-                <Eye className="h-3 w-3 flex-shrink-0" />
-                <span className="hidden lg:inline">Interactive Text</span>
-                <span className="lg:hidden">Text</span>
+              <TabsTrigger value="document" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
+                <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                <span className="hidden md:inline">Interactive Text</span>
+                <span className="md:hidden">Text</span>
               </TabsTrigger>
             </TabsList>
           </div>
@@ -234,14 +234,14 @@ This business plan effectively balances growth ambitions with comprehensive risk
 
             {/* AI Analysis Summary Tab */}
             <TabsContent value="analysis" className="h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4">
-              <Card className="border-0 mt-3 shadow-lg">
+              <Card className="border-0 mt-2 sm:mt-3 shadow-lg">
                 <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                     <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl shadow-lg">
                       <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                     </div>
                     <div className="min-w-0">
-                      <CardTitle className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                      <CardTitle className="text-sm sm:text-base lg:text-lg font-bold text-slate-900 dark:text-white">
                         Executive Summary
                       </CardTitle>
                       <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
@@ -259,42 +259,42 @@ This business plan effectively balances growth ambitions with comprehensive risk
                   
                   {/* Quick Stats - Responsive Grid */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-3 sm:mt-4">
-                    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-2.5 sm:p-3 border border-emerald-200/50 dark:border-emerald-800/30">
+                    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-emerald-200/50 dark:border-emerald-800/30">
                       <div className="flex items-center gap-1">
-                        <Target className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                        <Target className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-emerald-600 dark:text-emerald-400" />
                         <span className="text-xs font-medium text-emerald-800 dark:text-emerald-200">Insights</span>
                       </div>
-                      <p className="text-base sm:text-lg font-bold text-emerald-900 dark:text-emerald-100 mt-1">
+                      <p className="text-sm sm:text-base lg:text-lg font-bold text-emerald-900 dark:text-emerald-100 mt-1">
                         {isDemoMode ? '12' : bypassAPI ? '4' : (results?.analysis?.key_points?.length || 0)}
                       </p>
                     </div>
                     
-                    <div className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 rounded-xl p-2.5 sm:p-3 border border-red-200/50 dark:border-red-800/30">
+                    <div className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-red-200/50 dark:border-red-800/30">
                       <div className="flex items-center gap-1">
-                        <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400" />
+                        <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-red-600 dark:text-red-400" />
                         <span className="text-xs font-medium text-red-800 dark:text-red-200">Risks</span>
                       </div>
-                      <p className="text-base sm:text-lg font-bold text-red-900 dark:text-red-100 mt-1">
+                      <p className="text-sm sm:text-base lg:text-lg font-bold text-red-900 dark:text-red-100 mt-1">
                         {isDemoMode ? '3' : bypassAPI ? '3' : (results?.analysis?.risk_flags?.length || 0)}
                       </p>
                     </div>
 
-                    <div className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 rounded-xl p-2.5 sm:p-3 border border-amber-200/50 dark:border-amber-800/30">
+                    <div className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-amber-200/50 dark:border-amber-800/30">
                       <div className="flex items-center gap-1">
-                        <Sparkles className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                        <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-amber-600 dark:text-amber-400" />
                         <span className="text-xs font-medium text-amber-800 dark:text-amber-200">Concepts</span>
                       </div>
-                      <p className="text-base sm:text-lg font-bold text-amber-900 dark:text-amber-100 mt-1">
+                      <p className="text-sm sm:text-base lg:text-lg font-bold text-amber-900 dark:text-amber-100 mt-1">
                         {isDemoMode ? '3' : bypassAPI ? '3' : (results?.analysis?.key_concepts?.length || 0)}
                       </p>
                     </div>
                     
-                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-2.5 sm:p-3 border border-blue-200/50 dark:border-blue-800/30">
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-blue-200/50 dark:border-blue-800/30">
                       <div className="flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                        <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-blue-600 dark:text-blue-400" />
                         <span className="text-xs font-medium text-blue-800 dark:text-blue-200">Status</span>
                       </div>
-                      <p className="text-base sm:text-lg font-bold text-blue-900 dark:text-blue-100 mt-1">
+                      <p className="text-sm sm:text-base lg:text-lg font-bold text-blue-900 dark:text-blue-100 mt-1">
                         {isDemoMode ? 'Demo' : bypassAPI ? 'Preview' : 'Done'}
                       </p>
                     </div>
@@ -316,10 +316,10 @@ This business plan effectively balances growth ambitions with comprehensive risk
               {results?.analyzed_at && (
                 <div className="mt-3 sm:mt-4">
                   <Card className="border-0 shadow-lg bg-gradient-to-r from-slate-50/80 to-gray-50/80 dark:from-gray-800/80 dark:to-gray-900/80">
-                    <CardContent className="p-2.5 sm:p-3">
+                    <CardContent className="p-2 sm:p-2.5 lg:p-3">
                       <div className="flex items-center justify-center gap-2">
                         <div className="p-1.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
-                          <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white" />
+                          <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 lg:h-3.5 lg:w-3.5 text-white" />
                         </div>
                         <div className="text-center">
                           <p className="text-xs font-medium text-slate-700 dark:text-gray-300">
@@ -356,7 +356,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                         <Eye className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                       </div>
                       <div className="min-w-0">
-                        <CardTitle className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                        <CardTitle className="text-sm sm:text-base lg:text-lg font-bold text-slate-900 dark:text-white">
                           Interactive Document
                           {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
                           {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal">(Preview)</span>}
@@ -384,7 +384,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                   {(results?.document_text || isDemoMode || bypassAPI) ? (
                     <div className="space-y-2 sm:space-y-3">
                       {/* Interactive Text Display */}
-                      <div className="bg-slate-50 dark:bg-gray-800 rounded-2xl p-2.5 sm:p-4 max-h-[60vh] overflow-y-auto border border-slate-200 dark:border-gray-700">
+                      <div className="bg-slate-50 dark:bg-gray-800 rounded-2xl p-2 sm:p-2.5 lg:p-4 max-h-[60vh] overflow-y-auto border border-slate-200 dark:border-gray-700">
                         {(isDemoMode || bypassAPI) && (
                           <div className={`mb-3 p-2 border rounded-lg ${
                             isDemoMode 
@@ -413,9 +413,9 @@ This business plan effectively balances growth ambitions with comprehensive risk
                       
                       {/* Instructions - Responsive Grid */}
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
-                        <div className="p-2.5 sm:p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                        <div className="p-2 sm:p-2.5 lg:p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
                           <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-200 font-medium mb-1.5 text-sm">
-                            <TrendingUp className="h-3 w-3" />
+                            <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                             Key Insights
                           </div>
                           <p className="text-xs text-emerald-700 dark:text-emerald-300">
@@ -428,9 +428,9 @@ This business plan effectively balances growth ambitions with comprehensive risk
                           </p>
                         </div>
                         
-                        <div className="p-2.5 sm:p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
+                        <div className="p-2 sm:p-2.5 lg:p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
                           <div className="flex items-center gap-2 text-red-800 dark:text-red-200 font-medium mb-1.5 text-sm">
-                            <AlertTriangle className="h-3 w-3" />
+                            <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                             Risk Flags
                           </div>
                           <p className="text-xs text-red-700 dark:text-red-300">

@@ -24,6 +24,9 @@ function App() {
   // Responsive state
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activePanel, setActivePanel] = useState('chat') // 'chat' or 'document' for mobile
+  
+  // Sidebar collapse state
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   // Resizable panel state
   const [rightPanelWidth, setRightPanelWidth] = useState(40) // percentage
@@ -132,6 +135,18 @@ function App() {
       // Switch to chat panel on mobile
       setActivePanel('chat')
     }
+  }
+
+  // Handle casual chat (without documents)
+  const handleCasualChat = () => {
+    setCurrentView('casual-chat')
+    setSidebarOpen(false)
+    // Reset document-related states
+    setDocumentId('casual-chat-session')
+    setResults(null)
+    setFile(null)
+    setIsDemoMode(false)
+    setBypassAPI(false)
   }
 
   // Demo mode function
@@ -363,18 +378,21 @@ This business plan effectively balances ambitious growth objectives with compreh
           /* ===== UPLOAD VIEW ===== */
           <div className="h-full flex">
             {/* Fixed Sidebar for Desktop */}
-            <div className="hidden lg:block fixed left-0 top-0 h-full w-64 z-30">
+            <div className={`hidden lg:block fixed left-0 top-0 h-full z-30 ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
               <ModernSidebar 
                 onNewDocument={handleNewDocument}
                 onHome={resetToHome}
                 currentDocument={null}
                 isDemoMode={isDemoMode}
                 bypassAPI={bypassAPI}
+                collapsed={sidebarCollapsed}
+                onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+                onCasualChat={handleCasualChat}
               />
             </div>
             
             {/* Main Upload Content */}
-            <div className="flex-1 lg:ml-64 flex items-center justify-center p-4 sm:p-6 lg:p-8 relative min-h-full overflow-y-auto">
+            <div className={`flex-1 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'} flex items-center justify-center p-4 sm:p-6 lg:p-8 relative min-h-full overflow-y-auto transition-all duration-300`}>
               {/* Background Elements */}
               <div className="absolute inset-0 bg-gradient-to-br from-blue-100/20 via-purple-100/20 to-pink-100/20 dark:from-blue-900/10 dark:via-purple-900/10 dark:to-pink-900/10"></div>
               <div className="absolute top-1/4 left-1/4 w-32 h-32 sm:w-48 sm:h-48 lg:w-64 lg:h-64 bg-blue-200/30 dark:bg-blue-800/20 rounded-full blur-3xl"></div>
@@ -451,147 +469,266 @@ This business plan effectively balances ambitious growth objectives with compreh
                     onClose={() => setSidebarOpen(false)}
                     isDemoMode={isDemoMode}
                     bypassAPI={bypassAPI}
+                    collapsed={false}
+                    onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+                    onCasualChat={handleCasualChat}
                   />
                 </div>
               </>
             )}
           </div>
+        ) : currentView === 'casual-chat' ? (
+          /* ===== CASUAL CHAT VIEW ===== */
+          <>
+            {/* Fixed Sidebar for Desktop */}
+            <div className={`hidden lg:block fixed left-0 top-0 h-full z-30 ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
+              <ModernSidebar 
+                onNewDocument={handleNewDocument}
+                onHome={resetToHome}
+                currentDocument="Casual Chat"
+                isDemoMode={false}
+                bypassAPI={false}
+                collapsed={sidebarCollapsed}
+                onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+                onCasualChat={handleCasualChat}
+              />
+            </div>
+
+            {/* Mobile Header - Fixed at top */}
+            <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-b border-slate-200 dark:border-gray-700 shadow-sm">
+              <div className="flex items-center justify-between p-2 sm:p-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="hover:bg-gray-100 dark:hover:bg-gray-800 p-2"
+                >
+                  {sidebarOpen ? <X className="h-4 w-4 sm:h-5 sm:w-5" /> : <Menu className="h-4 w-4 sm:h-5 sm:w-5" />}
+                </Button>
+                
+                <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Casual Chat
+                </h1>
+                
+                <div className="w-8"></div> {/* Spacer for centering */}
+              </div>
+            </div>
+
+            {/* Main Chat Area - Full width casual chat */}
+            <div className={`${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'} pt-12 sm:pt-16 lg:pt-0 h-full transition-all duration-300`}>
+              <ModernChatPanel 
+                documentId="casual-chat-session"
+                filename="Casual Chat - No Document"
+                onSetInputMessage={setChatSetInputMessage}
+                isDemoMode={false}
+                bypassAPI={false}
+                casualMode={true}
+              />
+            </div>
+            
+            {/* Mobile Sidebar */}
+            {sidebarOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+                  onClick={() => setSidebarOpen(false)}
+                />
+                <div className="fixed inset-y-0 left-0 z-50 lg:hidden">
+                  <ModernSidebar 
+                    onNewDocument={handleNewDocument}
+                    onHome={resetToHome}
+                    currentDocument="Casual Chat"
+                    onClose={() => setSidebarOpen(false)}
+                    isDemoMode={false}
+                    bypassAPI={false}
+                    collapsed={false}
+                    onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+                    onCasualChat={handleCasualChat}
+                  />
+                </div>
+              </>
+            )}
+          </>
         ) : (
           /* ===== WORKSPACE VIEW ===== */
           <>
             {/* Fixed Sidebar for Desktop */}
-            <div className="hidden lg:block fixed left-0 top-0 h-full w-64 z-30">
+            <div className={`hidden lg:block fixed left-0 top-0 h-full z-30 ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
               <ModernSidebar 
                 onNewDocument={handleNewDocument}
                 onHome={resetToHome}
                 currentDocument={results?.filename || "Demo Document"}
                 isDemoMode={isDemoMode}
                 bypassAPI={bypassAPI}
+                collapsed={sidebarCollapsed}
+                onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+                onCasualChat={handleCasualChat}
               />
             </div>
 
             {/* Mobile Header - Fixed at top */}
             <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-b border-slate-200 dark:border-gray-700 shadow-sm">
-              <div className="flex items-center justify-between p-3">
+              <div className="flex items-center justify-between p-2 sm:p-3">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="hover:bg-gray-100 dark:hover:bg-gray-800 p-2"
                 >
-                  {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                  {sidebarOpen ? <X className="h-4 w-4 sm:h-5 sm:w-5" /> : <Menu className="h-4 w-4 sm:h-5 sm:w-5" />}
                 </Button>
                 
-                <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   DocuChat 
-                  {isDemoMode && <span className="text-sm text-orange-500 ml-1">(Demo)</span>}
-                  {bypassAPI && !isDemoMode && <span className="text-sm text-green-600 ml-1">(Preview)</span>}
+                  {isDemoMode && <span className="text-xs sm:text-sm text-orange-500 ml-1">(Demo)</span>}
+                  {bypassAPI && !isDemoMode && <span className="text-xs sm:text-sm text-green-600 ml-1">(Preview)</span>}
                 </h1>
                 
-                {/* Mobile Panel Switcher */}
-                <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                {/* Mobile Panel Switcher - Improved */}
+                <div className="flex gap-0.5 bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5 sm:p-1">
                   <Button 
                     variant={activePanel === 'chat' ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => setActivePanel('chat')}
-                    className="px-3 py-1.5 text-xs font-medium h-auto"
+                    className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium h-auto min-w-0"
                   >
-                    <MessageCircle className="h-3.5 w-3.5 mr-1" />
-                    Chat
+                    <MessageCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5 sm:mr-1" />
+                    <span className="hidden sm:inline">Chat</span>
                   </Button>
                   <Button
                     variant={activePanel === 'document' ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => setActivePanel('document')}
-                    className="px-3 py-1.5 text-xs font-medium h-auto"
+                    className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium h-auto min-w-0"
                   >
-                    <FileText className="h-3.5 w-3.5 mr-1" />
-                    Doc
+                    <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5 sm:mr-1" />
+                    <span className="hidden sm:inline">Doc</span>
                   </Button>
                 </div>
               </div>
             </div>
 
-            {/* Main Content Area - Properly positioned with resizable panels */}
-            <div className="lg:ml-64 pt-16 lg:pt-0 h-full flex workspace-container">
-              {/* Chat Panel */}
-              <div 
-                className={`
-                  h-full
-                  ${activePanel === 'chat' ? 'block' : 'hidden lg:block'}
-                `}
-                style={{ 
-                  width: `${100 - rightPanelWidth}%`,
-                  minWidth: '20%'
-                }}
-              >
-                {documentId ? (
-                  <ModernChatPanel 
-                    documentId={documentId}
-                    filename={results?.filename || "Demo Document"}
-                    onSetInputMessage={setChatSetInputMessage}
+            {/* Main Content Area - Improved responsive design */}
+            <div className={`${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'} pt-12 sm:pt-16 lg:pt-0 h-full workspace-container transition-all duration-300`}>
+              
+              {/* Mobile/Tablet: Full-width panels with switching */}
+              <div className="lg:hidden h-full">
+                {/* Chat Panel - Mobile/Tablet */}
+                <div className={`h-full ${activePanel === 'chat' ? 'block' : 'hidden'}`}>
+                  {documentId ? (
+                    <ModernChatPanel 
+                      documentId={documentId}
+                      filename={results?.filename || "Demo Document"}
+                      onSetInputMessage={setChatSetInputMessage}
+                      isDemoMode={isDemoMode}
+                      bypassAPI={bypassAPI}
+                    />
+                  ) : (
+                    <div className="h-full flex items-center justify-center bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 p-4">
+                      <div className="text-center space-y-4 max-w-md">
+                        <div className="p-4 bg-blue-100 dark:bg-blue-900/40 rounded-full w-fit mx-auto">
+                          <svg className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-lg font-semibold text-slate-700 dark:text-gray-300">Processing Document</p>
+                          <p className="text-sm text-slate-500 dark:text-gray-400">AI analysis in progress...</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Document Viewer Panel - Mobile/Tablet */}
+                <div className={`h-full ${activePanel === 'document' ? 'block' : 'hidden'}`}>
+                  <EnhancedDocumentViewer 
+                    results={results}
+                    file={file}
+                    inputMode={inputMode}
+                    onExplainConcept={handleExplainConcept}
                     isDemoMode={isDemoMode}
                     bypassAPI={bypassAPI}
                   />
-                ) : (
-                  <div className="h-full flex items-center justify-center bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 p-4">
-                    <div className="text-center space-y-4 max-w-md">
-                      <div className="p-4 bg-blue-100 dark:bg-blue-900/40 rounded-full w-fit mx-auto">
-                        <svg className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-lg font-semibold text-slate-700 dark:text-gray-300">Processing Document</p>
-                        <p className="text-sm text-slate-500 dark:text-gray-400">AI analysis in progress...</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Resize Handle - Desktop only */}
-              <div className="hidden lg:block relative">
-                <div 
-                  className={`
-                    w-1 h-full bg-slate-200 dark:bg-gray-700 hover:bg-blue-400 dark:hover:bg-blue-500 
-                    cursor-col-resize transition-colors duration-200 relative group
-                    ${isResizing ? 'bg-blue-500 dark:bg-blue-400' : ''}
-                  `}
-                  onMouseDown={handleMouseDown}
-                >
-                  {/* Visible handle indicator */}
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
-                               bg-slate-400 dark:bg-gray-500 group-hover:bg-blue-500 dark:group-hover:bg-blue-400 
-                               rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <GripVertical className="h-4 w-4 text-white" />
-                  </div>
-                  
-                  {/* Extended hover area */}
-                  <div className="absolute inset-y-0 -left-2 -right-2 cursor-col-resize" />
                 </div>
               </div>
 
-              {/* Document Viewer Panel */}
-              <div 
-                className={`
-                  h-full border-l border-slate-200 dark:border-gray-700
-                  ${activePanel === 'document' ? 'block' : 'hidden lg:block'}
-                `}
-                style={{ 
-                  width: `${rightPanelWidth}%`,
-                  minWidth: '20%'
-                }}
-              >
-                <EnhancedDocumentViewer 
-                  results={results}
-                  file={file}
-                  inputMode={inputMode}
-                  onExplainConcept={handleExplainConcept}
-                  isDemoMode={isDemoMode}
-                  bypassAPI={bypassAPI}
-                />
+              {/* Desktop: Side-by-side resizable panels */}
+              <div className="hidden lg:flex h-full">
+                {/* Chat Panel - Desktop */}
+                <div 
+                  className="h-full"
+                  style={{ 
+                    width: `${100 - rightPanelWidth}%`,
+                    minWidth: '30%'
+                  }}
+                >
+                  {documentId ? (
+                    <ModernChatPanel 
+                      documentId={documentId}
+                      filename={results?.filename || "Demo Document"}
+                      onSetInputMessage={setChatSetInputMessage}
+                      isDemoMode={isDemoMode}
+                      bypassAPI={bypassAPI}
+                    />
+                  ) : (
+                    <div className="h-full flex items-center justify-center bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800 p-4">
+                      <div className="text-center space-y-4 max-w-md">
+                        <div className="p-4 bg-blue-100 dark:bg-blue-900/40 rounded-full w-fit mx-auto">
+                          <svg className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-lg font-semibold text-slate-700 dark:text-gray-300">Processing Document</p>
+                          <p className="text-sm text-slate-500 dark:text-gray-400">AI analysis in progress...</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Resize Handle - Desktop only */}
+                <div className="relative">
+                  <div 
+                    className={`
+                      w-1 h-full bg-slate-200 dark:bg-gray-700 hover:bg-blue-400 dark:hover:bg-blue-500 
+                      cursor-col-resize transition-colors duration-200 relative group
+                      ${isResizing ? 'bg-blue-500 dark:bg-blue-400' : ''}
+                    `}
+                    onMouseDown={handleMouseDown}
+                  >
+                    {/* Visible handle indicator */}
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
+                                 bg-slate-400 dark:bg-gray-500 group-hover:bg-blue-500 dark:group-hover:bg-blue-400 
+                                 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <GripVertical className="h-4 w-4 text-white" />
+                    </div>
+                    
+                    {/* Extended hover area */}
+                    <div className="absolute inset-y-0 -left-2 -right-2 cursor-col-resize" />
+                  </div>
+                </div>
+
+                {/* Document Viewer Panel - Desktop */}
+                <div 
+                  className="h-full border-l border-slate-200 dark:border-gray-700"
+                  style={{ 
+                    width: `${rightPanelWidth}%`,
+                    minWidth: '30%'
+                  }}
+                >
+                  <EnhancedDocumentViewer 
+                    results={results}
+                    file={file}
+                    inputMode={inputMode}
+                    onExplainConcept={handleExplainConcept}
+                    isDemoMode={isDemoMode}
+                    bypassAPI={bypassAPI}
+                  />
+                </div>
               </div>
             </div>
             
@@ -610,6 +747,9 @@ This business plan effectively balances ambitious growth objectives with compreh
                     onClose={() => setSidebarOpen(false)}
                     isDemoMode={isDemoMode}
                     bypassAPI={bypassAPI}
+                    collapsed={false}
+                    onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+                    onCasualChat={handleCasualChat}
                   />
                 </div>
               </>
