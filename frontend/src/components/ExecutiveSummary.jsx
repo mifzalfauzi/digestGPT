@@ -30,7 +30,7 @@ function ExecutiveSummary({ results }) {
                 Executive Summary
               </CardTitle>
               <p className="text-sm text-slate-600 dark:text-gray-400 mt-1">
-                AI-powered analysis powered by Claude 4 Sonnet
+                Summary by Claude 4 Sonnet
               </p>
             </div>
             

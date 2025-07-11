@@ -167,7 +167,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-4 sm:p-6 h-full overflow-y-auto">
       {/* Executive Summary - Only show if showSummary is true */}
       {showSummary && (
         <Card className="border-0 shadow-xl bg-gradient-to-br from-slate-50 to-white dark:from-gray-800 dark:to-gray-900">
@@ -181,7 +181,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                   Executive Summary
                 </CardTitle>
                 <p className="text-sm text-slate-600 dark:text-gray-400 mt-1">
-                  AI-powered analysis powered by Claude 4 Sonnet
+                  Summary by Claude
                 </p>
               </div>
              
@@ -253,7 +253,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                   Strategic Insights
                 </CardTitle>
                 <p className="text-sm text-slate-600 dark:text-gray-400 mt-1">
-                  Key points identified by advanced AI analysis
+                  
                 </p>
               </div>
             </div>
@@ -289,7 +289,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                       
                       <div className="flex-1 space-y-3">
                         <div className="flex items-start justify-between gap-3">
-                          <p className="text-slate-800 dark:text-slate-100 leading-relaxed font-medium">
+                          <p className="text-slate-800 dark:text-slate-100 leading-relaxed font-medium text-sm">
                             {insight.text}
                           </p>
                           <Badge 
@@ -361,7 +361,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
                 : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
             }`}>
-              {risks.length === 0 ? 'Low Risk' : `${risks.length} risks found`}
+              {risks.length === 0 ? 'Low Risk' : `${risks.length} risks `}
             </Badge>
           </div>
         </CardHeader>
@@ -392,7 +392,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                     
                     <div className="flex-1 space-y-3">
                       <div className="flex items-start justify-between gap-3">
-                        <AlertDescription className="text-red-800 dark:text-red-200 leading-relaxed font-medium text-base">
+                        <AlertDescription className="text-red-800 dark:text-red-200 leading-relaxed font-medium text-sm">
                           {risk.text}
                         </AlertDescription>
                         <div className="flex gap-2">
