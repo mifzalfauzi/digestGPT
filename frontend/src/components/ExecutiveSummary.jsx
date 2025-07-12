@@ -10,6 +10,7 @@ import {
   Clock,
   TrendingUp
 } from 'lucide-react'
+import MarkdownRenderer from './MarkdownRenderer'
 
 function ExecutiveSummary({ results }) {
   const summary = results?.analysis?.summary || ''
@@ -38,9 +39,10 @@ function ExecutiveSummary({ results }) {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="bg-gradient-to-r from-purple-50/80 to-blue-50/80 dark:from-purple-950/30 dark:to-blue-950/30 rounded-2xl p-6 border border-purple-200/50 dark:border-purple-800/30">
-            <p className="text-slate-800 dark:text-slate-100 leading-relaxed text-base font-medium">
-              {summary || 'Comprehensive analysis will appear here after document processing...'}
-            </p>
+            <MarkdownRenderer 
+              content={summary || 'Comprehensive analysis will appear here after document processing...'}
+              className="text-slate-800 dark:text-slate-100 leading-relaxed text-base font-medium"
+            />
           </div>
           
           {/* Quick Stats */}

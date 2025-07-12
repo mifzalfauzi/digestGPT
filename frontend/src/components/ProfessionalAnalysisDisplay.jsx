@@ -22,6 +22,7 @@ import {
   Clock
 } from 'lucide-react'
 import HighlightableText from './HighlightableText'
+import MarkdownRenderer from './MarkdownRenderer'
 
 function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighlight, showSummary = true }) {
   const [insights, setInsights] = useState([])
@@ -289,9 +290,9 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                       
                       <div className="flex-1 space-y-3">
                         <div className="flex items-start justify-between gap-3">
-                          <p className="text-slate-800 dark:text-slate-100 leading-relaxed font-medium text-sm">
-                            {insight.text}
-                          </p>
+                          <div className="text-slate-800 dark:text-slate-100 leading-relaxed font-medium text-sm">
+                            <MarkdownRenderer content={insight.text} />
+                          </div>
                           <Badge 
                             variant="outline" 
                             className={`text-xs bg-${categoryColor}-50 text-${categoryColor}-700 dark:bg-${categoryColor}-900/20 dark:text-${categoryColor}-300 capitalize`}
@@ -391,9 +392,9 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                     </div>
                     
                     <div className="flex-1 space-y-3">
-                      <div className="flex items-start justify-between gap-3">
+                                              <div className="flex items-start justify-between gap-3">
                         <AlertDescription className="text-red-800 dark:text-red-200 leading-relaxed font-medium text-sm">
-                          {risk.text}
+                          <MarkdownRenderer content={risk.text} />
                         </AlertDescription>
                         <div className="flex gap-2">
                           <Badge 

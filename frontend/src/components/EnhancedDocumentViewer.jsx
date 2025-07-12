@@ -6,6 +6,7 @@ import { Eye, FileText, Brain, TrendingUp, Clock, Sparkles, Target, AlertTriangl
 import ProfessionalAnalysisDisplay from './ProfessionalAnalysisDisplay'
 import KeyConceptsDisplay from './KeyConceptsDisplay'
 import HighlightableText from './HighlightableText'
+import MarkdownRenderer from './MarkdownRenderer'
 
 function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, isDemoMode = false, bypassAPI = false }) {
   const [activeHighlight, setActiveHighlight] = useState(null)
@@ -252,9 +253,10 @@ This business plan effectively balances growth ambitions with comprehensive risk
                 </CardHeader>
                 <CardContent className="space-y-2 sm:space-y-3 px-3 sm:px-4">
                   <div className="bg-gradient-to-r from-purple-50/80 to-blue-50/80 dark:from-purple-950/30 dark:to-blue-950/30 rounded-2xl p-3 sm:p-4 border border-purple-200/50 dark:border-purple-800/30">
-                    <p className="text-slate-800 dark:text-slate-100 leading-relaxed text-sm font-medium">
-                      {results?.analysis?.summary || 'Comprehensive analysis will appear here after document processing...'}
-                    </p>
+                    <MarkdownRenderer 
+                      content={results?.analysis?.summary || 'Comprehensive analysis will appear here after document processing...'}
+                      className="text-slate-800 dark:text-slate-100 leading-relaxed text-sm font-medium"
+                    />
                   </div>
                   
                   {/* Quick Stats - Responsive Grid */}

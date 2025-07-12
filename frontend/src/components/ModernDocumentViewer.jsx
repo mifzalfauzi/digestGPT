@@ -6,6 +6,7 @@ import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Brain, FileText, AlertTriangle, Eye, Sparkles, Target, Search, ChevronRight } from 'lucide-react'
 import HighlightableText from './HighlightableText'
+import MarkdownRenderer from './MarkdownRenderer'
 
 function ModernDocumentViewer({ results, file, inputMode }) {
   const [activeHighlight, setActiveHighlight] = useState(null)
@@ -254,9 +255,10 @@ function ModernDocumentViewer({ results, file, inputMode }) {
                 </CardHeader>
                 <CardContent>
                   <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl p-6">
-                    <p className="text-slate-700 dark:text-gray-300 leading-relaxed">
-                      {results?.analysis?.summary || 'Summary will appear here after analysis...'}
-                    </p>
+                    <MarkdownRenderer 
+                      content={results?.analysis?.summary || 'Summary will appear here after analysis...'}
+                      className="text-slate-700 dark:text-gray-300 leading-relaxed"
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -300,9 +302,10 @@ function ModernDocumentViewer({ results, file, inputMode }) {
                                   <Target className={`h-4 w-4 ${isActive ? 'text-blue-700 dark:text-blue-200' : 'text-blue-600 dark:text-blue-400'}`} />
                                 </div>
                                 <div className="flex-1">
-                                  <p className="text-slate-700 dark:text-gray-300 leading-relaxed">
-                                    {pointText}
-                                  </p>
+                                  <MarkdownRenderer 
+                                    content={pointText}
+                                    className="text-slate-700 dark:text-gray-300 leading-relaxed"
+                                  />
                                   {hasHighlight && (
                                     <div className="mt-3 flex items-center gap-2">
                                       <Button
@@ -377,7 +380,7 @@ function ModernDocumentViewer({ results, file, inputMode }) {
                               <AlertTriangle className={`h-4 w-4 mt-0.5 ${isActive ? 'text-red-600 dark:text-red-300' : ''}`} />
                               <div className="flex-1">
                                 <AlertDescription className="dark:text-red-300 leading-relaxed">
-                                  {flagText}
+                                  <MarkdownRenderer content={flagText} />
                                 </AlertDescription>
                                 {hasHighlight && (
                                   <div className="mt-3 flex items-center gap-2">

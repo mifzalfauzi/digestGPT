@@ -1,5 +1,6 @@
 import React from 'react'
 import { CheckCircle2, ArrowRight, Zap, AlertTriangle, Info, Star } from 'lucide-react'
+import MarkdownRenderer from './MarkdownRenderer'
 
 function MessageFormatter({ content, className = "" }) {
   const formatMessage = (text) => {
@@ -27,9 +28,10 @@ function MessageFormatter({ content, className = "" }) {
                 </span>
               </div>
               <div className="flex-1 pt-0.5">
-                <span className="text-slate-800 dark:text-slate-100 font-medium leading-relaxed text-sm">
-                  {numberedListMatch[2]}
-                </span>
+                <MarkdownRenderer 
+                  content={numberedListMatch[2]}
+                  className="text-slate-800 dark:text-slate-100 font-medium leading-relaxed text-sm"
+                />
               </div>
             </div>
           )
@@ -42,9 +44,10 @@ function MessageFormatter({ content, className = "" }) {
           formattedLines.push(
             <div key={`${pIndex}-${index}`} className="group flex gap-2 my-1 ml-1 p-2 rounded-md bg-gradient-to-r from-slate-50/80 to-gray-50/80 dark:from-slate-800/30 dark:to-gray-800/30 hover:bg-gradient-to-r hover:from-slate-100/80 hover:to-gray-100/80 dark:hover:from-slate-700/30 dark:hover:to-gray-700/30 transition-all duration-200">
               <div className="flex-shrink-0 w-1 h-1 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full mt-2 shadow-sm"></div>
-              <span className="flex-1 text-slate-700 dark:text-slate-200 leading-relaxed text-sm">
-                {bulletMatch[1]}
-              </span>
+              <MarkdownRenderer 
+                content={bulletMatch[1]}
+                className="flex-1 text-slate-700 dark:text-slate-200 leading-relaxed text-sm"
+              />
             </div>
           )
           return
@@ -56,9 +59,10 @@ function MessageFormatter({ content, className = "" }) {
           formattedLines.push(
             <div key={`${pIndex}-${index}`} className="group flex gap-2 my-1 ml-6 p-1.5 rounded-md bg-gradient-to-r from-amber-50/60 to-orange-50/60 dark:from-amber-900/20 dark:to-orange-900/20 hover:bg-gradient-to-r hover:from-amber-100/60 hover:to-orange-100/60 dark:hover:from-amber-800/20 dark:hover:to-orange-800/20 transition-all duration-200">
               <ArrowRight className="flex-shrink-0 w-2.5 h-2.5 text-amber-500 dark:text-amber-400 mt-1" />
-              <span className="flex-1 text-slate-600 dark:text-slate-300 text-xs leading-relaxed">
-                {subBulletMatch[1]}
-              </span>
+              <MarkdownRenderer 
+                content={subBulletMatch[1]}
+                className="flex-1 text-slate-600 dark:text-slate-300 text-xs leading-relaxed"
+              />
             </div>
           )
           return
@@ -93,13 +97,15 @@ function MessageFormatter({ content, className = "" }) {
                 <Zap className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div className="flex-1">
-                <span className="font-bold text-emerald-800 dark:text-emerald-200 text-base">
-                  {headerMatch[1]}:
-                </span>
+                <MarkdownRenderer 
+                  content={`${headerMatch[1]}:`}
+                  className="font-bold text-emerald-800 dark:text-emerald-200 text-base"
+                />
                 {headerMatch[2] && (
-                  <span className="ml-2 text-slate-700 dark:text-slate-200 font-medium text-sm">
-                    {headerMatch[2]}
-                  </span>
+                  <MarkdownRenderer 
+                    content={headerMatch[2]}
+                    className="ml-2 text-slate-700 dark:text-slate-200 font-medium text-sm"
+                  />
                 )}
               </div>
             </div>
@@ -116,9 +122,10 @@ function MessageFormatter({ content, className = "" }) {
           formattedLines.push(
             <div key={`${pIndex}-${index}`} className="group flex gap-2 my-1.5 p-2 rounded-lg bg-gradient-to-r from-red-50/80 to-orange-50/80 dark:from-red-950/30 dark:to-orange-950/30 border-l-3 border-red-400 dark:border-red-500">
               <AlertTriangle className="flex-shrink-0 w-3 h-3 text-red-500 dark:text-red-400 mt-0.5" />
-              <span className="flex-1 text-slate-800 dark:text-slate-100 leading-relaxed font-medium text-sm">
-                {trimmedLine}
-              </span>
+              <MarkdownRenderer 
+                content={trimmedLine}
+                className="flex-1 text-slate-800 dark:text-slate-100 leading-relaxed font-medium text-sm"
+              />
             </div>
           )
         } else if (isQuestion) {
@@ -127,17 +134,19 @@ function MessageFormatter({ content, className = "" }) {
               <div className="flex-shrink-0 w-4 h-4 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full flex items-center justify-center mt-0.5">
                 <span className="text-white text-xs font-bold">?</span>
               </div>
-              <span className="flex-1 text-slate-800 dark:text-slate-100 leading-relaxed font-medium text-sm">
-                {trimmedLine}
-              </span>
+              <MarkdownRenderer 
+                content={trimmedLine}
+                className="flex-1 text-slate-800 dark:text-slate-100 leading-relaxed font-medium text-sm"
+              />
             </div>
           )
         } else {
           formattedLines.push(
             <div key={`${pIndex}-${index}`} className="my-1 p-1.5 rounded-md hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors duration-200">
-              <span className="text-slate-700 dark:text-slate-200 leading-relaxed text-sm">
-                {trimmedLine}
-              </span>
+              <MarkdownRenderer 
+                content={trimmedLine}
+                className="text-slate-700 dark:text-slate-200 leading-relaxed text-sm"
+              />
             </div>
           )
         }

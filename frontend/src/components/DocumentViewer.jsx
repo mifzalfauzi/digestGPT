@@ -3,6 +3,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs'
 import { Alert, AlertDescription } from './ui/alert'
 import { Brain, FileText, AlertTriangle, Eye } from 'lucide-react'
 import HighlightableText from './HighlightableText'
+import MarkdownRenderer from './MarkdownRenderer'
 
 function DocumentViewer({ results, file, inputMode }) {
   const [activeHighlight, setActiveHighlight] = useState(null)
@@ -146,9 +147,10 @@ function DocumentViewer({ results, file, inputMode }) {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">📋 Document Summary</h3>
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                    {results?.analysis?.summary || 'Summary will appear here after analysis...'}
-                  </p>
+                  <MarkdownRenderer 
+                    content={results?.analysis?.summary || 'Summary will appear here after analysis...'}
+                    className="text-gray-700 dark:text-gray-300 leading-relaxed"
+                  />
                 </div>
               </div>
             </TabsContent>
@@ -178,9 +180,10 @@ function DocumentViewer({ results, file, inputMode }) {
                           }`}
                           onClick={() => hasHighlight && handleItemClick(highlightId)}
                         >
-                          <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                            {pointText}
-                          </p>
+                          <MarkdownRenderer 
+                            content={pointText}
+                            className="text-gray-700 dark:text-gray-300 leading-relaxed"
+                          />
                           {hasHighlight && (
                             <div className="mt-2 text-xs text-blue-600 dark:text-blue-400">
                               💡 Click to highlight in document • Quote: "{point.quote}"
@@ -226,7 +229,7 @@ function DocumentViewer({ results, file, inputMode }) {
                         >
                           <AlertTriangle className="h-4 w-4" />
                           <AlertDescription className="dark:text-red-300">
-                            {flagText}
+                            <MarkdownRenderer content={flagText} />
                             {hasHighlight && (
                               <div className="mt-2 text-xs text-red-600 dark:text-red-400">
                                 💡 Click to highlight in document • Quote: "{flag.quote}"
