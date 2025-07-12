@@ -337,7 +337,7 @@ This business plan effectively balances ambitious growth objectives with compreh
       const containerWidth = containerRect.width
       const mouseX = e.clientX - containerRect.left
 
-      const percentage = Math.min(Math.max(((containerWidth - mouseX) / containerWidth) * 100, 25), 75)
+      const percentage = Math.min(Math.max(((containerWidth - mouseX) / containerWidth) * 100, 30), 70)
       setRightPanelWidth(percentage)
     }
 
@@ -412,7 +412,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                 
                 {/* Simple Header */}
                 <div className="text-center">
-                  <div className="inline-flex items-center gap-3">
+                  {/* <div className="inline-flex items-center gap-3">
                     <div className="relative">
                       <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
                         <FileText className="h-6 w-6 text-white" />
@@ -424,28 +424,12 @@ This business plan effectively balances ambitious growth objectives with compreh
                     <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-800 dark:from-white dark:via-blue-200 dark:to-indigo-200 bg-clip-text text-transparent">
                       DigesText
                     </h1>
-                  </div>
+                  </div> */}
                   {/* <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
                     AI-powered document analysis
                   </p> */}
                 </div>
 
-                {/* Upload Interface - Centered */}
-                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-2xl">
-                  <ModernUploadInterface
-                    file={file}
-                    textInput={textInput}
-                    setTextInput={setTextInput}
-                    inputMode={inputMode}
-                    setInputMode={setInputMode}
-                    handleFileChange={handleFileChange}
-                    handleSubmit={handleSubmit}
-                    loading={loading}
-                    error={error}
-                  />
-                </div>
-
-                {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 max-w-2xl mx-auto">
                   <Button
                     onClick={loadRealInterfaceWithoutAPI}
@@ -464,6 +448,24 @@ This business plan effectively balances ambitious growth objectives with compreh
                     View Demo
                   </Button>
                 </div>
+
+                {/* Upload Interface - Centered */}
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-2xl">
+                  <ModernUploadInterface
+                    file={file}
+                    textInput={textInput}
+                    setTextInput={setTextInput}
+                    inputMode={inputMode}
+                    setInputMode={setInputMode}
+                    handleFileChange={handleFileChange}
+                    handleSubmit={handleSubmit}
+                    loading={loading}
+                    error={error}
+                  />
+                </div>
+
+                {/* Action Buttons */}
+               
 
                 {/* Quick Start Options */}
                 <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-xl max-w-2xl mx-auto">
