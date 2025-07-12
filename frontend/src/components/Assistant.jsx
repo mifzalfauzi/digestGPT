@@ -34,7 +34,7 @@ function Assistant() {
   const results = selectedDocument?.results || null
   const documentId = selectedDocument?.documentId || selectedDocument?.id || null
   const selectedDocumentFile = selectedDocument?.file || file
-  
+
   // Check if all documents are ready for chat
   const allDocumentsReady = documents.length > 0 && documents.every(doc => doc.status === 'completed')
   const hasAnalyzingDocuments = documents.some(doc => doc.status === 'analyzing')
@@ -50,6 +50,11 @@ function Assistant() {
   // Resizable panel state
   const [rightPanelWidth, setRightPanelWidth] = useState(45) // percentage
   const [isResizing, setIsResizing] = useState(false)
+
+  // Collection state
+  const [collectionName, setCollectionName] = useState("")
+  const [collections, setCollections] = useState([])
+  const [expandedCollections, setExpandedCollections] = useState(new Set())
 
   // Document management functions
   const generateDocumentId = () => `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -80,6 +85,9 @@ function Assistant() {
       setCurrentView("workspace")
       setSidebarOpen(false)
       setActivePanel("chat")
+    } else {
+      // If already in workspace, switch to document panel to show the selected document
+      setActivePanel("document")
     }
   }
   
@@ -90,6 +98,55 @@ function Assistant() {
       const remainingDocs = documents.filter(doc => doc.id !== documentId)
       setSelectedDocumentId(remainingDocs.length > 0 ? remainingDocs[0].id : null)
     }
+  }
+
+  // Collection management functions
+  const generateCollectionId = () => `collection_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  
+  const addCollection = (collectionData) => {
+    const newCollection = {
+      id: generateCollectionId(),
+      createdAt: new Date().toISOString(),
+      documents: [],
+      ...collectionData
+    }
+    setCollections(prev => [...prev, newCollection])
+    return newCollection.id
+  }
+  
+  const updateCollection = (collectionId, updates) => {
+    setCollections(prev => prev.map(collection => 
+      collection.id === collectionId ? { ...collection, ...updates } : collection
+    ))
+  }
+  
+  const removeCollection = (collectionId) => {
+    setCollections(prev => prev.filter(collection => collection.id !== collectionId))
+    // Also remove all documents in this collection
+    const collection = collections.find(c => c.id === collectionId)
+    if (collection) {
+      collection.documents.forEach(docId => {
+        removeDocument(docId)
+      })
+    }
+  }
+  
+  const toggleCollectionExpansion = (collectionId) => {
+    setExpandedCollections(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(collectionId)) {
+        newSet.delete(collectionId)
+      } else {
+        newSet.add(collectionId)
+      }
+      return newSet
+    })
+  }
+  
+  const addDocumentToCollection = (collectionId, documentId) => {
+    updateCollection(collectionId, {
+      documents: [...collections.find(c => c.id === collectionId).documents, documentId]
+    })
   }
 
   // Multi-file staging handler (doesn't analyze immediately)
@@ -169,14 +226,28 @@ function Assistant() {
         })
       }
 
-      console.log("API Response:", response.data)
-      
       updateDocument(documentId, {
         status: 'completed',
         results: response.data,
         documentId: response.data.document_id || documentId,
         analysisEndTime: new Date().toISOString()
       })
+      
+      // Update collection status if this document belongs to a collection
+      const document = documents.find(doc => doc.id === documentId)
+      if (document?.collectionId) {
+        const collection = collections.find(c => c.id === document.collectionId)
+        if (collection) {
+          const collectionDocuments = documents.filter(doc => doc.collectionId === document.collectionId)
+          const completedCount = collectionDocuments.filter(doc => doc.status === 'completed').length
+          
+          if (completedCount === collectionDocuments.length) {
+            updateCollection(document.collectionId, { status: 'completed' })
+          } else {
+            updateCollection(document.collectionId, { status: 'analyzing' })
+          }
+        }
+      }
       
       // Switch to workspace view if not already there
       if (currentView === 'upload') {
@@ -196,6 +267,23 @@ function Assistant() {
         status: 'error',
         error: errorMessage
       })
+      
+      // Update collection status if this document belongs to a collection
+      const document = documents.find(doc => doc.id === documentId)
+      if (document?.collectionId) {
+        const collection = collections.find(c => c.id === document.collectionId)
+        if (collection) {
+          const collectionDocuments = documents.filter(doc => doc.collectionId === document.collectionId)
+          const errorCount = collectionDocuments.filter(doc => doc.status === 'error').length
+          
+          if (errorCount === collectionDocuments.length) {
+            updateCollection(document.collectionId, { status: 'error' })
+          } else {
+            updateCollection(document.collectionId, { status: 'analyzing' })
+          }
+        }
+      }
+      
       setError(errorMessage)
     }
   }
@@ -276,6 +364,63 @@ function Assistant() {
           return
         }
         
+      } else if (inputMode === "collection") {
+        // Handle collection upload
+        if (stagedFiles.length === 0) {
+          setError("Please select files for the collection")
+          setLoading(false)
+          return
+        }
+        
+        if (!collectionName.trim()) {
+          setError("Please provide a collection name")
+          setLoading(false)
+          return
+        }
+        
+        // Create collection
+        const collectionId = addCollection({
+          name: collectionName.trim(),
+          fileCount: stagedFiles.length,
+          status: 'creating'
+        })
+        
+        const documentIds = []
+        
+        // Add all files to the collection
+        for (const selectedFile of stagedFiles) {
+          const documentId = addDocument({
+            filename: selectedFile.name,
+            file: selectedFile,
+            inputMode: 'collection',
+            status: 'uploading',
+            collectionId: collectionId
+          })
+          documentIds.push(documentId)
+          
+          // Start analysis for this document
+          handleDocumentSubmit(documentId, selectedFile)
+        }
+        
+        // Update collection with document IDs
+        updateCollection(collectionId, {
+          documents: documentIds,
+          status: 'analyzing'
+        })
+        
+        // Auto-select first document and switch to workspace
+        if (documentIds.length > 0) {
+          setSelectedDocumentId(documentIds[0])
+          setCurrentView("workspace")
+          setSidebarOpen(false)
+          setActivePanel("chat")
+        }
+        
+        // Clear staged files and collection name after starting analysis
+        setStagedFiles([])
+        setCollectionName("")
+        setFile(null)
+        
       } else {
         // Handle text input
         if (!textInput.trim()) {
@@ -322,6 +467,8 @@ function Assistant() {
     setSelectedDocumentId(null)
     // Clear staged files
     setStagedFiles([])
+    // Clear collection state
+    setCollectionName("")
     const fileInput = document.getElementById("file-input")
     if (fileInput) fileInput.value = ""
   }
@@ -334,6 +481,8 @@ function Assistant() {
     setDocuments([])
     setSelectedDocumentId(null)
     setStagedFiles([])
+    setCollections([])
+    setExpandedCollections(new Set())
     resetToHome()
   }
 
@@ -618,6 +767,10 @@ This business plan effectively balances ambitious growth objectives with compreh
               selectedDocumentId={selectedDocumentId}
               onSelectDocument={selectDocument}
               onRemoveDocument={removeDocument}
+              collections={collections}
+              expandedCollections={expandedCollections}
+              onToggleCollectionExpansion={toggleCollectionExpansion}
+              onRemoveCollection={removeCollection}
             />
           </div>
 
@@ -709,6 +862,8 @@ This business plan effectively balances ambitious growth objectives with compreh
                     stagedFiles={stagedFiles}
                     removeStagedFile={removeStagedFile}
                     clearStagedFiles={clearStagedFiles}
+                    collectionName={collectionName}
+                    setCollectionName={setCollectionName}
                   />
                 </div>
 
@@ -759,6 +914,10 @@ This business plan effectively balances ambitious growth objectives with compreh
                   selectedDocumentId={selectedDocumentId}
                   onSelectDocument={selectDocument}
                   onRemoveDocument={removeDocument}
+                  collections={collections}
+                  expandedCollections={expandedCollections}
+                  onToggleCollectionExpansion={toggleCollectionExpansion}
+                  onRemoveCollection={removeCollection}
                 />
               </div>
             </>
@@ -786,6 +945,10 @@ This business plan effectively balances ambitious growth objectives with compreh
               selectedDocumentId={selectedDocumentId}
               onSelectDocument={selectDocument}
               onRemoveDocument={removeDocument}
+              collections={collections}
+              expandedCollections={expandedCollections}
+              onToggleCollectionExpansion={toggleCollectionExpansion}
+              onRemoveCollection={removeCollection}
             />
           </div>
 
@@ -851,6 +1014,10 @@ This business plan effectively balances ambitious growth objectives with compreh
                   selectedDocumentId={selectedDocumentId}
                   onSelectDocument={selectDocument}
                   onRemoveDocument={removeDocument}
+                  collections={collections}
+                  expandedCollections={expandedCollections}
+                  onToggleCollectionExpansion={toggleCollectionExpansion}
+                  onRemoveCollection={removeCollection}
                 />
               </div>
             </>
@@ -878,6 +1045,10 @@ This business plan effectively balances ambitious growth objectives with compreh
               selectedDocumentId={selectedDocumentId}
               onSelectDocument={selectDocument}
               onRemoveDocument={removeDocument}
+              collections={collections}
+              expandedCollections={expandedCollections}
+              onToggleCollectionExpansion={toggleCollectionExpansion}
+              onRemoveCollection={removeCollection}
             />
           </div>
 
@@ -1113,6 +1284,10 @@ This business plan effectively balances ambitious growth objectives with compreh
                   selectedDocumentId={selectedDocumentId}
                   onSelectDocument={selectDocument}
                   onRemoveDocument={removeDocument}
+                  collections={collections}
+                  expandedCollections={expandedCollections}
+                  onToggleCollectionExpansion={toggleCollectionExpansion}
+                  onRemoveCollection={removeCollection}
                 />
               </div>
             </>

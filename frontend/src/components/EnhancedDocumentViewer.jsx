@@ -63,7 +63,7 @@ Our proprietary AI technology creates significant barriers to entry while our st
 This business plan effectively balances growth ambitions with comprehensive risk management. The combination of strong financial positioning, innovative technology, and strategic market opportunities positions us for sustained success in the evolving AI landscape.`
 
   const getFileUrl = () => {
-    if (file && inputMode === 'file' && file.type === 'application/pdf') {
+    if (file && file.type === 'application/pdf') {
       return URL.createObjectURL(file)
     }
     return null
@@ -74,7 +74,13 @@ This business plan effectively balances growth ambitions with comprehensive risk
   // Set default tab based on PDF availability
   useEffect(() => {
     if (!activeTab) {
-      setActiveTab(isPDF ? "pdf" : ((isDemoMode || bypassAPI) ? "analysis" : "document"))
+      if (isPDF) {
+        setActiveTab("pdf")
+      } else if (isDemoMode || bypassAPI) {
+        setActiveTab("analysis")
+      } else {
+        setActiveTab("document")
+      }
     }
   }, [isPDF, activeTab, isDemoMode, bypassAPI])
 
@@ -215,7 +221,18 @@ This business plan effectively balances growth ambitions with comprehensive risk
               <TabsContent value="pdf" className="h-full mt-1 sm:mt-2 px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4">
                 <Card className="h-full border-0 shadow-xl">
                   <CardContent className="p-0 h-full">
-                    <div className="h-full border border-slate-200 dark:border-gray-600 rounded-xl overflow-hidden">
+                    <div className="h-full border border-slate-200 dark:border-gray-600 rounded-xl overflow-hidden relative">
+                      {!results && (
+                        <div className="absolute inset-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm flex items-center justify-center z-10">
+                          <div className="text-center space-y-3">
+                            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                            <div>
+                              <p className="text-sm font-medium text-slate-700 dark:text-gray-300">Analyzing Document</p>
+                              <p className="text-xs text-slate-500 dark:text-gray-400">PDF will be available once analysis completes</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       <iframe
                         src={getFileUrl()}
                         className="w-full h-full"
@@ -231,18 +248,37 @@ This business plan effectively balances growth ambitions with comprehensive risk
             <TabsContent value="analysis" className="h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4">
               <Card className="border-0 mt-2 sm:mt-3 shadow-lg">
                 <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                    <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl shadow-lg">
-                      <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl shadow-lg">
+                        <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                      </div>
+                      <div className="min-w-0">
+                        <CardTitle className="text-sm sm:text-base lg:text-lg font-bold text-slate-900 dark:text-white">
+                          Executive Summary
+                        </CardTitle>
+                        <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
+                          Summary by Claude
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <CardTitle className="text-sm sm:text-base lg:text-lg font-bold text-slate-900 dark:text-white">
-                        Executive Summary
-                      </CardTitle>
-                      <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
-                        Summary by Claude
-                      </p>
-                    </div>
+                    
+                    {/* Document Analyzed Timestamp */}
+                    {results?.analyzed_at && (
+                      <div className="flex items-center gap-2 bg-gradient-to-r from-slate-50/80 to-gray-50/80 dark:from-gray-800/80 dark:to-gray-900/80 rounded-lg p-2 border border-slate-200/50 dark:border-gray-700/50">
+                        <div className="p-1 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
+                          <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-xs font-medium text-slate-700 dark:text-gray-300">
+                            Analyzed
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-gray-400">
+                            {new Date(results.analyzed_at).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2 sm:space-y-3 px-3 sm:px-4">
@@ -307,29 +343,6 @@ This business plan effectively balances growth ambitions with comprehensive risk
                   bypassAPI={bypassAPI}
                 />
               </div>
-
-              {/* Analyzed Time */}
-              {results?.analyzed_at && (
-                <div className="mt-3 sm:mt-4">
-                  <Card className="border-0 shadow-lg bg-gradient-to-r from-slate-50/80 to-gray-50/80 dark:from-gray-800/80 dark:to-gray-900/80">
-                    <CardContent className="p-2 sm:p-2.5 lg:p-3">
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="p-1.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
-                          <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 lg:h-3.5 lg:w-3.5 text-white" />
-                        </div>
-                        <div className="text-center">
-                          <p className="text-xs font-medium text-slate-700 dark:text-gray-300">
-                            Document Analyzed
-                          </p>
-                          <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
-                            {new Date(results.analyzed_at).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
             </TabsContent>
 
             {/* Insights & Risks Tab */}

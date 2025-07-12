@@ -201,7 +201,7 @@ async def analyze_document_with_claude(text: str, retry_count: int = 0) -> dict:
     
     # Adjust prompt based on retry count
     if retry_count == 0:
-        prompt = f"""You are an AI assistant that helps explain documents clearly. 
+    prompt = f"""You are an AI assistant that helps explain documents clearly. 
 Given this document, do the following:
 1. Explain what the document is about in 1–2 sentences.
 2. Summarize key important points as bullet points.

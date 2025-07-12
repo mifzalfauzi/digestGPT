@@ -20,7 +20,12 @@ function ModernSidebar({
   documents = [],
   selectedDocumentId = null,
   onSelectDocument = () => {},
-  onRemoveDocument = () => {}
+  onRemoveDocument = () => {},
+  // Collection props
+  collections = [],
+  expandedCollections = new Set(),
+  onToggleCollectionExpansion = () => {},
+  onRemoveCollection = () => {}
 }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const navigate = useNavigate()
@@ -36,14 +41,14 @@ function ModernSidebar({
               <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-purple-600 dark:text-purple-400 absolute -top-0.5 -right-0.5" />
             </div>
             {!collapsed && (
-              <div>
+            <div>
                 <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
-                  DocuChat
-                </h1>
+                DocuChat
+              </h1>
                 <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
                   {isDemoMode ? 'Demo Mode - No API Usage' : bypassAPI ? 'Preview Mode - No API Usage' : 'AI Document Analysis'}
-                </p>
-              </div>
+              </p>
+            </div>
             )}
           </div>
           
@@ -60,19 +65,19 @@ function ModernSidebar({
                 {collapsed ? <Menu className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
               </Button>
             )}
-            
-            {/* Mobile Close Button */}
+          
+          {/* Mobile Close Button */}
             {onClose && !collapsed && (
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={onClose}
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={onClose}
                 className="lg:hidden p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
         </div>
         
         {/* Demo/Preview Mode Banner */}
@@ -103,8 +108,8 @@ function ModernSidebar({
         <div className="space-y-1.5">
           {!collapsed && (
             <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">
-              Navigation
-            </p>
+            Navigation
+          </p>
           )}
           
           <Button 
@@ -137,8 +142,8 @@ function ModernSidebar({
               <>
                 <span className="flex-1 text-left">New Analysis</span>
                 <Badge variant="secondary" className="bg-blue-100 text-blue-700 text-xs px-1.5 py-0.5">
-                  AI
-                </Badge>
+              AI
+            </Badge>
               </>
             )}
           </Button>
@@ -192,12 +197,12 @@ function ModernSidebar({
                   }`} />
                 </div>
                 {!collapsed && (
-                  <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                      {currentDocument}
-                    </p>
+                    {currentDocument}
+                  </p>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                      <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1">
                         <Activity className={`h-2.5 w-2.5 flex-shrink-0 ${
                           isDemoMode 
                             ? 'text-orange-400 animate-pulse' 
@@ -213,7 +218,7 @@ function ModernSidebar({
                             : 'text-emerald-300'
                         }`}>
                           {isDemoMode ? 'Demo' : bypassAPI ? 'Preview' : 'Active'}
-                        </span>
+                      </span>
                       </div>
                       <Badge variant="outline" className={`text-xs px-1.5 py-0.5 ${
                         isDemoMode 
@@ -233,17 +238,146 @@ function ModernSidebar({
           </div>
         )}
 
-        {/* Documents List */}
-        {documents.length > 0 && (
+        {/* Collections List */}
+        {collections.length > 0 && (
           <div className="space-y-2">
             {!collapsed && (
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">
-                Documents ({documents.length})
+                Collections ({collections.length})
               </p>
             )}
             
             <div className="space-y-1 max-h-64 overflow-y-auto">
-              {documents.map((doc) => (
+              {collections.map((collection) => {
+                const isExpanded = expandedCollections.has(collection.id)
+                const collectionDocuments = documents.filter(doc => doc.collectionId === collection.id)
+                const completedCount = collectionDocuments.filter(doc => doc.status === 'completed').length
+                
+                return (
+                  <div key={collection.id} className="space-y-1">
+                    {/* Collection Header */}
+                    <div
+                      onClick={() => onToggleCollectionExpansion(collection.id)}
+                      className={`${collapsed ? 'p-2' : 'p-2.5 sm:p-3'} rounded-lg cursor-pointer transition-all duration-200 group bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-700`}
+                    >
+                      <div className={`flex items-start ${collapsed ? 'justify-center' : 'gap-2'}`}>
+                        <div className={`${collapsed ? 'p-1' : 'p-1.5'} rounded-lg flex-shrink-0 bg-purple-200 dark:bg-purple-800`} title={collapsed ? collection.name : ''}>
+                          <FileText className={`${collapsed ? 'h-3 w-3' : 'h-3.5 w-3.5'} text-purple-700 dark:text-purple-300`} />
+                        </div>
+                        {!collapsed && (
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-medium text-purple-900 dark:text-purple-100 truncate">
+                                {collection.name}
+                              </p>
+                              <div className="flex items-center gap-1">
+                                <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 text-xs px-1.5 py-0.5">
+                                  {collectionDocuments.length} docs
+                                </Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-4 w-4 p-0 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    onRemoveCollection(collection.id)
+                                  }}
+                                >
+                                  <X className="h-2.5 w-2.5" />
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <div className={`w-2 h-2 rounded-full ${
+                                completedCount === collectionDocuments.length ? 'bg-green-500' :
+                                completedCount > 0 ? 'bg-yellow-500' : 'bg-blue-500 animate-pulse'
+                              }`} />
+                              <span className="text-xs text-purple-700 dark:text-purple-300">
+                                {completedCount === collectionDocuments.length ? 'All Ready' :
+                                 completedCount > 0 ? `${completedCount}/${collectionDocuments.length} Ready` :
+                                 'Analyzing...'}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Collection Documents (when expanded) */}
+                    {isExpanded && !collapsed && (
+                      <div className="ml-4 space-y-1">
+                        {collectionDocuments.map((doc) => (
+                          <div
+                            key={doc.id}
+                            onClick={() => onSelectDocument(doc.id)}
+                            className={`p-2 rounded-lg cursor-pointer transition-all duration-200 group ${
+                              selectedDocumentId === doc.id
+                                ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700'
+                                : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
+                            }`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <div className={`p-1 rounded-lg flex-shrink-0 ${
+                                selectedDocumentId === doc.id
+                                  ? 'bg-blue-200 dark:bg-blue-800'
+                                  : 'bg-gray-200 dark:bg-gray-700 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40'
+                              }`}>
+                                <FileText className={`h-3 w-3 ${
+                                  selectedDocumentId === doc.id
+                                    ? 'text-blue-700 dark:text-blue-300'
+                                    : 'text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
+                                }`} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-medium truncate ${
+                                  selectedDocumentId === doc.id
+                                    ? 'text-blue-900 dark:text-blue-100'
+                                    : 'text-gray-900 dark:text-white'
+                                }`}>
+                                  {doc.filename}
+                                </p>
+                                <div className="flex items-center gap-1.5 mt-1">
+                                  <div className={`w-2 h-2 rounded-full ${
+                                    doc.status === 'completed' ? 'bg-green-500' :
+                                    doc.status === 'analyzing' ? 'bg-yellow-500 animate-pulse' :
+                                    doc.status === 'uploading' ? 'bg-blue-500 animate-pulse' :
+                                    doc.status === 'error' ? 'bg-red-500' : 'bg-gray-400'
+                                  }`} />
+                                  <span className={`text-xs ${
+                                    selectedDocumentId === doc.id
+                                      ? 'text-blue-700 dark:text-blue-300'
+                                      : 'text-gray-500 dark:text-gray-400'
+                                  }`}>
+                                    {doc.status === 'completed' ? 'Ready' :
+                                     doc.status === 'analyzing' ? 'Analyzing...' :
+                                     doc.status === 'uploading' ? 'Uploading...' :
+                                     doc.status === 'error' ? 'Error' : 'Pending'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Individual Documents List (not in collections) */}
+        {documents.filter(doc => !doc.collectionId).length > 0 && (
+          <div className="space-y-2">
+            {!collapsed && (
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">
+                Individual Documents ({documents.filter(doc => !doc.collectionId).length})
+              </p>
+            )}
+            
+            <div className="space-y-1 max-h-64 overflow-y-auto">
+              {documents.filter(doc => !doc.collectionId).map((doc) => (
                 <div
                   key={doc.id}
                   onClick={() => onSelectDocument(doc.id)}
@@ -342,8 +476,8 @@ function ModernSidebar({
               ) : (
                 <></>
               )}
-            </p>
-          </div>
+          </p>
+        </div>
         )}
       </div>
       
