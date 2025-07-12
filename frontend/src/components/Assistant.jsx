@@ -10,17 +10,30 @@ import { Button } from "./ui/button"
 import { Menu, X, MessageCircle, FileText, Eye, GripVertical, Sparkles, Zap } from "lucide-react"
 
 function Assistant() {
+  // Multi-document state
+  const [documents, setDocuments] = useState([])
+  const [selectedDocumentId, setSelectedDocumentId] = useState(null)
+  const [uploadingDocuments, setUploadingDocuments] = useState([])
+  
+  // File staging for upload (before analysis)
+  const [stagedFiles, setStagedFiles] = useState([])
+  
+  // Legacy state for backward compatibility and single document operations
   const [file, setFile] = useState(null)
   const [textInput, setTextInput] = useState("")
   const [loading, setLoading] = useState(false)
-  const [results, setResults] = useState(null)
   const [error, setError] = useState("")
   const [inputMode, setInputMode] = useState("file") // 'file' or 'text'
-  const [documentId, setDocumentId] = useState(null)
   const [currentView, setCurrentView] = useState("upload") // 'upload', 'workspace', or 'casual-chat'
   const [chatSetInputMessage, setChatSetInputMessage] = useState(null)
   const [isDemoMode, setIsDemoMode] = useState(false)
   const [bypassAPI, setBypassAPI] = useState(false)
+  
+  // Computed values for selected document
+  const selectedDocument = documents.find(doc => doc.id === selectedDocumentId)
+  const results = selectedDocument?.results || null
+  const documentId = selectedDocument?.id || null
+  const selectedDocumentFile = selectedDocument?.file || file
 
   // Responsive state
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -32,7 +45,146 @@ function Assistant() {
   const [rightPanelWidth, setRightPanelWidth] = useState(45) // percentage
   const [isResizing, setIsResizing] = useState(false)
 
-  // ... (keep all existing handler functions unchanged)
+  // Document management functions
+  const generateDocumentId = () => `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  
+  const addDocument = (documentData) => {
+    const newDocument = {
+      id: generateDocumentId(),
+      uploadDate: new Date().toISOString(),
+      status: 'uploading',
+      ...documentData
+    }
+    setDocuments(prev => [...prev, newDocument])
+    return newDocument.id
+  }
+  
+  const updateDocument = (documentId, updates) => {
+    setDocuments(prev => prev.map(doc => 
+      doc.id === documentId ? { ...doc, ...updates } : doc
+    ))
+  }
+  
+  const selectDocument = (documentId) => {
+    setSelectedDocumentId(documentId)
+    // Clear any existing errors when switching documents
+    setError("")
+    // Switch to workspace view if currently on upload view
+    if (currentView === "upload") {
+      setCurrentView("workspace")
+      setSidebarOpen(false)
+      setActivePanel("chat")
+    }
+  }
+  
+  const removeDocument = (documentId) => {
+    setDocuments(prev => prev.filter(doc => doc.id !== documentId))
+    if (selectedDocumentId === documentId) {
+      // Select another document if available, or clear selection
+      const remainingDocs = documents.filter(doc => doc.id !== documentId)
+      setSelectedDocumentId(remainingDocs.length > 0 ? remainingDocs[0].id : null)
+    }
+  }
+
+  // Multi-file staging handler (doesn't analyze immediately)
+  const handleMultipleFileChange = (files) => {
+    const fileArray = Array.from(files)
+    const validFiles = []
+    
+    for (const selectedFile of fileArray) {
+      if (!selectedFile.name.toLowerCase().endsWith(".pdf") && !selectedFile.name.toLowerCase().endsWith(".docx")) {
+        setError(`Invalid file type: ${selectedFile.name}. Please select PDF or DOCX files.`)
+        continue
+      }
+      if (selectedFile.size > 10 * 1024 * 1024) {
+        setError(`File too large: ${selectedFile.name}. Maximum size is 10MB.`)
+        continue
+      }
+      
+      // Check for duplicates
+      const isDuplicate = stagedFiles.some(staged => 
+        staged.name === selectedFile.name && staged.size === selectedFile.size
+      )
+      
+      if (!isDuplicate) {
+        validFiles.push(selectedFile)
+      }
+    }
+    
+    if (validFiles.length > 0) {
+      setStagedFiles(prev => [...prev, ...validFiles])
+      setError("")
+    }
+  }
+
+  // Remove individual staged file
+  const removeStagedFile = (index) => {
+    setStagedFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Clear all staged files
+  const clearStagedFiles = () => {
+    setStagedFiles([])
+    setFile(null)
+  }
+
+  // Individual document submission handler
+  const handleDocumentSubmit = async (documentId, file, textContent = null) => {
+    updateDocument(documentId, { status: 'analyzing' })
+    
+    try {
+      let response
+
+      if (file) {
+        const formData = new FormData()
+        formData.append("file", file)
+
+        response = await axios.post("http://localhost:8000/analyze-file", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        })
+      } else if (textContent) {
+        const formData = new FormData()
+        formData.append("text", textContent)
+
+        response = await axios.post("http://localhost:8000/analyze-text", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        })
+      }
+
+      console.log("API Response:", response.data)
+      
+      updateDocument(documentId, {
+        status: 'completed',
+        results: response.data,
+        documentId: response.data.document_id || documentId
+      })
+      
+      // Switch to workspace view if not already there
+      if (currentView === 'upload') {
+        setCurrentView("workspace")
+        setSidebarOpen(false)
+        setActivePanel("chat")
+      }
+      
+    } catch (err) {
+      console.error("Error:", err)
+      let errorMessage = "An error occurred while processing your request"
+      if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail
+      }
+      
+      updateDocument(documentId, {
+        status: 'error',
+        error: errorMessage
+      })
+      setError(errorMessage)
+    }
+  }
+
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0]
     if (selectedFile) {
@@ -53,55 +205,91 @@ function Assistant() {
     e.preventDefault()
     setLoading(true)
     setError("")
-    setResults(null)
+    
     try {
-      let response
-
       if (inputMode === "file") {
-        if (!file) {
-          setError("Please select a file")
+        // Handle multiple staged files
+        if (stagedFiles.length > 0) {
+          const documentIds = []
+          
+          for (const selectedFile of stagedFiles) {
+            const documentId = addDocument({
+              filename: selectedFile.name,
+              file: selectedFile,
+              inputMode: 'file',
+              status: 'uploading'
+            })
+            documentIds.push(documentId)
+            
+            // Start analysis for this document
+            handleDocumentSubmit(documentId, selectedFile)
+          }
+          
+          // Auto-select first document and switch to workspace
+          if (documentIds.length > 0) {
+            setSelectedDocumentId(documentIds[0])
+            setCurrentView("workspace")
+            setSidebarOpen(false)
+            setActivePanel("chat")
+          }
+          
+          // Clear staged files after starting analysis
+          setStagedFiles([])
+          setFile(null)
+          
+        } else if (file) {
+          // Handle single file (legacy support)
+          const documentId = addDocument({
+            filename: file.name,
+            file: file,
+            inputMode: 'file',
+            status: 'uploading'
+          })
+          
+          setSelectedDocumentId(documentId)
+          setCurrentView("workspace")
+          setSidebarOpen(false)
+          setActivePanel("chat")
+          
+          // Start analysis
+          handleDocumentSubmit(documentId, file)
+          setFile(null)
+          
+        } else {
+          setError("Please select one or more files")
           setLoading(false)
           return
         }
-
-        const formData = new FormData()
-        formData.append("file", file)
-
-        response = await axios.post("http://localhost:8000/analyze-file", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        })
+        
       } else {
+        // Handle text input
         if (!textInput.trim()) {
           setError("Please enter some text")
           setLoading(false)
           return
         }
 
-        const formData = new FormData()
-        formData.append("text", textInput)
-
-        response = await axios.post("http://localhost:8000/analyze-text", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+        const documentId = addDocument({
+          filename: `Text Document ${new Date().toLocaleDateString()}`,
+          file: null,
+          inputMode: 'text',
+          status: 'uploading',
+          textContent: textInput
         })
+        
+        setSelectedDocumentId(documentId)
+        setCurrentView("workspace")
+        setSidebarOpen(false)
+        setActivePanel("chat")
+        
+        // Start analysis
+        handleDocumentSubmit(documentId, null, textInput)
+        setTextInput("")
       }
-
-      console.log("API Response:", response.data)
-      setResults(response.data)
-      setDocumentId(response.data.document_id)
-      setCurrentView("workspace")
-      setSidebarOpen(false)
-      setActivePanel("chat")
+      
     } catch (err) {
       console.error("Error:", err)
-      if (err.response?.data?.detail) {
-        setError(err.response.data.detail)
-      } else {
-        setError("An error occurred while processing your request")
-      }
+      setError("An error occurred while processing your request")
     } finally {
       setLoading(false)
     }
@@ -110,18 +298,27 @@ function Assistant() {
   const resetToHome = () => {
     setFile(null)
     setTextInput("")
-    setResults(null)
     setError("")
-    setDocumentId(null)
     setCurrentView("upload")
     setSidebarOpen(false)
     setIsDemoMode(false)
     setBypassAPI(false)
+    // Keep documents but clear selection for upload view
+    setSelectedDocumentId(null)
+    // Clear staged files
+    setStagedFiles([])
     const fileInput = document.getElementById("file-input")
     if (fileInput) fileInput.value = ""
   }
 
   const handleNewDocument = () => {
+    resetToHome()
+  }
+  
+  const clearAllDocuments = () => {
+    setDocuments([])
+    setSelectedDocumentId(null)
+    setStagedFiles([])
     resetToHome()
   }
 
@@ -136,8 +333,7 @@ function Assistant() {
   const handleCasualChat = () => {
     setCurrentView("casual-chat")
     setSidebarOpen(false)
-    setDocumentId("casual-chat-session")
-    setResults(null)
+    setSelectedDocumentId("casual-chat-session")
     setFile(null)
     setIsDemoMode(false)
     setBypassAPI(false)
@@ -145,14 +341,22 @@ function Assistant() {
 
   const startDemoMode = () => {
     setIsDemoMode(true)
-    setDocumentId("demo-document-id")
     setCurrentView("workspace")
     setSidebarOpen(false)
     setActivePanel("chat")
 
-    setResults({
+    const demoDocumentId = addDocument({
       filename: "Sample Business Plan.pdf",
-      document_id: "demo-document-id",
+      file: null,
+      inputMode: 'demo',
+      status: 'completed'
+    })
+    
+    setSelectedDocumentId(demoDocumentId)
+
+    const demoResults = {
+      filename: "Sample Business Plan.pdf",
+      document_id: demoDocumentId,
       executive_summary: {
         main_points: [
           "Strategic expansion into emerging markets with projected 40% revenue growth",
@@ -212,20 +416,33 @@ function Assistant() {
           "Potential regulatory restrictions on AI applications",
         ],
       },
+    }
+    
+    // Update the document with demo results
+    updateDocument(demoDocumentId, {
+      results: demoResults
     })
   }
 
   const loadRealInterfaceWithoutAPI = () => {
     setBypassAPI(true)
-    setDocumentId("real-document-id")
     setCurrentView("workspace")
     setSidebarOpen(false)
     setActivePanel("chat")
 
-    setResults({
+    const realDocumentId = addDocument({
+      filename: "Business_Plan_Q1_2024.pdf",
+      file: null,
+      inputMode: 'preview',
+      status: 'completed'
+    })
+    
+    setSelectedDocumentId(realDocumentId)
+
+    const realResults = {
       success: true,
       filename: "Business_Plan_Q1_2024.pdf",
-      document_id: "real-document-id",
+      document_id: realDocumentId,
       document_text: `# Strategic Business Plan - Q1 2024 Analysis
 
 ## Executive Summary
@@ -322,6 +539,11 @@ This business plan effectively balances ambitious growth objectives with compreh
         ],
       },
       analyzed_at: new Date().toISOString(),
+    }
+    
+    // Update the document with real results
+    updateDocument(realDocumentId, {
+      results: realResults
     })
   }
 
@@ -375,6 +597,10 @@ This business plan effectively balances ambitious growth objectives with compreh
               collapsed={sidebarCollapsed}
               onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
               onCasualChat={handleCasualChat}
+              documents={documents}
+              selectedDocumentId={selectedDocumentId}
+              onSelectDocument={selectDocument}
+              onRemoveDocument={removeDocument}
             />
           </div>
 
@@ -461,6 +687,11 @@ This business plan effectively balances ambitious growth objectives with compreh
                     handleSubmit={handleSubmit}
                     loading={loading}
                     error={error}
+                    handleMultipleFileChange={handleMultipleFileChange}
+                    documents={documents}
+                    stagedFiles={stagedFiles}
+                    removeStagedFile={removeStagedFile}
+                    clearStagedFiles={clearStagedFiles}
                   />
                 </div>
 
@@ -507,6 +738,10 @@ This business plan effectively balances ambitious growth objectives with compreh
                   collapsed={false}
                   onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
                   onCasualChat={handleCasualChat}
+                  documents={documents}
+                  selectedDocumentId={selectedDocumentId}
+                  onSelectDocument={selectDocument}
+                  onRemoveDocument={removeDocument}
                 />
               </div>
             </>
@@ -530,6 +765,10 @@ This business plan effectively balances ambitious growth objectives with compreh
               collapsed={sidebarCollapsed}
               onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
               onCasualChat={handleCasualChat}
+              documents={documents}
+              selectedDocumentId={selectedDocumentId}
+              onSelectDocument={selectDocument}
+              onRemoveDocument={removeDocument}
             />
           </div>
 
@@ -591,6 +830,10 @@ This business plan effectively balances ambitious growth objectives with compreh
                   collapsed={false}
                   onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
                   onCasualChat={handleCasualChat}
+                  documents={documents}
+                  selectedDocumentId={selectedDocumentId}
+                  onSelectDocument={selectDocument}
+                  onRemoveDocument={removeDocument}
                 />
               </div>
             </>
@@ -614,6 +857,10 @@ This business plan effectively balances ambitious growth objectives with compreh
               collapsed={sidebarCollapsed}
               onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
               onCasualChat={handleCasualChat}
+              documents={documents}
+              selectedDocumentId={selectedDocumentId}
+              onSelectDocument={selectDocument}
+              onRemoveDocument={removeDocument}
             />
           </div>
 
@@ -728,8 +975,8 @@ This business plan effectively balances ambitious growth objectives with compreh
               <div className={`h-full ${activePanel === "document" ? "block" : "hidden"}`}>
                 <EnhancedDocumentViewer
                   results={results}
-                  file={file}
-                  inputMode={inputMode}
+                  file={selectedDocumentFile}
+                  inputMode={selectedDocument?.inputMode || inputMode}
                   onExplainConcept={handleExplainConcept}
                   isDemoMode={isDemoMode}
                   bypassAPI={bypassAPI}
@@ -813,8 +1060,8 @@ This business plan effectively balances ambitious growth objectives with compreh
               >
                 <EnhancedDocumentViewer
                   results={results}
-                  file={file}
-                  inputMode={inputMode}
+                  file={selectedDocumentFile}
+                  inputMode={selectedDocument?.inputMode || inputMode}
                   onExplainConcept={handleExplainConcept}
                   isDemoMode={isDemoMode}
                   bypassAPI={bypassAPI}
@@ -841,6 +1088,10 @@ This business plan effectively balances ambitious growth objectives with compreh
                   collapsed={false}
                   onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
                   onCasualChat={handleCasualChat}
+                  documents={documents}
+                  selectedDocumentId={selectedDocumentId}
+                  onSelectDocument={selectDocument}
+                  onRemoveDocument={removeDocument}
                 />
               </div>
             </>

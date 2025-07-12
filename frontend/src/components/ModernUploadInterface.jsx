@@ -6,7 +6,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs'
 import { Alert, AlertDescription } from './ui/alert'
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card'
 import { Badge } from './ui/badge'
-import { Upload, FileText, Brain, AlertTriangle, Loader2, Sparkles, Zap, Shield, Clock } from 'lucide-react'
+import { Upload, FileText, Brain, AlertTriangle, Loader2, Sparkles, Zap, Shield, Clock, X } from 'lucide-react'
 
 function ModernUploadInterface({
   file,
@@ -17,7 +17,13 @@ function ModernUploadInterface({
   handleFileChange,
   handleSubmit,
   loading,
-  error
+  error,
+  // Multi-document props
+  handleMultipleFileChange,
+  documents = [],
+  stagedFiles = [],
+  removeStagedFile,
+  clearStagedFiles
 }) {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -102,18 +108,45 @@ function ModernUploadInterface({
                       type="file"
                       id="file-input"
                       accept=".pdf,.docx"
-                      onChange={handleFileChange}
+                      multiple
+                      onChange={(e) => {
+                        if (handleMultipleFileChange && e.target.files.length > 1) {
+                          handleMultipleFileChange(e.target.files)
+                        } else {
+                          handleFileChange(e)
+                        }
+                      }}
                       className="hidden"
                     />
                     <label htmlFor="file-input" className="cursor-pointer block">
-                      {file ? (
+                      {file || stagedFiles.length > 0 ? (
                         <div className="space-y-3 sm:space-y-4">
                           <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 dark:bg-blue-900/40 rounded-full">
                             <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400" />
                           </div>
                           <div>
-                            <p className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white break-all">{file.name}</p>
-                            <p className="text-xs sm:text-sm text-slate-500 dark:text-gray-400 mt-1">Tap to change file</p>
+                            {stagedFiles.length > 1 ? (
+                              <>
+                                <p className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white">
+                                  {stagedFiles.length} files selected
+                                </p>
+                                <p className="text-xs sm:text-sm text-slate-500 dark:text-gray-400 mt-1">Tap to add more files</p>
+                              </>
+                            ) : stagedFiles.length === 1 ? (
+                              <>
+                                <p className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white break-all">
+                                  {stagedFiles[0].name}
+                                </p>
+                                <p className="text-xs sm:text-sm text-slate-500 dark:text-gray-400 mt-1">Tap to add more files</p>
+                              </>
+                            ) : (
+                              <>
+                                <p className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white break-all">
+                                  {file?.name}
+                                </p>
+                                <p className="text-xs sm:text-sm text-slate-500 dark:text-gray-400 mt-1">Tap to change file</p>
+                              </>
+                            )}
                             <Badge className="mt-2 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200 text-xs">
                               Ready for Analysis
                             </Badge>
@@ -125,8 +158,8 @@ function ModernUploadInterface({
                             <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-slate-400 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
                           </div>
                           <div>
-                            <p className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white">Drop your file here</p>
-                            <p className="text-xs sm:text-sm text-slate-500 dark:text-gray-400 mt-1">or tap to browse</p>
+                            <p className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white">Drop your files here</p>
+                            <p className="text-xs sm:text-sm text-slate-500 dark:text-gray-400 mt-1">or tap to browse • Multiple files supported</p>
                           </div>
                         </div>
                       )}
@@ -146,6 +179,55 @@ function ModernUploadInterface({
                       <span>Secure</span>
                     </div>
                   </div>
+                  
+                  {/* Staged Files Display */}
+                  {stagedFiles.length > 0 && (
+                    <div className="mt-4 sm:mt-6 p-4 bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-600">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-semibold text-slate-900 dark:text-white">
+                          Selected Files ({stagedFiles.length})
+                        </h4>
+                        <Button
+                          type="button"
+                          onClick={clearStagedFiles}
+                          variant="outline"
+                          size="sm"
+                          className="text-xs h-7 px-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 border-red-300 hover:border-red-400"
+                        >
+                          Clear All
+                        </Button>
+                      </div>
+                      <div className="grid gap-2 max-h-40 overflow-y-auto">
+                        {stagedFiles.map((stagedFile, index) => (
+                          <div 
+                            key={index} 
+                            className="flex items-center justify-between p-2 bg-white dark:bg-gray-700 rounded-lg border border-slate-200 dark:border-gray-600"
+                          >
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                                  {stagedFile.name}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-gray-400">
+                                  {(stagedFile.size / 1024 / 1024).toFixed(2)} MB
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              onClick={() => removeStagedFile(index)}
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 
@@ -170,7 +252,7 @@ function ModernUploadInterface({
               <div className="mt-6 sm:mt-8">
                 <Button 
                   type="submit" 
-                  disabled={loading || (inputMode === 'file' && !file) || (inputMode === 'text' && !textInput.trim())}
+                  disabled={loading || (inputMode === 'file' && !file && stagedFiles.length === 0) || (inputMode === 'text' && !textInput.trim())}
                   className="w-full h-12 sm:h-14 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 dark:from-blue-600 dark:to-purple-600 dark:hover:from-blue-500 dark:hover:to-purple-500 text-white text-base sm:text-lg font-semibold rounded-xl shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 touch-manipulation"
                 >
                   {loading ? (

@@ -6,7 +6,22 @@ import { Badge } from './ui/badge'
 import { Brain, Upload, FileText, Home, MessageCircle, Settings, HelpCircle, Sparkles, Activity, X, Menu, PanelLeftClose } from 'lucide-react'
 import SettingsPanel from './SettingsPanel'
 
-function ModernSidebar({ onNewDocument, currentDocument, onHome, onClose, isDemoMode = false, bypassAPI = false, collapsed = false, onToggleCollapse, onCasualChat }) {
+function ModernSidebar({ 
+  onNewDocument, 
+  currentDocument, 
+  onHome, 
+  onClose, 
+  isDemoMode = false, 
+  bypassAPI = false, 
+  collapsed = false, 
+  onToggleCollapse, 
+  onCasualChat,
+  // Multi-document props
+  documents = [],
+  selectedDocumentId = null,
+  onSelectDocument = () => {},
+  onRemoveDocument = () => {}
+}) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const navigate = useNavigate()
   
@@ -200,6 +215,74 @@ function ModernSidebar({ onNewDocument, currentDocument, onHome, onClose, isDemo
                 )}
               </div>
             </Card>
+          </div>
+        )}
+
+        {/* Documents List */}
+        {documents.length > 0 && (
+          <div className="space-y-2">
+            {!collapsed && (
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">
+                Documents ({documents.length})
+              </p>
+            )}
+            
+            <div className="space-y-1 max-h-64 overflow-y-auto">
+              {documents.map((doc) => (
+                <div
+                  key={doc.id}
+                  onClick={() => onSelectDocument(doc.id)}
+                  className={`${collapsed ? 'p-2' : 'p-2.5 sm:p-3'} rounded-lg cursor-pointer transition-all duration-200 group ${
+                    selectedDocumentId === doc.id
+                      ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700'
+                      : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
+                  }`}
+                >
+                  <div className={`flex items-start ${collapsed ? 'justify-center' : 'gap-2'}`}>
+                    <div className={`${collapsed ? 'p-1' : 'p-1.5'} rounded-lg flex-shrink-0 ${
+                      selectedDocumentId === doc.id
+                        ? 'bg-blue-200 dark:bg-blue-800'
+                        : 'bg-gray-200 dark:bg-gray-700 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40'
+                    }`} title={collapsed ? doc.filename : ''}>
+                      <FileText className={`${collapsed ? 'h-3 w-3' : 'h-3.5 w-3.5'} ${
+                        selectedDocumentId === doc.id
+                          ? 'text-blue-700 dark:text-blue-300'
+                          : 'text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
+                      }`} />
+                    </div>
+                    {!collapsed && (
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-medium truncate ${
+                          selectedDocumentId === doc.id
+                            ? 'text-blue-900 dark:text-blue-100'
+                            : 'text-gray-900 dark:text-white'
+                        }`}>
+                          {doc.filename}
+                        </p>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <div className={`w-2 h-2 rounded-full ${
+                            doc.status === 'completed' ? 'bg-green-500' :
+                            doc.status === 'analyzing' ? 'bg-yellow-500 animate-pulse' :
+                            doc.status === 'uploading' ? 'bg-blue-500 animate-pulse' :
+                            doc.status === 'error' ? 'bg-red-500' : 'bg-gray-400'
+                          }`} />
+                          <span className={`text-xs ${
+                            selectedDocumentId === doc.id
+                              ? 'text-blue-700 dark:text-blue-300'
+                              : 'text-gray-500 dark:text-gray-400'
+                          }`}>
+                            {doc.status === 'completed' ? 'Ready' :
+                             doc.status === 'analyzing' ? 'Analyzing...' :
+                             doc.status === 'uploading' ? 'Uploading...' :
+                             doc.status === 'error' ? 'Error' : 'Pending'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
