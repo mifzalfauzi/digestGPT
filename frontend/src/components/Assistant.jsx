@@ -75,8 +75,8 @@ function Assistant() {
     setSelectedDocumentId(documentId)
     // Clear any existing errors when switching documents
     setError("")
-    // Switch to workspace view if currently on upload view
-    if (currentView === "upload") {
+    // Switch to workspace view if currently on upload view or casual chat
+    if (currentView === "upload" || currentView === "casual-chat") {
       setCurrentView("workspace")
       setSidebarOpen(false)
       setActivePanel("chat")
@@ -776,7 +776,7 @@ This business plan effectively balances ambitious growth objectives with compreh
             <ModernSidebar
               onNewDocument={handleNewDocument}
               onHome={resetToHome}
-              currentDocument="Casual Chat"
+              currentDocument="Normal Chat"
               isDemoMode={false}
               bypassAPI={false}
               collapsed={sidebarCollapsed}
@@ -806,7 +806,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                 </div>
                 <div>
                   <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 dark:from-white dark:to-blue-200 bg-clip-text text-transparent">
-                    Casual Chat
+                    Normal Chat
                   </h1>
                   <p className="text-xs text-gray-500 dark:text-gray-400">AI Assistant</p>
                 </div>

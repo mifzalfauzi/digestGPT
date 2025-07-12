@@ -229,7 +229,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                 <Badge className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 px-1 py-0.5">
                   <Brain className="h-1.5 w-1.5 sm:h-2 sm:w-2 mr-0.5" />
                   <span className="hidden sm:inline text-xs">
-                    {casualMode ? 'Casual Chat' : isDemoMode ? 'Demo Mode' : bypassAPI ? 'Preview Mode' : 'Claude 4 Sonnet'}
+                    {casualMode ? 'Normal Chat' : isDemoMode ? 'Demo Mode' : bypassAPI ? 'Preview Mode' : 'Claude 4 Sonnet'}
                   </span>
                   <span className="sm:hidden text-xs">
                     {casualMode ? 'Chat' : isDemoMode ? 'Demo' : bypassAPI ? 'Preview' : 'Claude'}

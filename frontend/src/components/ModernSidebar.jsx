@@ -142,6 +142,21 @@ function ModernSidebar({
               </>
             )}
           </Button>
+
+          <Button 
+            onClick={() => {
+              onCasualChat()
+              onClose?.()
+            }}
+            variant="ghost" 
+            className={`w-full text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 h-8 py-2 text-sm ${
+              collapsed ? 'justify-center px-0' : 'justify-start gap-2'
+            }`}
+            title={collapsed ? 'Chat' : ''}
+          >
+            <MessageCircle className="h-3.5 w-3.5 flex-shrink-0" />
+            {!collapsed && <span>Normal Chat</span>}
+          </Button>
         </div>
 
         {/* Current Document Section */}
@@ -286,39 +301,7 @@ function ModernSidebar({
           </div>
         )}
 
-        {/* Quick Actions */}
-        <div className="space-y-2">
-          {!collapsed && (
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">
-              Quick Actions
-            </p>
-          )}
-          <div className={`${collapsed ? 'flex flex-col gap-1.5' : 'grid grid-cols-2 gap-1.5'}`}>
-            <Button 
-              variant="outline" 
-              size="sm"
-              className={`text-xs h-auto py-2 flex flex-col gap-1 hover:bg-gray-100 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white touch-manipulation ${
-                collapsed ? 'w-full' : ''
-              }`}
-              title={collapsed ? 'Analyze' : ''}
-            >
-              <Brain className="h-3.5 w-3.5" />
-              {!collapsed && <span>Analyze</span>}
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              className={`text-xs h-auto py-2 flex flex-col gap-1 hover:bg-gray-100 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white touch-manipulation ${
-                collapsed ? 'w-full' : ''
-              }`}
-              onClick={onCasualChat}
-              title={collapsed ? 'Chat' : ''}
-            >
-              <MessageCircle className="h-3.5 w-3.5" />
-              {!collapsed && <span>Chat</span>}
-            </Button>
-          </div>
-        </div>
+
       </div>
 
       {/* Modern Footer */}
