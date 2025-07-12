@@ -6,10 +6,10 @@ import { Textarea } from './ui/textarea'
 import { Badge } from './ui/badge'
 import { Card, CardHeader, CardContent } from './ui/card'
 import { Separator } from './ui/separator'
-import { MessageCircle, Send, Bot, User, AlertCircle, Trash2, Sparkles, Brain, Zap, ThumbsUp, ThumbsDown, Copy, Check } from 'lucide-react'
+import { MessageCircle, Send, Bot, User, AlertCircle, Trash2, Sparkles, Brain, Zap, ThumbsUp, ThumbsDown, Copy, Check, Clock } from 'lucide-react'
 import MessageFormatter from './MessageFormatter';
 
-function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode = false, bypassAPI = false, casualMode = false }) {
+function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode = false, bypassAPI = false, casualMode = false, isDisabled = false, analyzingStatus = null }) {
   const [messages, setMessages] = useState([])
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -261,7 +261,37 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
       {/* Messages Area - Scrollable */}
       <div className="flex-1 overflow-hidden relative">
         <div className="h-full overflow-y-auto px-2 sm:px-3 lg:px-4 py-2 sm:py-3">
-          {messages.length === 0 ? (
+          {isDisabled ? (
+            <div className="text-center py-6 sm:py-8 space-y-3 sm:space-y-4">
+              <div className="flex justify-center">
+                <div className="relative">
+                  <div className="p-3 sm:p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl">
+                    <Zap className="h-6 w-6 sm:h-8 sm:w-8 text-amber-600 dark:text-amber-400 animate-pulse" />
+                  </div>
+                  <Brain className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500 absolute -top-1 -right-1" />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                  Documents Analyzing...
+                </h3>
+                <p className="text-slate-600 dark:text-gray-300 max-w-md mx-auto text-xs sm:text-sm px-4">
+                  {analyzingStatus || "Please wait while your documents are being processed. This may take a few minutes for larger files."}
+                </p>
+                
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 sm:p-4 max-w-md mx-auto">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <span className="text-sm font-medium text-amber-800 dark:text-amber-200">Analysis in Progress</span>
+                  </div>
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    Large files (&gt;1MB) may take longer to process. Chat will be available once all documents are ready.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : messages.length === 0 ? (
             <div className="text-center py-6 sm:py-8 space-y-3 sm:space-y-4">
               <div className="flex justify-center">
                 <div className="relative">
@@ -482,13 +512,13 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                   handleSendMessage(e)
                 }
               }}
-              placeholder={casualMode ? "Type your message here..." : "Enter question here to inquire on the document."}
+              placeholder={isDisabled ? "Documents are being analyzed..." : (casualMode ? "Type your message here..." : "Enter question here to inquire on the document.")}
               className="min-h-[40px] sm:min-h-[44px] lg:min-h-[48px] max-h-[80px] sm:max-h-[100px] resize-none bg-white dark:bg-gray-700 border-slate-200 dark:border-gray-600 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-gray-400 rounded-xl pr-10 sm:pr-12 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"
-              disabled={isLoading}
+              disabled={isLoading || isDisabled}
             />
             <Button 
               type="submit" 
-              disabled={!inputMessage || !inputMessage.trim() || isLoading}
+              disabled={!inputMessage || !inputMessage.trim() || isLoading || isDisabled}
               className="absolute right-1 sm:right-1.5 bottom-1 sm:bottom-1.5 h-6 w-6 sm:h-7 sm:w-7 p-0 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
             >
               <Send className="h-3 w-3 sm:h-3.5 sm:w-3.5" />

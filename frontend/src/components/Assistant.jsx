@@ -34,6 +34,12 @@ function Assistant() {
   const results = selectedDocument?.results || null
   const documentId = selectedDocument?.documentId || selectedDocument?.id || null
   const selectedDocumentFile = selectedDocument?.file || file
+  
+  // Check if all documents are ready for chat
+  const allDocumentsReady = documents.length > 0 && documents.every(doc => doc.status === 'completed')
+  const hasAnalyzingDocuments = documents.some(doc => doc.status === 'analyzing')
+  const analyzingCount = documents.filter(doc => doc.status === 'analyzing').length
+  const completedCount = documents.filter(doc => doc.status === 'completed').length
 
   // Responsive state
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -130,7 +136,15 @@ function Assistant() {
 
   // Individual document submission handler
   const handleDocumentSubmit = async (documentId, file, textContent = null) => {
-    updateDocument(documentId, { status: 'analyzing' })
+    const fileName = file?.name || "Text Document"
+    const fileSize = file?.size || 0
+    const isLargeFile = fileSize > 1024 * 1024 // > 1MB
+    
+    updateDocument(documentId, { 
+      status: 'analyzing',
+      analysisStartTime: new Date().toISOString(),
+      isLargeFile: isLargeFile
+    })
     
     try {
       let response
@@ -160,7 +174,8 @@ function Assistant() {
       updateDocument(documentId, {
         status: 'completed',
         results: response.data,
-        documentId: response.data.document_id || documentId
+        documentId: response.data.document_id || documentId,
+        analysisEndTime: new Date().toISOString()
       })
       
       // Switch to workspace view if not already there
@@ -946,6 +961,8 @@ This business plan effectively balances ambitious growth objectives with compreh
                     onSetInputMessage={setChatSetInputMessage}
                     isDemoMode={isDemoMode}
                     bypassAPI={bypassAPI}
+                    isDisabled={!allDocumentsReady}
+                    analyzingStatus={hasAnalyzingDocuments ? `Analyzing ${analyzingCount} of ${documents.length} documents... (${completedCount} completed)` : null}
                   />
                 ) : (
                   <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 p-6">
@@ -1003,6 +1020,8 @@ This business plan effectively balances ambitious growth objectives with compreh
                     onSetInputMessage={setChatSetInputMessage}
                     isDemoMode={isDemoMode}
                     bypassAPI={bypassAPI}
+                    isDisabled={!allDocumentsReady}
+                    analyzingStatus={hasAnalyzingDocuments ? `Analyzing ${analyzingCount} of ${documents.length} documents... (${completedCount} completed)` : null}
                   />
                 ) : (
                   <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 p-12">

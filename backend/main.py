@@ -194,12 +194,14 @@ def extract_text_from_docx(file_bytes: bytes) -> str:
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error reading DOCX: {str(e)}")
 
-async def analyze_document_with_claude(text: str) -> dict:
+async def analyze_document_with_claude(text: str, retry_count: int = 0) -> dict:
     """Send text to Anthropic Claude for analysis"""
     if not client:
         raise HTTPException(status_code=500, detail="Key not configured")
     
-    prompt = f"""You are an AI assistant that helps explain documents clearly. 
+    # Adjust prompt based on retry count
+    if retry_count == 0:
+        prompt = f"""You are an AI assistant that helps explain documents clearly. 
 Given this document, do the following:
 1. Explain what the document is about in 1–2 sentences.
 2. Summarize key important points as bullet points.
@@ -210,7 +212,14 @@ For each key point and risk flag, please also include a short quote (5-15 words)
 
 For key concepts, provide the term and a brief explanation of what it means in the context of this document.
 
-IMPORTANT: You must respond with ONLY valid JSON. Do not include any text before or after the JSON. Do not wrap the JSON in markdown code blocks. Just return pure JSON.
+CRITICAL: You must respond with ONLY valid JSON. Follow these strict rules:
+- Do not include any text before or after the JSON
+- Do not wrap the JSON in markdown code blocks
+- Use only standard double quotes (") for strings
+- Ensure all arrays and objects are properly closed
+- Do not include trailing commas
+- Escape any quotes within text content properly
+- Keep quotes short (5-15 words maximum)
 
 Use this exact JSON structure:
 {{
@@ -249,6 +258,17 @@ Use this exact JSON structure:
 
 Document text:
 {text[:8000]}"""
+    else:
+        # Simplified prompt for retry
+        prompt = f"""Analyze this document and return ONLY valid JSON with this structure:
+{{
+    "summary": "Brief explanation",
+    "key_points": [{{"text": "point", "quote": "quote"}}],
+    "risk_flags": [{{"text": "🚩 risk", "quote": "quote"}}],
+    "key_concepts": [{{"term": "term", "explanation": "explanation"}}]
+}}
+
+Document: {text[:4000]}"""
     
     try:
         response = client.messages.create(
@@ -270,38 +290,114 @@ Document text:
         
         if json_start != -1 and json_end > json_start:
             json_content = content[json_start:json_end]
+            
+            # Clean up common JSON formatting issues
+            json_content = json_content.replace('```json', '').replace('```', '').strip()
+            
+            # Fix common JSON syntax errors
+            json_content = re.sub(r',\s*}', '}', json_content)  # Remove trailing commas
+            json_content = re.sub(r',\s*]', ']', json_content)  # Remove trailing commas in arrays
+            json_content = re.sub(r'(["\w])\s*\n\s*(["\w])', r'\1, \2', json_content)  # Add missing commas
+            json_content = re.sub(r'(["\w])\s*}\s*(["\w])', r'\1}, \2', json_content)  # Add missing commas before closing braces
+            
             try:
                 result = json.loads(json_content)
                 print(f"Parsed JSON successfully: {result}")  # Debug log
                 return result
             except json.JSONDecodeError as e:
                 print(f"JSON parsing failed: {e}")  # Debug log
-                # Try to clean up the JSON
-                json_content = json_content.replace('```json', '').replace('```', '').strip()
+                print(f"Problematic JSON content: {json_content}")
+                
+                # Try more aggressive cleaning
                 try:
+                    # Remove any non-ASCII characters that might be causing issues
+                    json_content = ''.join(char for char in json_content if ord(char) < 128)
+                    # Try to fix common quote issues
+                    json_content = re.sub(r'[""]', '"', json_content)  # Replace smart quotes
+                    json_content = re.sub(r'['']', "'", json_content)  # Replace smart apostrophes
+                    
                     result = json.loads(json_content)
                     print(f"Parsed cleaned JSON successfully: {result}")  # Debug log
                     return result
-                except json.JSONDecodeError:
+                except json.JSONDecodeError as e2:
+                    print(f"Second JSON parsing attempt failed: {e2}")  # Debug log
                     pass
         
-        # If we can't parse JSON, create a structured fallback
+        # If we can't parse JSON, try to extract useful information from the raw response
         print(f"Using fallback parsing for content: {content[:200]}...")  # Debug log
-        return {
-            "summary": "Document analysis completed. Raw response could not be parsed as JSON.",
-            "key_points": [
+        
+        # Try to extract summary from the content
+        summary = "Document analysis completed."
+        if "summary" in content.lower():
+            # Try to find summary section
+            summary_match = re.search(r'"summary"\s*:\s*"([^"]+)"', content)
+            if summary_match:
+                summary = summary_match.group(1)
+        
+        # Try to extract key points
+        key_points = []
+        if "key_points" in content.lower():
+            # Look for key points in the content
+            key_points_matches = re.findall(r'"text"\s*:\s*"([^"]+)"', content)
+            for i, text in enumerate(key_points_matches[:5]):  # Limit to 5 points
+                key_points.append({
+                    "text": text,
+                    "quote": "Extracted from analysis"
+                })
+        
+        # Try to extract risk flags
+        risk_flags = []
+        if "risk_flags" in content.lower():
+            # Look for risk flags in the content
+            risk_matches = re.findall(r'🚩\s*([^"]+)', content)
+            for risk in risk_matches[:3]:  # Limit to 3 risks
+                risk_flags.append({
+                    "text": f"🚩 {risk.strip()}",
+                    "quote": "Identified during analysis"
+                })
+        
+        # Try to extract key concepts
+        key_concepts = []
+        if "key_concepts" in content.lower():
+            # Look for terms and explanations
+            term_matches = re.findall(r'"term"\s*:\s*"([^"]+)"', content)
+            explanation_matches = re.findall(r'"explanation"\s*:\s*"([^"]+)"', content)
+            
+            for i, term in enumerate(term_matches[:3]):  # Limit to 3 concepts
+                explanation = explanation_matches[i] if i < len(explanation_matches) else "Important concept from the document"
+                key_concepts.append({
+                    "term": term,
+                    "explanation": explanation
+                })
+        
+        # If we couldn't extract anything useful, provide a basic fallback
+        if not key_points and not risk_flags and not key_concepts:
+            key_points = [
                 {
                     "text": "Analysis completed but response format was unexpected. Please try again or contact support.",
                     "quote": "N/A"
                 }
-            ],
-            "risk_flags": [
+            ]
+            risk_flags = [
                 {
                     "text": "🚩 Unable to parse AI response properly. This may indicate a technical issue.",
                     "quote": "N/A"
                 }
-            ],
-            "key_concepts": []
+            ]
+        
+        # If we get here, JSON parsing failed completely
+        # Try one more time with a simplified approach if we haven't retried yet
+        if retry_count == 0:
+            print("JSON parsing failed, attempting retry with simplified prompt...")
+            return await analyze_document_with_claude(text, retry_count=1)
+        
+        # If retry also failed, return the fallback
+        return {
+            "summary": summary,
+            "key_points": key_points,
+            "risk_flags": risk_flags,
+            "key_concepts": key_concepts,
+            "analysis_method": "fallback_parsing"
         }
         
     except Exception as e:
