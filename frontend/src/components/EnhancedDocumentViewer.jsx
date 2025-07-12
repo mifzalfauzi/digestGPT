@@ -152,34 +152,28 @@ This business plan effectively balances growth ambitions with comprehensive risk
               <Brain className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="text-xs sm:text-sm lg:text-base font-bold text-slate-900 dark:text-white">
-                Dashboard 
-                {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
-                {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal">(Preview)</span>}
-              </h2>
-              {results?.filename && (
-                <div className="flex items-center gap-1 mt-1">
-                  <FileText className="h-2 w-2 sm:h-2.5 sm:w-2.5 text-slate-500 flex-shrink-0" />
-                  <p className="text-xs text-slate-500 dark:text-gray-400 truncate">
-                    {results.filename}
-                  </p>
-                  <Badge className={`text-xs border-0 px-1 py-0.5 ${
-                    isDemoMode 
-                      ? 'bg-gradient-to-r from-orange-500 to-yellow-600 text-white'
-                      : bypassAPI
-                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
-                      : 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white'
-                  }`}>
-                    <Sparkles className="h-1.5 w-1.5 sm:h-2 sm:w-2 mr-0.5" />
-                    <span className="hidden sm:inline">
-                      {isDemoMode ? 'Demo Data' : bypassAPI ? 'Preview Data' : 'Analyzed'}
-                    </span>
-                    <span className="sm:hidden">
-                      {isDemoMode ? '🎭' : bypassAPI ? '👁️' : '✓'}
-                    </span>
-                  </Badge>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <h2 className="text-xs sm:text-sm lg:text-base font-bold text-slate-900 dark:text-white">
+                  Dashboard 
+                  {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
+                  {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal">(Preview)</span>}
+                </h2>
+                <Badge className={`text-xs border-0 px-1 py-0.5 ${
+                  isDemoMode 
+                    ? 'bg-gradient-to-r from-orange-500 to-yellow-600 text-white'
+                    : bypassAPI
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
+                    : 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white'
+                }`}>
+                  <Sparkles className="h-1.5 w-1.5 sm:h-2 sm:w-2 mr-0.5" />
+                  <span className="hidden sm:inline">
+                    {isDemoMode ? 'Demo Data' : bypassAPI ? 'Preview Data' : 'Analyzed'}
+                  </span>
+                  <span className="sm:hidden">
+                    {isDemoMode ? '🎭' : bypassAPI ? '👁️' : '✓'}
+                  </span>
+                </Badge>
+              </div>
             </div>
           </div>
         </div>

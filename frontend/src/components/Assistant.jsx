@@ -576,7 +576,7 @@ This business plan effectively balances ambitious growth objectives with compreh
       const containerWidth = containerRect.width
       const mouseX = e.clientX - containerRect.left
 
-      const percentage = Math.min(Math.max(((containerWidth - mouseX) / containerWidth) * 100, 30), 70)
+      const percentage = Math.min(Math.max(((containerWidth - mouseX) / containerWidth) * 100, 30), 60)
       setRightPanelWidth(percentage)
     }
 
@@ -1067,7 +1067,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                   >
                     <GripVertical className="h-5 w-5 text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
                   </div>
-                  <div className="absolute inset-y-0 -left-4 -right-4 cursor-col-resize" />
+                  <div className="absolute inset-y-0 -left-1 -right-1 cursor-col-resize" />
                 </div>
               </div>
 

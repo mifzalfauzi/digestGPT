@@ -4,7 +4,7 @@ import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
 import { ScrollArea } from './ui/scroll-area'
 import { Badge } from './ui/badge'
-import { MessageCircle, Send, Bot, User, AlertCircle, Trash2 } from 'lucide-react'
+import { MessageCircle, Send, Bot, User, AlertCircle, Trash2, Brain } from 'lucide-react'
 
 function ChatPanel({ documentId, filename }) {
   const [messages, setMessages] = useState([])
@@ -77,7 +77,6 @@ function ChatPanel({ documentId, filename }) {
             <MessageCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Chat Assistant</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Ask questions about: {filename}</p>
             </div>
           </div>
           <Button 
@@ -91,6 +90,28 @@ function ChatPanel({ documentId, filename }) {
           </Button>
         </div>
       </div>
+
+      {/* Document Banner - Shows current document being discussed */}
+      {filename && (
+        <div className="px-6 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b border-blue-200/50 dark:border-blue-800/30">
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-blue-200/50 dark:border-blue-700/30">
+            <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-sm">
+              <Brain className="h-4 w-4 text-white" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                Currently discussing:
+              </p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                {filename}
+              </p>
+            </div>
+            <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 text-xs px-3 py-1">
+              Active
+            </Badge>
+          </div>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-hidden">

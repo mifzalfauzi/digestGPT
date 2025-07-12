@@ -220,12 +220,12 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
               <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 sm:w-2 sm:h-2 lg:w-2.5 lg:h-2.5 bg-green-500 rounded-full border border-white dark:border-gray-800"></div>
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="text-xs sm:text-sm lg:text-base font-bold text-slate-900 dark:text-white">
-                {casualMode ? 'Claude Assistant' : 'Assistant'}
-                {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
-                {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal">(Preview)</span>}
-              </h2>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
+                <h2 className="text-xs sm:text-sm lg:text-base font-bold text-slate-900 dark:text-white">
+                  {casualMode ? 'Claude Assistant' : 'Assistant'}
+                  {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
+                  {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal">(Preview)</span>}
+                </h2>
                 <Badge className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 px-1 py-0.5">
                   <Brain className="h-1.5 w-1.5 sm:h-2 sm:w-2 mr-0.5" />
                   <span className="hidden sm:inline text-xs">
@@ -235,14 +235,6 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                     {casualMode ? 'Chat' : isDemoMode ? 'Demo' : bypassAPI ? 'Preview' : 'Claude'}
                   </span>
                 </Badge>
-                {!casualMode && (
-                  <>
-                    <span className="text-xs text-slate-500 dark:text-gray-400 hidden sm:inline">•</span>
-                    <p className="text-xs text-slate-500 dark:text-gray-400 truncate max-w-[80px] sm:max-w-[100px] lg:max-w-[160px]">
-                      {filename || 'No document'}
-                    </p>
-                  </>
-                )}
               </div>
             </div>
           </div>
@@ -257,6 +249,28 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
           </Button>
         </div>
       </div>
+
+      {/* Document Banner - Shows current document being discussed */}
+      {!casualMode && filename && (
+        <div className="flex-shrink-0 px-2 sm:px-3 lg:px-4 py-2 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/30 dark:to-indigo-950/30 border-b border-blue-200/50 dark:border-blue-800/30">
+          <div className="flex items-center gap-2 p-2 sm:p-2.5 rounded-lg bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-blue-200/50 dark:border-blue-700/30">
+            <div className="p-1.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-sm">
+              <Brain className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-blue-800 dark:text-blue-200">
+                Currently discussing:
+              </p>
+              <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white truncate">
+                {filename}
+              </p>
+            </div>
+            <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 text-xs px-2 py-0.5">
+              Active
+            </Badge>
+          </div>
+        </div>
+      )}
 
       {/* Messages Area - Scrollable */}
       <div className="flex-1 overflow-hidden relative">
