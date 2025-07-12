@@ -779,12 +779,11 @@ This business plan effectively balances ambitious growth objectives with compreh
                 )}
               </div>
 
-              {/* Enhanced Resize Handle */}
+              {/* Hidden Resize Handle - Only visible on hover */}
               <div className="relative">
                 <div
                   className={`
-                    w-2 h-full bg-gradient-to-b from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 
-                    hover:bg-gradient-to-b hover:from-blue-400 hover:via-blue-500 hover:to-blue-400 
+                    w-1 h-full bg-transparent hover:bg-gradient-to-b hover:from-blue-400 hover:via-blue-500 hover:to-blue-400 
                     dark:hover:from-blue-500 dark:hover:via-blue-400 dark:hover:to-blue-500
                     cursor-col-resize transition-all duration-200 relative group
                     ${isResizing ? "bg-gradient-to-b from-blue-500 via-blue-600 to-blue-500" : ""}

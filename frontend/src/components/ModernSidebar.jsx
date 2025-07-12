@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { Badge } from './ui/badge'
-import { Separator } from './ui/separator'
 import { Brain, Upload, FileText, Home, MessageCircle, Settings, HelpCircle, Sparkles, Activity, X, Menu, PanelLeftClose } from 'lucide-react'
 import SettingsPanel from './SettingsPanel'
 
@@ -12,7 +11,7 @@ function ModernSidebar({ onNewDocument, currentDocument, onHome, onClose, isDemo
   const navigate = useNavigate()
   
   return (
-    <div className={`${collapsed ? 'w-16' : 'w-64 sm:w-72 lg:w-64'} bg-white dark:bg-gray-900 h-full flex flex-col shadow-xl lg:shadow-none transition-all duration-300`}>
+    <div className="w-full bg-white dark:bg-gray-900 h-full flex flex-col shadow-xl lg:shadow-none transition-all duration-300">
       {/* Modern Logo Section */}
       <div className="p-3 sm:p-4 border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm">
         <div className="flex items-center justify-between">
@@ -130,8 +129,6 @@ function ModernSidebar({ onNewDocument, currentDocument, onHome, onClose, isDemo
           </Button>
         </div>
 
-        <Separator className="my-2 sm:my-3 bg-white dark:bg-gray-900" />
-
         {/* Current Document Section */}
         {currentDocument && (
           <div className="space-y-2">
@@ -205,8 +202,6 @@ function ModernSidebar({ onNewDocument, currentDocument, onHome, onClose, isDemo
             </Card>
           </div>
         )}
-
-        <Separator className="my-2 sm:my-3 bg-white dark:bg-gray-900" />
 
         {/* Quick Actions */}
         <div className="space-y-2">
