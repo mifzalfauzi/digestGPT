@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { Badge } from './ui/badge'
-import { Brain, Upload, FileText, Home, MessageCircle, Settings, HelpCircle, Sparkles, Activity, X, Menu, PanelLeftClose } from 'lucide-react'
+import { Brain, Upload, FileText, Home, MessageCircle, Settings, HelpCircle, Sparkles, Activity, X, Menu, PanelLeftClose, ChevronDown } from 'lucide-react'
 import SettingsPanel from './SettingsPanel'
 
 function ModernSidebar({ 
@@ -169,7 +169,7 @@ function ModernSidebar({
           <div className="space-y-2">
             {!collapsed && (
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">
-                {isDemoMode ? 'Demo Document' : bypassAPI ? 'Preview Document' : 'Active Document'}
+                {isDemoMode ? 'New Document' : bypassAPI ? 'Preview Document' : 'Active Document'}
               </p>
             )}
             
@@ -274,6 +274,11 @@ function ModernSidebar({
                                 <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 text-xs px-1.5 py-0.5">
                                   {collectionDocuments.length} docs
                                 </Badge>
+                                <ChevronDown 
+                                  className={`h-3 w-3 text-purple-600 dark:text-purple-400 transition-transform duration-200 ${
+                                    isExpanded ? 'rotate-180' : ''
+                                  }`} 
+                                />
                               </div>
                             </div>
                             <div className="flex items-center gap-1.5 mt-1">
