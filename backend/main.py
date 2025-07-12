@@ -2,8 +2,9 @@ import os
 import io
 import json
 import uuid
+import re
 from datetime import datetime, timedelta
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Tuple
 import pdfplumber
 from docx import Document
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Depends
@@ -51,6 +52,102 @@ class ChatResponse(BaseModel):
 def get_client_ip(request):
     """Get client IP for usage tracking"""
     return request.client.host
+
+def count_words(text: str) -> int:
+    """Count words in text"""
+    return len(text.split())
+
+def split_text_into_chunks(text: str, target_words: int = 1200, overlap_words: int = 100) -> List[str]:
+    """
+    Split text into chunks of approximately target_words each.
+    Ensures splitting happens on paragraph boundaries or sentence boundaries.
+    
+    Args:
+        text: The text to split
+        target_words: Target number of words per chunk
+        overlap_words: Number of words to overlap between chunks
+    
+    Returns:
+        List of text chunks
+    """
+    if not text.strip():
+        return []
+    
+    # First, try to split by paragraphs
+    paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
+    
+    if not paragraphs:
+        # If no paragraphs, split by sentences
+        sentences = re.split(r'[.!?]+', text)
+        sentences = [s.strip() for s in sentences if s.strip()]
+        paragraphs = sentences
+    
+    chunks = []
+    current_chunk = ""
+    current_word_count = 0
+    
+    for paragraph in paragraphs:
+        paragraph_words = count_words(paragraph)
+        
+        # If adding this paragraph would exceed target, start a new chunk
+        if current_word_count + paragraph_words > target_words and current_chunk:
+            chunks.append(current_chunk.strip())
+            
+            # Start new chunk with overlap from previous chunk
+            if overlap_words > 0:
+                words = current_chunk.split()
+                overlap_text = " ".join(words[-overlap_words:]) if len(words) > overlap_words else current_chunk
+                current_chunk = overlap_text + "\n\n" + paragraph
+                current_word_count = count_words(overlap_text) + paragraph_words
+            else:
+                current_chunk = paragraph
+                current_word_count = paragraph_words
+        else:
+            if current_chunk:
+                current_chunk += "\n\n" + paragraph
+            else:
+                current_chunk = paragraph
+            current_word_count += paragraph_words
+    
+    # Add the last chunk
+    if current_chunk.strip():
+        chunks.append(current_chunk.strip())
+    
+    # If we have chunks that are still too long, split them further by sentences
+    final_chunks = []
+    for chunk in chunks:
+        if count_words(chunk) <= target_words * 1.5:  # Allow some flexibility
+            final_chunks.append(chunk)
+        else:
+            # Split by sentences
+            sentences = re.split(r'[.!?]+', chunk)
+            sentences = [s.strip() for s in sentences if s.strip()]
+            
+            sub_chunk = ""
+            sub_word_count = 0
+            
+            for sentence in sentences:
+                sentence_words = count_words(sentence)
+                
+                if sub_word_count + sentence_words > target_words and sub_chunk:
+                    final_chunks.append(sub_chunk.strip())
+                    sub_chunk = sentence
+                    sub_word_count = sentence_words
+                else:
+                    if sub_chunk:
+                        sub_chunk += ". " + sentence
+                    else:
+                        sub_chunk = sentence
+                    sub_word_count += sentence_words
+            
+            if sub_chunk.strip():
+                final_chunks.append(sub_chunk.strip())
+    
+    return final_chunks
+
+def should_chunk_document(text: str, word_threshold: int = 1000) -> bool:
+    """Determine if a document should be chunked based on word count"""
+    return count_words(text) > word_threshold
 
 def check_usage_limit(client_ip: str):
     """Check if client has exceeded daily usage limit"""
@@ -203,11 +300,237 @@ Document text:
                     "text": "🚩 Unable to parse AI response properly. This may indicate a technical issue.",
                     "quote": "N/A"
                 }
-            ]
+            ],
+            "key_concepts": []
         }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Anthropic API error: {str(e)}")
+
+async def analyze_document_with_chunking(text: str, enable_synthesis: bool = True) -> dict:
+    """
+    Analyze a document with automatic chunking for long documents.
+    
+    Args:
+        text: The document text to analyze
+        enable_synthesis: Whether to use final synthesis for chunked documents
+    
+    Returns:
+        Analysis result dictionary
+    """
+    word_count = count_words(text)
+    print(f"Document word count: {word_count}")
+    
+    # Check if document needs chunking
+    if not should_chunk_document(text):
+        print("Document is short enough for single analysis")
+        return await analyze_document_with_claude(text)
+    
+    # Split document into chunks
+    chunks = split_text_into_chunks(text)
+    print(f"Document split into {len(chunks)} chunks")
+    
+    if len(chunks) == 1:
+        print("Only one chunk created, using single analysis")
+        return await analyze_document_with_claude(text)
+    
+    # Analyze each chunk
+    chunk_analyses = []
+    for i, chunk in enumerate(chunks):
+        print(f"Analyzing chunk {i+1}/{len(chunks)} ({count_words(chunk)} words)")
+        try:
+            analysis = await analyze_document_with_claude(chunk)
+            chunk_analyses.append(analysis)
+        except Exception as e:
+            print(f"Error analyzing chunk {i+1}: {e}")
+            # Continue with other chunks
+    
+    if not chunk_analyses:
+        raise HTTPException(status_code=500, detail="Failed to analyze any document chunks")
+    
+    # Combine results
+    if enable_synthesis and len(chunk_analyses) > 1:
+        print("Performing final synthesis of chunk analyses")
+        return await synthesize_final_analysis(chunk_analyses, text)
+    else:
+        print("Aggregating chunk analyses without synthesis")
+        return aggregate_chunk_analyses(chunk_analyses)
+
+def aggregate_chunk_analyses(chunk_analyses: List[dict]) -> dict:
+    """
+    Aggregate multiple chunk analyses into a single analysis.
+    
+    Args:
+        chunk_analyses: List of analysis dictionaries from individual chunks
+    
+    Returns:
+        Combined analysis dictionary
+    """
+    if not chunk_analyses:
+        return {
+            "summary": "No analysis data available",
+            "key_points": [],
+            "risk_flags": [],
+            "key_concepts": []
+        }
+    
+    if len(chunk_analyses) == 1:
+        return chunk_analyses[0]
+    
+    # Collect all items from all chunks
+    all_key_points = []
+    all_risk_flags = []
+    all_key_concepts = []
+    
+    for analysis in chunk_analyses:
+        all_key_points.extend(analysis.get("key_points", []))
+        all_risk_flags.extend(analysis.get("risk_flags", []))
+        all_key_concepts.extend(analysis.get("key_concepts", []))
+    
+    # Remove duplicates based on text content
+    def remove_duplicates(items, key_func=lambda x: x.get("text", "").lower()):
+        seen = set()
+        unique_items = []
+        for item in items:
+            key = key_func(item)
+            if key and key not in seen:
+                seen.add(key)
+                unique_items.append(item)
+        return unique_items
+    
+    # Remove duplicates and limit results
+    unique_key_points = remove_duplicates(all_key_points)[:15]  # Limit to top 15
+    unique_risk_flags = remove_duplicates(all_risk_flags)[:8]   # Limit to top 8
+    unique_key_concepts = remove_duplicates(all_key_concepts, lambda x: x.get("term", "").lower())[:10]  # Limit to top 10
+    
+    # Create combined summary
+    chunk_count = len(chunk_analyses)
+    combined_summary = f"Document analyzed in {chunk_count} sections. "
+    
+    # Use the first chunk's summary as base, or create a generic one
+    if chunk_analyses[0].get("summary"):
+        base_summary = chunk_analyses[0]["summary"]
+        if "analyzed in" not in base_summary.lower():
+            combined_summary += base_summary
+        else:
+            combined_summary += "This is a comprehensive analysis of a large document."
+    else:
+        combined_summary += "This is a comprehensive analysis of a large document."
+    
+    return {
+        "summary": combined_summary,
+        "key_points": unique_key_points,
+        "risk_flags": unique_risk_flags,
+        "key_concepts": unique_key_concepts,
+        "chunk_count": chunk_count,
+        "analysis_method": "chunked"
+    }
+
+async def synthesize_final_analysis(chunk_analyses: List[dict], original_text: str) -> dict:
+    """
+    Send combined chunk analyses to Claude for final synthesis.
+    
+    Args:
+        chunk_analyses: List of analysis dictionaries from individual chunks
+        original_text: Original full document text
+    
+    Returns:
+        Final synthesized analysis
+    """
+    if not client or len(chunk_analyses) <= 1:
+        return aggregate_chunk_analyses(chunk_analyses)
+    
+    try:
+        # Prepare the combined insights for synthesis
+        combined_insights = {
+            "key_points": [],
+            "risk_flags": [],
+            "key_concepts": []
+        }
+        
+        for i, analysis in enumerate(chunk_analyses):
+            combined_insights["key_points"].extend(analysis.get("key_points", []))
+            combined_insights["risk_flags"].extend(analysis.get("risk_flags", []))
+            combined_insights["key_concepts"].extend(analysis.get("key_concepts", []))
+        
+        # Create synthesis prompt
+        synthesis_prompt = f"""You are analyzing a large document that has been split into {len(chunk_analyses)} sections for processing.
+
+Here are the insights collected from all sections:
+
+Key Points Found:
+{json.dumps(combined_insights["key_points"], indent=2)}
+
+Risk Flags Identified:
+{json.dumps(combined_insights["risk_flags"], indent=2)}
+
+Key Concepts Identified:
+{json.dumps(combined_insights["key_concepts"], indent=2)}
+
+Please provide a refined, comprehensive analysis that:
+1. Creates an overall summary that captures the main themes and purpose of the document
+2. Identifies and groups related key points, removing redundancies
+3. Consolidates similar risk flags and highlights the most critical ones
+4. Organizes key concepts into logical groups and explains their relationships
+5. Ensures all insights are relevant and well-supported
+
+IMPORTANT: You must respond with ONLY valid JSON. Do not include any text before or after the JSON. Do not wrap the JSON in markdown code blocks. Just return pure JSON.
+
+Use this exact JSON structure:
+{{
+    "summary": "Comprehensive summary of the entire document",
+    "key_points": [
+        {{
+            "text": "Consolidated key point description",
+            "quote": "relevant quote from document"
+        }}
+    ],
+    "risk_flags": [
+        {{
+            "text": "🚩 Consolidated risk description",
+            "quote": "relevant quote from document"
+        }}
+    ],
+    "key_concepts": [
+        {{
+            "term": "Important Term",
+            "explanation": "What this term means in the context of this document"
+        }}
+    ]
+}}"""
+
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1500,
+            temperature=0.2,
+            messages=[
+                {"role": "user", "content": synthesis_prompt}
+            ]
+        )
+        
+        content = response.content[0].text.strip()
+        
+        # Parse JSON response
+        json_start = content.find('{')
+        json_end = content.rfind('}') + 1
+        
+        if json_start != -1 and json_end > json_start:
+            json_content = content[json_start:json_end]
+            try:
+                result = json.loads(json_content)
+                result["chunk_count"] = len(chunk_analyses)
+                result["analysis_method"] = "chunked_with_synthesis"
+                return result
+            except json.JSONDecodeError:
+                pass
+        
+        # Fallback to aggregation if synthesis fails
+        print("Synthesis failed, falling back to aggregation")
+        return aggregate_chunk_analyses(chunk_analyses)
+        
+    except Exception as e:
+        print(f"Synthesis error: {e}, falling back to aggregation")
+        return aggregate_chunk_analyses(chunk_analyses)
 
 def find_quote_position(text: str, quote: str) -> Dict:
     """Find the position of a quote in the document text"""
@@ -338,11 +661,15 @@ async def analyze_file(file: UploadFile = File(...)):
         if not text.strip():
             raise HTTPException(status_code=400, detail="No text found in the document")
         
+        # Calculate document statistics
+        word_count = count_words(text)
+        chunks = split_text_into_chunks(text) if should_chunk_document(text) else [text]
+        
         # Store document for chat functionality
         document_id = store_document(text, file.filename)
         
-        # Analyze with Claude
-        analysis = await analyze_document_with_claude(text)
+        # Analyze with chunking if needed
+        analysis = await analyze_document_with_chunking(text)
         
         # Add position information for highlighting
         for key_point in analysis.get("key_points", []):
@@ -359,6 +686,11 @@ async def analyze_file(file: UploadFile = File(...)):
             "success": True,
             "document_id": document_id,
             "filename": file.filename,
+            "file_size": len(file_bytes),
+            "text_length": len(text),
+            "word_count": word_count,
+            "chunk_count": len(chunks),
+            "analysis_method": analysis.get("analysis_method", "single"),
             "document_text": text,
             "analysis": analysis,
             "analyzed_at": datetime.now().isoformat()
@@ -379,11 +711,15 @@ async def analyze_text(text: str = Form(...)):
         raise HTTPException(status_code=400, detail="Text too long. Maximum length is 50,000 characters")
     
     try:
+        # Calculate document statistics
+        word_count = count_words(text)
+        chunks = split_text_into_chunks(text) if should_chunk_document(text) else [text]
+        
         # Store document for chat functionality
         document_id = store_document(text, "Pasted Text")
         
-        # Analyze with Claude
-        analysis = await analyze_document_with_claude(text)
+        # Analyze with chunking if needed
+        analysis = await analyze_document_with_chunking(text)
         
         # Add position information for highlighting
         for key_point in analysis.get("key_points", []):
@@ -399,6 +735,10 @@ async def analyze_text(text: str = Form(...)):
         return {
             "success": True,
             "document_id": document_id,
+            "text_length": len(text),
+            "word_count": word_count,
+            "chunk_count": len(chunks),
+            "analysis_method": analysis.get("analysis_method", "single"),
             "document_text": text,
             "analysis": analysis,
             "analyzed_at": datetime.now().isoformat()

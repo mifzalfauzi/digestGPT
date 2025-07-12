@@ -32,7 +32,7 @@ function Assistant() {
   // Computed values for selected document
   const selectedDocument = documents.find(doc => doc.id === selectedDocumentId)
   const results = selectedDocument?.results || null
-  const documentId = selectedDocument?.id || null
+  const documentId = selectedDocument?.documentId || selectedDocument?.id || null
   const selectedDocumentFile = selectedDocument?.file || file
 
   // Responsive state
@@ -420,7 +420,8 @@ function Assistant() {
     
     // Update the document with demo results
     updateDocument(demoDocumentId, {
-      results: demoResults
+      results: demoResults,
+      documentId: demoDocumentId
     })
   }
 
@@ -543,7 +544,8 @@ This business plan effectively balances ambitious growth objectives with compreh
     
     // Update the document with real results
     updateDocument(realDocumentId, {
-      results: realResults
+      results: realResults,
+      documentId: realDocumentId
     })
   }
 
