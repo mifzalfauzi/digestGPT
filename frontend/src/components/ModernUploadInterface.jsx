@@ -67,7 +67,7 @@ function ModernUploadInterface({
       </div> */}
 
       {/* Main Upload Card */}
-      <Card className="shadow-2xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+      <Card className="shadow-2xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm animate-fade-in-scale">
         <CardHeader className="text-center pb-4 sm:pb-6 px-4 sm:px-8 pt-6 sm:pt-8">
           <CardTitle className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
             Start Your Analysis
@@ -82,7 +82,7 @@ function ModernUploadInterface({
             <TabsList className="grid w-full grid-cols-3 mb-6 sm:mb-8 bg-slate-100 dark:bg-gray-700 p-1 rounded-xl h-auto">
               <TabsTrigger 
                 value="file" 
-                className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:shadow-md rounded-lg py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm"
+                className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:shadow-md rounded-lg py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm transition-all duration-200"
               >
                 <Upload className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Upload File</span>
@@ -93,7 +93,7 @@ function ModernUploadInterface({
               </TabsTrigger>
               <TabsTrigger 
                 value="collection" 
-                className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:shadow-md rounded-lg py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm"
+                className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:shadow-md rounded-lg py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm transition-all duration-200"
               >
                 <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Collection</span>
@@ -104,7 +104,7 @@ function ModernUploadInterface({
               </TabsTrigger>
               <TabsTrigger 
                 value="text" 
-                className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:shadow-md rounded-lg py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm"
+                className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:shadow-md rounded-lg py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm transition-all duration-200"
               >
                 <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Paste Text</span>
@@ -115,8 +115,8 @@ function ModernUploadInterface({
               </TabsTrigger>
             </TabsList>
 
-            <form onSubmit={handleSubmit}>
-              <TabsContent value="file" className="space-y-4 sm:space-y-6">
+            <form onSubmit={inputMode === 'collection' ? handleCollectionUpload : handleSubmit}>
+              <TabsContent value="file" className="space-y-4 sm:space-y-6 animate-tab-enter">
                 <div className="relative group">
                   <div className="border-2 border-dashed border-slate-300 dark:border-gray-600 rounded-2xl p-8 sm:p-12 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 group-hover:bg-blue-50/50 dark:group-hover:bg-blue-900/10 touch-manipulation">
                     <Input
@@ -246,7 +246,7 @@ function ModernUploadInterface({
                 </div>
               </TabsContent>
 
-              <TabsContent value="collection" className="space-y-4 sm:space-y-6">
+              <TabsContent value="collection" className="space-y-4 sm:space-y-6 animate-tab-enter">
                 {/* Collection Name Input */}
                 <div className="space-y-2">
                   <label htmlFor="collection-name" className="text-sm font-medium text-slate-700 dark:text-gray-300">
@@ -379,7 +379,7 @@ function ModernUploadInterface({
                 </div>
               </TabsContent>
 
-              <TabsContent value="text" className="space-y-4 sm:space-y-6">
+              <TabsContent value="text" className="space-y-4 sm:space-y-6 animate-tab-enter">
                 <div className="space-y-3 sm:space-y-4">
                   <Textarea
                     value={textInput}

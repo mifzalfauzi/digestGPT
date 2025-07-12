@@ -99,6 +99,49 @@
     }
   }
 
+  @keyframes fade-in-scale {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes slide-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes bounce-down {
+    0%, 20%, 50%, 80%, 100% {
+      transform: translateY(0);
+    }
+    40% {
+      transform: translateY(10px);
+    }
+    60% {
+      transform: translateY(5px);
+    }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+    }
+  }
+
   .animate-slide-in-left {
     animation: slide-in-left 0.7s ease-out;
   }
@@ -109,5 +152,42 @@
 
   .animate-fade-in-up {
     animation: fade-in-up 0.5s ease-out;
+  }
+
+  .animate-fade-in-scale {
+    animation: fade-in-scale 0.6s ease-out;
+  }
+
+  .animate-slide-in-up {
+    animation: slide-in-up 0.5s ease-out;
+  }
+
+  .animate-bounce-down {
+    animation: bounce-down 2s infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  /* Staggered animations for chat messages */
+  .animate-message-enter {
+    animation: slide-in-up 0.4s ease-out;
+  }
+
+  .animate-message-enter:nth-child(1) { animation-delay: 0.1s; }
+  .animate-message-enter:nth-child(2) { animation-delay: 0.2s; }
+  .animate-message-enter:nth-child(3) { animation-delay: 0.3s; }
+  .animate-message-enter:nth-child(4) { animation-delay: 0.4s; }
+  .animate-message-enter:nth-child(5) { animation-delay: 0.5s; }
+
+  /* Tab transition animations */
+  .animate-tab-enter {
+    animation: fade-in-scale 0.3s ease-out;
+  }
+
+  /* Scroll indicator animations */
+  .animate-scroll-indicator {
+    animation: bounce-down 2s ease-in-out infinite;
   }
 } 

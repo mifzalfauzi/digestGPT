@@ -12,6 +12,13 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
   const [activeHighlight, setActiveHighlight] = useState(null)
   const [highlights, setHighlights] = useState([])
   const [activeTab, setActiveTab] = useState('')
+  const [tabChangeKey, setTabChangeKey] = useState(0)
+
+  // Handle tab change with animation
+  const handleTabChange = (newTab) => {
+    setTabChangeKey(prev => prev + 1)
+    setActiveTab(newTab)
+  }
 
   // Mock document text for demo mode
   const mockDocumentText = `# Sample Business Plan - Strategic Expansion Initiative
@@ -187,7 +194,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
 
       {/* Enhanced Content - Scrollable */}
       <div className="flex-1 overflow-hidden">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
           <div className="flex-shrink-0 px-2 sm:px-3 lg:px-4 pt-2 sm:pt-3">
             <TabsList className={`grid w-full ${isPDF ? 'grid-cols-4' : 'grid-cols-3'} bg-slate-100 dark:bg-gray-700 p-0.5 sm:p-1 rounded-xl h-auto`}>
             <TabsTrigger value="analysis" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
@@ -218,7 +225,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
           <div className="flex-1 overflow-hidden">
             {/* PDF Viewer Tab */}
             {isPDF && (
-              <TabsContent value="pdf" className="h-full mt-1 sm:mt-2 px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4">
+              <TabsContent value="pdf" className="h-full mt-1 sm:mt-2 px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter">
                 <Card className="h-full border-0 shadow-xl">
                   <CardContent className="p-0 h-full">
                     <div className="h-full border border-slate-200 dark:border-gray-600 rounded-xl overflow-hidden relative">
@@ -245,7 +252,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
             )}
 
             {/* AI Analysis Summary Tab */}
-            <TabsContent value="analysis" className="h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4">
+            <TabsContent value="analysis" className="h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter">
               <Card className="border-0 mt-2 sm:mt-3 shadow-lg">
                 <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -346,7 +353,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
             </TabsContent>
 
             {/* Insights & Risks Tab */}
-            <TabsContent value="insights" className="h-full mt-1 sm:mt-2 overflow-y-auto">
+            <TabsContent value="insights" className="h-full mt-1 sm:mt-2 overflow-y-auto animate-tab-enter">
               <ProfessionalAnalysisDisplay 
                 results={results}
                 onHighlightClick={handleShowInDocument}
@@ -356,7 +363,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
             </TabsContent>
 
             {/* Interactive Document Text Tab */}
-            <TabsContent value="document" className="h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4">
+            <TabsContent value="document" className="h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter">
               <Card className="border-0 shadow-xl">
                 <CardHeader className="px-3 sm:px-4">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2">

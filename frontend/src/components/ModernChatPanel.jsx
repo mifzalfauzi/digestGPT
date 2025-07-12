@@ -6,7 +6,7 @@ import { Textarea } from './ui/textarea'
 import { Badge } from './ui/badge'
 import { Card, CardHeader, CardContent } from './ui/card'
 import { Separator } from './ui/separator'
-import { MessageCircle, Send, Bot, User, AlertCircle, Trash2, Sparkles, Brain, Zap, ThumbsUp, ThumbsDown, Copy, Check, Clock } from 'lucide-react'
+import { MessageCircle, Send, Bot, User, AlertCircle, Trash2, Sparkles, Brain, Zap, ThumbsUp, ThumbsDown, Copy, Check, Clock, ChevronDown } from 'lucide-react'
 import MessageFormatter from './MessageFormatter';
 
 function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode = false, bypassAPI = false, casualMode = false, isDisabled = false, analyzingStatus = null }) {
@@ -15,8 +15,11 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
   const [isLoading, setIsLoading] = useState(false)
   const [copiedMessageId, setCopiedMessageId] = useState(null)
   const [messageFeedback, setMessageFeedback] = useState({}) // Store feedback for each message
+  const [showScrollIndicator, setShowScrollIndicator] = useState(false)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
   const messagesEndRef = useRef(null)
   const textareaRef = useRef(null)
+  const messagesContainerRef = useRef(null)
 
   // Mock responses for demo mode and API bypass mode
   const mockResponses = [
@@ -57,9 +60,31 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
+  // Check if user can scroll down
+  const checkScrollPosition = () => {
+    if (messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
+      setShowScrollIndicator(!isNearBottom && messages.length > 2)
+    }
+  }
+
   useEffect(() => {
     scrollToBottom()
+    // Hide initial load animation after first render
+    if (isInitialLoad) {
+      setTimeout(() => setIsInitialLoad(false), 1000)
+    }
   }, [messages])
+
+  // Add scroll listener
+  useEffect(() => {
+    const container = messagesContainerRef.current
+    if (container) {
+      container.addEventListener('scroll', checkScrollPosition)
+      return () => container.removeEventListener('scroll', checkScrollPosition)
+    }
+  }, [messages.length])
 
   // Create wrapper function that sets input and focuses textarea
   const setInputMessageAndFocus = (message) => {
@@ -274,7 +299,10 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
 
       {/* Messages Area - Scrollable */}
       <div className="flex-1 overflow-hidden relative">
-        <div className="h-full overflow-y-auto px-2 sm:px-3 lg:px-4 py-2 sm:py-3">
+        <div 
+          ref={messagesContainerRef}
+          className="h-full overflow-y-auto px-2 sm:px-3 lg:px-4 py-2 sm:py-3 scroll-smooth"
+        >
           {isDisabled ? (
             <div className="text-center py-6 sm:py-8 space-y-3 sm:space-y-4">
               <div className="flex justify-center">
@@ -359,9 +387,13 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
               </div>
             </div>
           ) : (
-            <div className="space-y-3 sm:space-y-4">
+            <div className={`space-y-3 sm:space-y-4 ${isInitialLoad ? 'animate-fade-in-scale' : ''}`}>
               {messages.map((message, index) => (
-                <div key={message.id || index} className={`flex gap-2 sm:gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div 
+                  key={message.id || index} 
+                  className={`flex gap-2 sm:gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'} animate-message-enter`}
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
                   {message.type !== 'user' && (
                     <div className="flex-shrink-0 mt-1">
                       {message.type === 'ai' ? (
@@ -510,6 +542,19 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
             </div>
           )}
         </div>
+
+        {/* Scroll Indicator */}
+        {showScrollIndicator && (
+          <div className="absolute bottom-20 right-4 z-10">
+            <Button
+              onClick={scrollToBottom}
+              className="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 shadow-lg hover:shadow-xl transition-all duration-200 animate-scroll-indicator"
+              title="Scroll to bottom"
+            >
+              <ChevronDown className="h-4 w-4 text-white" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Modern Input - Fixed at bottom */}

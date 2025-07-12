@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import axios from "axios"
 import ModernSidebar from "./ModernSidebar"
 import ModernUploadInterface from "./ModernUploadInterface"
@@ -28,9 +28,20 @@ function Assistant() {
   const [chatSetInputMessage, setChatSetInputMessage] = useState(null)
   const [isDemoMode, setIsDemoMode] = useState(false)
   const [bypassAPI, setBypassAPI] = useState(false)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
   
   // Computed values for selected document
-  const selectedDocument = documents.find(doc => doc.id === selectedDocumentId)
+  const selectedDocument = documents.find(doc => doc.id === selectedDocumentId) || null
+  const currentDocument = selectedDocument?.filename || (isDemoMode ? "Demo Business Plan.pdf" : bypassAPI ? "Preview Document.pdf" : null)
+
+  // Hide initial load animation after component mounts
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialLoad(false)
+    }, 800)
+    return () => clearTimeout(timer)
+  }, [])
+  
   const results = selectedDocument?.results || null
   const documentId = selectedDocument?.documentId || selectedDocument?.id || null
   const selectedDocumentFile = selectedDocument?.file || file
@@ -61,9 +72,9 @@ function Assistant() {
   
   const addDocument = (documentData) => {
     const newDocument = {
-      id: generateDocumentId(),
+      id: documentData.id || generateDocumentId(),
       uploadDate: new Date().toISOString(),
-      status: 'uploading',
+      status: documentData.status || 'uploading',
       ...documentData
     }
     setDocuments(prev => [...prev, newDocument])
@@ -144,9 +155,15 @@ function Assistant() {
   }
   
   const addDocumentToCollection = (collectionId, documentId) => {
-    updateCollection(collectionId, {
-      documents: [...collections.find(c => c.id === collectionId).documents, documentId]
-    })
+    setCollections(prev => prev.map(collection => {
+      if (collection.id === collectionId) {
+        return {
+          ...collection,
+          documents: [...(collection.documents || []), documentId]
+        }
+      }
+      return collection
+    }))
   }
 
   // Multi-file staging handler (doesn't analyze immediately)
@@ -188,20 +205,117 @@ function Assistant() {
   // Clear all staged files
   const clearStagedFiles = () => {
     setStagedFiles([])
-    setFile(null)
+  }
+
+  const handleCollectionUpload = async (e) => {
+    e.preventDefault()
+    
+    if (!collectionName?.trim() || stagedFiles.length === 0) {
+      setError('Please provide a collection name and select at least one file.')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    try {
+      // Store staged files before clearing them
+      const filesToProcess = [...stagedFiles]
+      
+      // Create collection
+      const collectionId = generateCollectionId()
+      const newCollection = {
+        id: collectionId,
+        name: collectionName.trim(),
+        createdAt: new Date().toISOString(),
+        documents: []
+      }
+      
+      // Add collection to state
+      setCollections(prev => [...prev, newCollection])
+
+      // Clear staged files and collection name immediately
+      clearStagedFiles()
+      setCollectionName('')
+      
+      // Switch to workspace view immediately
+      setCurrentView('workspace')
+      setSidebarOpen(false)
+      setActivePanel("chat")
+
+      // Process each file in the collection
+      const uploadPromises = filesToProcess.map(async (file, index) => {
+        const documentId = generateDocumentId()
+        
+        // Add document to collection
+        setCollections(prev => prev.map(collection => {
+          if (collection.id === collectionId) {
+            return {
+              ...collection,
+              documents: [...(collection.documents || []), documentId]
+            }
+          }
+          return collection
+        }))
+        
+        // If this is the first document, select it immediately
+        if (index === 0) {
+          setSelectedDocumentId(documentId)
+          // Ensure we stay on chat panel for collections
+          setActivePanel("chat")
+        }
+        
+        // Process the document with collectionId
+        await handleDocumentSubmit(documentId, file, null, collectionId)
+        
+        return documentId
+      })
+
+      const documentIds = await Promise.all(uploadPromises)
+
+      // First document is already selected above
+      
+    } catch (error) {
+      console.error('Collection upload error:', error)
+      setError('Failed to upload collection. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Individual document submission handler
-  const handleDocumentSubmit = async (documentId, file, textContent = null) => {
+  const handleDocumentSubmit = async (documentId, file, textContent = null, collectionId = null) => {
     const fileName = file?.name || "Text Document"
     const fileSize = file?.size || 0
     const isLargeFile = fileSize > 1024 * 1024 // > 1MB
     
-    updateDocument(documentId, { 
-      status: 'analyzing',
-      analysisStartTime: new Date().toISOString(),
-      isLargeFile: isLargeFile
-    })
+    // Check if document already exists
+    const existingDocument = documents.find(doc => doc.id === documentId)
+    
+    if (existingDocument) {
+      // Update existing document
+      updateDocument(documentId, { 
+        analysisStartTime: new Date().toISOString(),
+        isLargeFile: isLargeFile
+      })
+    } else {
+      // Add new document with collectionId if provided
+      const documentData = {
+        id: documentId,
+        filename: fileName,
+        file: file,
+        status: 'analyzing',
+        analysisStartTime: new Date().toISOString(),
+        isLargeFile: isLargeFile,
+        uploadDate: new Date().toISOString()
+      }
+      
+      if (collectionId) {
+        documentData.collectionId = collectionId
+      }
+      
+      addDocument(documentData)
+    }
     
     try {
       let response
@@ -320,7 +434,7 @@ function Assistant() {
               filename: selectedFile.name,
               file: selectedFile,
               inputMode: 'file',
-              status: 'uploading'
+              status: 'analyzing'
             })
             documentIds.push(documentId)
             
@@ -346,7 +460,7 @@ function Assistant() {
             filename: file.name,
             file: file,
             inputMode: 'file',
-            status: 'uploading'
+            status: 'analyzing'
           })
           
           setSelectedDocumentId(documentId)
@@ -365,62 +479,11 @@ function Assistant() {
         }
         
       } else if (inputMode === "collection") {
-        // Handle collection upload
-        if (stagedFiles.length === 0) {
-          setError("Please select files for the collection")
-          setLoading(false)
-          return
-        }
-        
-        if (!collectionName.trim()) {
-          setError("Please provide a collection name")
-          setLoading(false)
-          return
-        }
-        
-        // Create collection
-        const collectionId = addCollection({
-          name: collectionName.trim(),
-          fileCount: stagedFiles.length,
-          status: 'creating'
-        })
-        
-        const documentIds = []
-        
-        // Add all files to the collection
-        for (const selectedFile of stagedFiles) {
-          const documentId = addDocument({
-            filename: selectedFile.name,
-            file: selectedFile,
-            inputMode: 'collection',
-            status: 'uploading',
-            collectionId: collectionId
-          })
-          documentIds.push(documentId)
-          
-          // Start analysis for this document
-          handleDocumentSubmit(documentId, selectedFile)
-        }
-        
-        // Update collection with document IDs
-        updateCollection(collectionId, {
-          documents: documentIds,
-          status: 'analyzing'
-        })
-        
-        // Auto-select first document and switch to workspace
-        if (documentIds.length > 0) {
-          setSelectedDocumentId(documentIds[0])
-          setCurrentView("workspace")
-          setSidebarOpen(false)
-          setActivePanel("chat")
-        }
-        
-        // Clear staged files and collection name after starting analysis
-        setStagedFiles([])
-        setCollectionName("")
-        setFile(null)
-        
+        // Collection upload is handled by handleCollectionUpload function
+        // This should not be reached as the form uses handleCollectionUpload for collections
+        setError("Collection upload should use the dedicated handler")
+        setLoading(false)
+        return
       } else {
         // Handle text input
         if (!textInput.trim()) {
@@ -433,7 +496,7 @@ function Assistant() {
           filename: `Text Document ${new Date().toLocaleDateString()}`,
           file: null,
           inputMode: 'text',
-          status: 'uploading',
+          status: 'analyzing',
           textContent: textInput
         })
         
@@ -845,8 +908,8 @@ This business plan effectively balances ambitious growth objectives with compreh
                   </Button>
                 </div>
 
-                {/* Upload Interface - Centered */}
-                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-2xl">
+                {/* Upload Interface */}
+                <div className={`w-full ${isInitialLoad ? 'animate-slide-in-up' : ''}`}>
                   <ModernUploadInterface
                     file={file}
                     textInput={textInput}
@@ -857,13 +920,16 @@ This business plan effectively balances ambitious growth objectives with compreh
                     handleSubmit={handleSubmit}
                     loading={loading}
                     error={error}
+                    // Multi-document props
                     handleMultipleFileChange={handleMultipleFileChange}
                     documents={documents}
                     stagedFiles={stagedFiles}
                     removeStagedFile={removeStagedFile}
                     clearStagedFiles={clearStagedFiles}
+                    // Collection props
                     collectionName={collectionName}
                     setCollectionName={setCollectionName}
+                    handleCollectionUpload={handleCollectionUpload}
                   />
                 </div>
 
@@ -1119,7 +1185,7 @@ This business plan effectively balances ambitious growth objectives with compreh
           <div
             className={`transition-all duration-300 ${
               sidebarCollapsed ? "lg:ml-20" : "lg:ml-80"
-            } pt-12 sm:pt-14 lg:pt-0 h-full workspace-container`}
+            } pt-12 sm:pt-14 lg:pt-0 h-full workspace-container ${isInitialLoad ? 'animate-fade-in-scale' : ''}`}
           >
             {/* Mobile/Tablet: Full-width panels with switching */}
             <div className="lg:hidden h-full">
