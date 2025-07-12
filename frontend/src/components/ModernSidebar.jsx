@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { Badge } from './ui/badge'
@@ -8,6 +9,7 @@ import SettingsPanel from './SettingsPanel'
 
 function ModernSidebar({ onNewDocument, currentDocument, onHome, onClose, isDemoMode = false, bypassAPI = false, collapsed = false, onToggleCollapse, onCasualChat }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const navigate = useNavigate()
   
   return (
     <div className={`${collapsed ? 'w-16' : 'w-64 sm:w-72 lg:w-64'} bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-full flex flex-col shadow-xl lg:shadow-none transition-all duration-300`}>
@@ -93,17 +95,17 @@ function ModernSidebar({ onNewDocument, currentDocument, onHome, onClose, isDemo
           
           <Button 
             onClick={() => {
-              onHome()
+              navigate('/')
               onClose?.()
             }}
             variant="ghost" 
             className={`w-full text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 h-8 py-2 text-sm ${
               collapsed ? 'justify-center px-0' : 'justify-start gap-2'
             }`}
-            title={collapsed ? 'Dashboard' : ''}
+            title={collapsed ? 'Home' : ''}
           >
             <Home className="h-3.5 w-3.5 flex-shrink-0" />
-            {!collapsed && <span>Dashboard</span>}
+            {!collapsed && <span>Home</span>}
           </Button>
 
           <Button 
