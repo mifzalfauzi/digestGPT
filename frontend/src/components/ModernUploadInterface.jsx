@@ -22,22 +22,9 @@ function ModernUploadInterface({
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Hero Section */}
-      <div className="text-center mb-8 sm:mb-12">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-full mb-4 sm:mb-6">
-          <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400" />
-          <span className="text-xs sm:text-sm font-medium text-blue-700 dark:text-blue-300">AI-Powered Document Analysis</span>
-        </div>
-        
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-slate-900 via-blue-800 to-purple-800 dark:from-white dark:via-blue-200 dark:to-purple-200 bg-clip-text text-transparent mb-3 sm:mb-4 leading-tight">
-          Transform Documents into Insights
-        </h1>
-        <p className="text-lg sm:text-xl text-slate-600 dark:text-gray-300 max-w-2xl mx-auto leading-relaxed px-4">
-          Upload your PDFs or documents to get instant AI-powered summaries, key insights, and risk assessments in seconds.
-        </p>
-      </div>
-
+      
       {/* Features Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
+      {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
         <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20">
           <CardContent className="p-4 sm:p-6 text-center">
             <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 dark:bg-blue-900/40 rounded-xl mb-3 sm:mb-4">
@@ -67,7 +54,7 @@ function ModernUploadInterface({
             <p className="text-xs sm:text-sm text-slate-600 dark:text-gray-300">Advanced Claude AI for deep document understanding</p>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
 
       {/* Main Upload Card */}
       <Card className="shadow-2xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
@@ -221,7 +208,7 @@ function ModernUploadInterface({
       </Card>
 
       {/* Trust Indicators */}
-      <div className="text-center mt-8 sm:mt-12">
+      {/* <div className="text-center mt-8 sm:mt-12">
         <p className="text-xs sm:text-sm text-slate-500 dark:text-gray-400 mb-3 sm:mb-4">
           Trusted by professionals worldwide
         </p>
@@ -239,7 +226,7 @@ function ModernUploadInterface({
             <span className="sm:hidden">SOC 2</span>
           </Badge>
         </div>
-      </div>
+      </div> */}
     </div>
   )
 }

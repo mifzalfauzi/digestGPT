@@ -12,7 +12,7 @@ function ModernSidebar({ onNewDocument, currentDocument, onHome, onClose, isDemo
   const navigate = useNavigate()
   
   return (
-    <div className={`${collapsed ? 'w-16' : 'w-64 sm:w-72 lg:w-64'} bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-full flex flex-col shadow-xl lg:shadow-none transition-all duration-300`}>
+    <div className={`${collapsed ? 'w-16' : 'w-64 sm:w-72 lg:w-64'} bg-white dark:bg-gray-900 h-full flex flex-col shadow-xl lg:shadow-none transition-all duration-300`}>
       {/* Modern Logo Section */}
       <div className="p-3 sm:p-4 border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm">
         <div className="flex items-center justify-between">
