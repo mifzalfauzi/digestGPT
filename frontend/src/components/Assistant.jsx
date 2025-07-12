@@ -791,14 +791,14 @@ This business plan effectively balances ambitious growth objectives with compreh
             </div>
 
             {/* Mobile Menu Button */}
-            <div className="lg:hidden fixed top-6 left-6 z-40">
+            <div className="lg:hidden fixed top-4 left-4 z-40">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 hover:bg-white dark:hover:bg-gray-900 transition-all duration-200"
+                className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 hover:bg-white dark:hover:bg-gray-900 transition-all duration-200 p-2"
               >
-                <Menu className="h-5 w-5" />
+                <Menu className="h-4 w-4" />
               </Button>
             </div>
 
@@ -954,33 +954,33 @@ This business plan effectively balances ambitious growth objectives with compreh
 
           {/* Professional Full-Width Mobile Header */}
           <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 shadow-lg">
-            <div className="flex items-center justify-between p-4">
+            <div className="flex items-center justify-between p-2 sm:p-3">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-xl"
+                className="hover:bg-gray-100 dark:hover:bg-gray-800 p-1.5 rounded-lg"
               >
-                {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
               </Button>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
-                  <MessageCircle className="h-5 w-5 text-white" />
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg sm:rounded-xl flex items-center justify-center">
+                  <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 dark:from-white dark:to-blue-200 bg-clip-text text-transparent">
+                  <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 dark:from-white dark:to-blue-200 bg-clip-text text-transparent">
                     Normal Chat
                   </h1>
                   <p className="text-xs text-gray-500 dark:text-gray-400">AI Assistant</p>
                 </div>
               </div>
-              <div className="w-10"></div>
+              <div className="w-8 sm:w-10"></div>
             </div>
           </div>
 
           {/* Full-Width Chat Area */}
           <div
-            className={`transition-all duration-300 ${sidebarCollapsed ? "lg:ml-20" : "lg:ml-80"} pt-16 lg:pt-0 h-full`}
+            className={`transition-all duration-300 ${sidebarCollapsed ? "lg:ml-20" : "lg:ml-80"} pt-12 sm:pt-14 lg:pt-0 h-full`}
           >
             <ModernChatPanel
               documentId="casual-chat-session"
@@ -1054,22 +1054,22 @@ This business plan effectively balances ambitious growth objectives with compreh
 
           {/* Enhanced Mobile Header */}
           <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 shadow-lg">
-            <div className="flex items-center justify-between p-4">
+            <div className="flex items-center justify-between p-2 sm:p-3">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-xl"
+                className="hover:bg-gray-100 dark:hover:bg-gray-800 p-1.5 rounded-lg"
               >
-                {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
               </Button>
 
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
-                  <FileText className="h-5 w-5 text-white" />
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg sm:rounded-xl flex items-center justify-center">
+                  <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 </div>
                 <div className="text-center">
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 dark:from-white dark:to-blue-200 bg-clip-text text-transparent">
+                  <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 dark:from-white dark:to-blue-200 bg-clip-text text-transparent">
                     DigesText
                   </h1>
                   <div className="flex items-center gap-2 text-xs">
@@ -1084,31 +1084,31 @@ This business plan effectively balances ambitious growth objectives with compreh
               </div>
 
               {/* Enhanced Mobile Panel Switcher */}
-              <div className="flex gap-1 bg-gray-100/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl p-1 border border-gray-200/50 dark:border-gray-700/50">
+              <div className="flex gap-1 bg-gray-100/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg sm:rounded-xl p-1 border border-gray-200/50 dark:border-gray-700/50">
                 <Button
                   variant={activePanel === "chat" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setActivePanel("chat")}
-                  className={`px-3 py-2 text-xs font-semibold h-auto min-w-0 rounded-lg transition-all duration-200 ${
+                  className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-semibold h-auto min-w-0 rounded-md sm:rounded-lg transition-all duration-200 ${
                     activePanel === "chat"
                       ? "bg-white dark:bg-gray-700 shadow-sm text-blue-700 dark:text-blue-300"
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                   }`}
                 >
-                  <MessageCircle className="h-4 w-4 sm:mr-1" />
+                  <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
                   <span className="hidden sm:inline">Chat</span>
                 </Button>
                 <Button
                   variant={activePanel === "document" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setActivePanel("document")}
-                  className={`px-3 py-2 text-xs font-semibold h-auto min-w-0 rounded-lg transition-all duration-200 ${
+                  className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-semibold h-auto min-w-0 rounded-md sm:rounded-lg transition-all duration-200 ${
                     activePanel === "document"
                       ? "bg-white dark:bg-gray-700 shadow-sm text-blue-700 dark:text-blue-300"
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                   }`}
                 >
-                  <FileText className="h-4 w-4 sm:mr-1" />
+                  <FileText className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
                   <span className="hidden sm:inline">Document</span>
                 </Button>
               </div>
@@ -1119,7 +1119,7 @@ This business plan effectively balances ambitious growth objectives with compreh
           <div
             className={`transition-all duration-300 ${
               sidebarCollapsed ? "lg:ml-20" : "lg:ml-80"
-            } pt-16 lg:pt-0 h-full workspace-container`}
+            } pt-12 sm:pt-14 lg:pt-0 h-full workspace-container`}
           >
             {/* Mobile/Tablet: Full-width panels with switching */}
             <div className="lg:hidden h-full">

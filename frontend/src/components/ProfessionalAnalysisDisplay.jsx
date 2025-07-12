@@ -158,12 +158,80 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     }
   }
 
+  const getCategoryBadgeClasses = (category) => {
+    switch (category) {
+      case 'financial': 
+        return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
+      case 'legal': 
+        return 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+      case 'technical': 
+        return 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300'
+      case 'strategic': 
+        return 'bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300'
+      case 'compliance': 
+        return 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300'
+      case 'security': 
+        return 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300'
+      case 'operational': 
+        return 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300'
+      default: 
+        return 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
+    }
+  }
+
+  const getCategoryIconClasses = (category) => {
+    switch (category) {
+      case 'financial': 
+        return 'bg-emerald-100 dark:bg-emerald-900/30'
+      case 'legal': 
+        return 'bg-blue-100 dark:bg-blue-900/30'
+      case 'technical': 
+        return 'bg-purple-100 dark:bg-purple-900/30'
+      case 'strategic': 
+        return 'bg-orange-100 dark:bg-orange-900/30'
+      case 'compliance': 
+        return 'bg-red-100 dark:bg-red-900/30'
+      case 'security': 
+        return 'bg-red-100 dark:bg-red-900/30'
+      case 'operational': 
+        return 'bg-yellow-100 dark:bg-yellow-900/30'
+      default: 
+        return 'bg-blue-100 dark:bg-blue-900/30'
+    }
+  }
+
   const getSeverityColor = (severity) => {
     switch (severity) {
       case 'critical': return 'red'
       case 'high': return 'orange'
       case 'medium': return 'yellow'
       default: return 'gray'
+    }
+  }
+
+  const getSeverityBadgeClasses = (severity) => {
+    switch (severity) {
+      case 'critical': 
+        return 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300'
+      case 'high': 
+        return 'bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300'
+      case 'medium': 
+        return 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300'
+      default: 
+        return 'bg-gray-50 text-gray-700 dark:bg-gray-900/20 dark:text-gray-300'
+    }
+  }
+
+  const getSeverityIconClasses = (severity) => {
+    switch (severity) {
+      case 'critical': 
+        return 'bg-red-100 dark:bg-red-900/30'
+      case 'high': 
+        return 'bg-orange-100 dark:bg-orange-900/30'
+      case 'medium': 
+        return 'bg-yellow-100 dark:bg-yellow-900/30'
+      default: 
+        return 'bg-gray-100 dark:bg-gray-900/30'
     }
   }
 
@@ -284,7 +352,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                 >
                   <CardContent className="p-5">
                     <div className="flex items-start gap-4">
-                      <div className={`p-2.5 bg-${categoryColor}-100 dark:bg-${categoryColor}-900/30 rounded-lg flex-shrink-0`}>
+                      <div className={`p-2.5 ${getCategoryIconClasses(insight.category)} rounded-lg flex-shrink-0`}>
                         {getCategoryIcon(insight.category)}
                       </div>
                       
@@ -295,7 +363,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                           </div>
                           <Badge 
                             variant="outline" 
-                            className={`text-xs bg-${categoryColor}-50 text-${categoryColor}-700 dark:bg-${categoryColor}-900/20 dark:text-${categoryColor}-300 capitalize`}
+                            className={`text-xs ${getCategoryBadgeClasses(insight.category)} capitalize`}
                           >
                             {insight.category}
                           </Badge>
@@ -387,25 +455,25 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                   onClick={() => hasHighlight && onHighlightClick(risk.id)}
                 >
                   <div className="flex items-start gap-4">
-                    <div className={`p-2.5 bg-${severityColor}-100 dark:bg-${severityColor}-900/30 rounded-lg flex-shrink-0`}>
+                    <div className={`p-2.5 ${getSeverityIconClasses(risk.severity)} rounded-lg flex-shrink-0`}>
                       <AlertTriangle className={`h-5 w-5 text-${severityColor}-600 dark:text-${severityColor}-400`} />
                     </div>
                     
                     <div className="flex-1 space-y-3">
-                                              <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start justify-between gap-3">
                         <AlertDescription className="text-red-800 dark:text-red-200 leading-relaxed font-medium text-sm">
                           <MarkdownRenderer content={risk.text} />
                         </AlertDescription>
                         <div className="flex gap-2">
                           <Badge 
                             variant="outline" 
-                            className={`text-xs bg-${severityColor}-50 text-${severityColor}-700 dark:bg-${severityColor}-900/20 dark:text-${severityColor}-300 capitalize`}
+                            className={`text-xs ${getSeverityBadgeClasses(risk.severity)} capitalize`}
                           >
                             {risk.severity}
                           </Badge>
                           <Badge 
                             variant="outline" 
-                            className={`text-xs bg-${categoryColor}-50 text-${categoryColor}-700 dark:bg-${categoryColor}-900/20 dark:text-${categoryColor}-300 capitalize`}
+                            className={`text-xs ${getCategoryBadgeClasses(risk.category)} capitalize`}
                           >
                             {risk.category}
                           </Badge>

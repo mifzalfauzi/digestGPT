@@ -274,17 +274,6 @@ function ModernSidebar({
                                 <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 text-xs px-1.5 py-0.5">
                                   {collectionDocuments.length} docs
                                 </Badge>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-4 w-4 p-0 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    onRemoveCollection(collection.id)
-                                  }}
-                                >
-                                  <X className="h-2.5 w-2.5" />
-                                </Button>
                               </div>
                             </div>
                             <div className="flex items-center gap-1.5 mt-1">
@@ -431,8 +420,8 @@ function ModernSidebar({
                   </div>
                 </div>
               ))}
-            </div>
           </div>
+        </div>
         )}
 
 
