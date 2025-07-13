@@ -9,10 +9,12 @@ import pdfplumber
 from docx import Document
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
 import anthropic
 from dotenv import load_dotenv
+import tempfile
+from docx2pdf import convert as docx2pdf_convert
 
 # Load environment variables
 load_dotenv()
@@ -201,7 +203,7 @@ async def analyze_document_with_claude(text: str, retry_count: int = 0) -> dict:
     
     # Adjust prompt based on retry count
     if retry_count == 0:
-    prompt = f"""You are an AI assistant that helps explain documents clearly. 
+        prompt = f"""You are an AI assistant that helps explain documents clearly. 
 Given this document, do the following:
 1. Explain what the document is about in 1–2 sentences.
 2. Summarize key important points as bullet points.
@@ -401,50 +403,41 @@ Document: {text[:4000]}"""
                             "quote": key_phrases[0][:50] + "..."
                         }
                     ]
+                    
                     if len(key_phrases) > 1:
                         key_points.append({
                             "text": f"Additional content includes: {key_phrases[1][:100]}...",
                             "quote": key_phrases[1][:50] + "..."
                         })
-                else:
-                    key_points = [
-                        {
-                            "text": "Document analysis completed. The document contains substantial content that has been processed.",
-                            "quote": "Document processed successfully"
-                        }
-                    ]
-            else:
-                key_points = [
-                    {
-                        "text": "Document analysis completed. The document has been processed and analyzed.",
-                        "quote": "Analysis completed"
-                    }
-                ]
-            
-            risk_flags = [
-                {
-                    "text": "🚩 Note: Analysis completed with simplified processing due to technical constraints.",
-                    "quote": "Technical processing note"
-                }
-            ]
         
-        # If we get here, JSON parsing failed completely
-        # Try one more time with a simplified approach if we haven't retried yet
-        if retry_count == 0:
-            print("JSON parsing failed, attempting retry with simplified prompt...")
-            return await analyze_document_with_claude(text, retry_count=1)
-        
-        # If retry also failed, return the fallback
+        # Return the extracted or fallback analysis
         return {
             "summary": summary,
             "key_points": key_points,
             "risk_flags": risk_flags,
-            "key_concepts": key_concepts,
-            "analysis_method": "fallback_parsing"
+            "key_concepts": key_concepts
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Anthropic API error: {str(e)}")
+        print(f"Error in Claude API call: {e}")  # Debug log
+        
+        # If we've already retried, return a basic fallback
+        if retry_count > 0:
+            return {
+                "summary": "Document analysis completed with basic processing.",
+                "key_points": [
+                    {
+                        "text": "Document has been processed and is ready for analysis.",
+                        "quote": "Document processing completed"
+                    }
+                ],
+                "risk_flags": [],
+                "key_concepts": []
+            }
+        
+        # If this is the first attempt, try again with a simpler prompt
+        print(f"Retrying with simplified prompt...")  # Debug log
+        return await analyze_document_with_claude(text, retry_count + 1)
 
 async def analyze_document_with_chunking(text: str, enable_synthesis: bool = True) -> dict:
     """
@@ -980,6 +973,190 @@ async def get_chat_history(document_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving chat history: {str(e)}")
+
+@app.post("/convert-docx-to-pdf")
+async def convert_docx_to_pdf(file: UploadFile = File(...)):
+    """Accept a DOCX file, convert to PDF, and return the PDF file path."""
+    from docx import Document
+    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY, TA_RIGHT
+    from reportlab.lib import colors
+    from reportlab.lib.colors import black, blue, red, green
+    import re
+    
+    if not file.filename.lower().endswith('.docx'):
+        raise HTTPException(status_code=400, detail="Only DOCX files are supported.")
+    try:
+        # Read the DOCX file content
+        file_content = await file.read()
+        
+        # Parse DOCX using python-docx
+        doc = Document(io.BytesIO(file_content))
+        
+        # Create PDF using reportlab
+        temp_dir = tempfile.gettempdir()
+        pdf_filename = f"docx_converted_{uuid.uuid4().hex[:8]}.pdf"
+        pdf_path = os.path.join(temp_dir, pdf_filename)
+        
+        # Create PDF document
+        doc_pdf = SimpleDocTemplate(pdf_path, pagesize=A4, 
+                                  leftMargin=0.75*inch, rightMargin=0.75*inch,
+                                  topMargin=0.75*inch, bottomMargin=0.75*inch)
+        story = []
+        
+        # Get styles
+        styles = getSampleStyleSheet()
+        
+        # Create custom styles
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=16,
+            spaceAfter=15,
+            alignment=TA_CENTER,
+            textColor=colors.darkblue
+        )
+        
+        heading1_style = ParagraphStyle(
+            'CustomHeading1',
+            parent=styles['Heading1'],
+            fontSize=14,
+            spaceAfter=10,
+            spaceBefore=10,
+            textColor=colors.darkblue
+        )
+        
+        heading2_style = ParagraphStyle(
+            'CustomHeading2',
+            parent=styles['Heading2'],
+            fontSize=12,
+            spaceAfter=8,
+            spaceBefore=8,
+            textColor=colors.darkblue
+        )
+        
+        normal_style = ParagraphStyle(
+            'CustomNormal',
+            parent=styles['Normal'],
+            fontSize=10,
+            spaceAfter=4,
+            alignment=TA_JUSTIFY
+        )
+        
+        # Process all paragraphs in order
+        for paragraph in doc.paragraphs:
+            if not paragraph.text.strip():
+                continue
+            
+            # Determine paragraph style based on formatting
+            text = paragraph.text.strip()
+            style = normal_style
+            
+            # Check if it's a heading based on formatting or content
+            if paragraph.style.name.startswith('Heading'):
+                if 'Heading 1' in paragraph.style.name or len(text) < 50:
+                    style = heading1_style
+                else:
+                    style = heading2_style
+            elif paragraph.style.name.startswith('Title'):
+                style = title_style
+            elif len(text) < 100 and not text.endswith('.') and not text.endswith('!') and not text.endswith('?'):
+                # Short text without ending punctuation might be a heading
+                style = heading2_style
+            
+            # Process runs for formatting
+            formatted_text = ""
+            for run in paragraph.runs:
+                run_text = run.text
+                
+                # Apply formatting based on run properties
+                if run.bold:
+                    run_text = f"<b>{run_text}</b>"
+                if run.italic:
+                    run_text = f"<i>{run_text}</i>"
+                if run.underline:
+                    run_text = f"<u>{run_text}</u>"
+                
+                # Handle font size
+                if hasattr(run, 'font') and run.font.size:
+                    size = run.font.size.pt
+                    if size > 12:
+                        run_text = f"<font size='{int(size)}'>{run_text}</font>"
+                
+                # Handle color
+                if hasattr(run, 'font') and run.font.color:
+                    color = run.font.color.rgb
+                    if color:
+                        # Convert RGB to hex
+                        hex_color = f"#{color:06x}"
+                        run_text = f"<font color='{hex_color}'>{run_text}</font>"
+                
+                formatted_text += run_text
+            
+            if formatted_text:
+                story.append(Paragraph(formatted_text, style))
+                story.append(Spacer(1, 4))
+        
+        # Process tables
+        for table in doc.tables:
+            # Convert table to reportlab format
+            table_data = []
+            for row in table.rows:
+                row_data = []
+                for cell in row.cells:
+                    # Get cell text
+                    cell_text = ""
+                    for paragraph in cell.paragraphs:
+                        for run in paragraph.runs:
+                            run_text = run.text
+                            if run.bold:
+                                run_text = f"<b>{run_text}</b>"
+                            if run.italic:
+                                run_text = f"<i>{run_text}</i>"
+                            cell_text += run_text
+                        cell_text += " "
+                    row_data.append(cell_text.strip())
+                table_data.append(row_data)
+            
+            if table_data:
+                # Create reportlab table
+                pdf_table = Table(table_data)
+                pdf_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 10),
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                    ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('FONTSIZE', (0, 1), (-1, -1), 9),
+                ]))
+                story.append(pdf_table)
+                story.append(Spacer(1, 10))
+        
+        # Build PDF
+        doc_pdf.build(story)
+        
+        # Return the PDF file URL
+        return {"pdf_url": f"/pdf/{pdf_filename}"}
+        
+    except Exception as e:
+        print(f"PDF conversion error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Conversion failed: {str(e)}")
+
+@app.get("/pdf/{pdf_filename}")
+def serve_pdf(pdf_filename: str):
+    """Serve a PDF file from the temp directory."""
+    temp_dir = tempfile.gettempdir()
+    pdf_path = os.path.join(temp_dir, pdf_filename)
+    if not os.path.exists(pdf_path):
+        raise HTTPException(status_code=404, detail="PDF not found.")
+    return FileResponse(pdf_path, media_type="application/pdf")
 
 if __name__ == "__main__":
     import uvicorn

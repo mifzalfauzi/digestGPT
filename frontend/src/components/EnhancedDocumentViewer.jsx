@@ -7,12 +7,16 @@ import ProfessionalAnalysisDisplay from './ProfessionalAnalysisDisplay'
 import KeyConceptsDisplay from './KeyConceptsDisplay'
 import HighlightableText from './HighlightableText'
 import MarkdownRenderer from './MarkdownRenderer'
+import DocxViewer from './DocxViewer'
+import mammoth from 'mammoth'
 
 function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, isDemoMode = false, bypassAPI = false }) {
   const [activeHighlight, setActiveHighlight] = useState(null)
   const [highlights, setHighlights] = useState([])
   const [activeTab, setActiveTab] = useState('')
   const [tabChangeKey, setTabChangeKey] = useState(0)
+  const [docxContent, setDocxContent] = useState(null)
+  const [docxLoading, setDocxLoading] = useState(false)
 
   // Handle tab change with animation
   const handleTabChange = (newTab) => {
@@ -77,19 +81,21 @@ This business plan effectively balances growth ambitions with comprehensive risk
   }
 
   const isPDF = file && file.type === 'application/pdf' && !isDemoMode && !bypassAPI
+  const isDOCX = file && file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' && !isDemoMode && !bypassAPI
+  const hasDocumentViewer = isPDF || isDOCX
 
-  // Set default tab based on PDF availability
+  // Set default tab based on document availability
   useEffect(() => {
     if (!activeTab) {
-      if (isPDF) {
-        setActiveTab("pdf")
+      if (hasDocumentViewer) {
+        setActiveTab("document-viewer")
       } else if (isDemoMode || bypassAPI) {
         setActiveTab("analysis")
       } else {
         setActiveTab("document")
       }
     }
-  }, [isPDF, activeTab, isDemoMode, bypassAPI])
+  }, [hasDocumentViewer, activeTab, isDemoMode, bypassAPI])
 
   // Generate highlights for text interaction
   useEffect(() => {
@@ -155,6 +161,35 @@ This business plan effectively balances growth ambitions with comprehensive risk
     }, 150)
   }
 
+  // Load DOCX content when file changes
+  useEffect(() => {
+    if (isDOCX && file) {
+      loadDocxContent()
+    } else {
+      setDocxContent(null)
+    }
+  }, [isDOCX, file])
+
+  const loadDocxContent = async () => {
+    if (!file) return
+
+    setDocxLoading(true)
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      const result = await mammoth.convertToHtml({ arrayBuffer })
+      
+      setDocxContent({
+        html: result.value,
+        messages: result.messages
+      })
+    } catch (err) {
+      console.error('Error loading DOCX file:', err)
+      setDocxContent(null)
+    } finally {
+      setDocxLoading(false)
+    }
+  }
+
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800">
             {/* Enhanced Header - Fixed at top */}
@@ -196,7 +231,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
           <div className="flex-shrink-0 px-2 sm:px-3 lg:px-4 pt-2 sm:pt-3">
-            <TabsList className={`grid w-full ${isPDF ? 'grid-cols-4' : 'grid-cols-3'} bg-slate-100 dark:bg-gray-700 p-0.5 sm:p-1 rounded-xl h-auto`}>
+            <TabsList className={`grid w-full ${hasDocumentViewer ? 'grid-cols-4' : 'grid-cols-3'} bg-slate-100 dark:bg-gray-700 p-0.5 sm:p-1 rounded-xl h-auto`}>
             <TabsTrigger value="analysis" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
                 <Brain className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
                 <span className="hidden md:inline">Analysis</span>
@@ -207,11 +242,11 @@ This business plan effectively balances growth ambitions with comprehensive risk
                 <span className="hidden md:inline">Insights & Risks</span>
                 <span className="md:hidden">Insights</span>
               </TabsTrigger>
-              {isPDF && (
-                <TabsTrigger value="pdf" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
+              {hasDocumentViewer && (
+                <TabsTrigger value="document-viewer" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
                   <FileText className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
-                  <span className="hidden sm:inline">PDF Viewer</span>
-                  <span className="sm:hidden">PDF</span>
+                  <span className="hidden sm:inline">{isPDF ? 'PDF Viewer' : 'DOCX Viewer'}</span>
+                  <span className="sm:hidden">{isPDF ? 'PDF' : 'DOCX'}</span>
                 </TabsTrigger>
               )}
               <TabsTrigger value="document" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
@@ -223,31 +258,41 @@ This business plan effectively balances growth ambitions with comprehensive risk
           </div>
 
           <div className="flex-1 overflow-hidden">
-            {/* PDF Viewer Tab */}
-            {isPDF && (
-              <TabsContent value="pdf" className="h-full mt-1 sm:mt-2 px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter">
-                <Card className="h-full border-0 shadow-xl">
-                  <CardContent className="p-0 h-full">
-                    <div className="h-full border border-slate-200 dark:border-gray-600 rounded-xl overflow-hidden relative">
-                      {!results && (
-                        <div className="absolute inset-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm flex items-center justify-center z-10">
-                          <div className="text-center space-y-3">
-                            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                            <div>
-                              <p className="text-sm font-medium text-slate-700 dark:text-gray-300">Analyzing Document</p>
-                              <p className="text-xs text-slate-500 dark:text-gray-400">PDF will be available once analysis completes</p>
+            {/* Document Viewer Tab (PDF or DOCX) */}
+            {hasDocumentViewer && (
+              <TabsContent value="document-viewer" className="h-full mt-1 sm:mt-2 px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter">
+                {isPDF ? (
+                  <Card className="h-full border-0 shadow-xl">
+                    <CardContent className="p-0 h-full">
+                      <div className="h-full border border-slate-200 dark:border-gray-600 rounded-xl overflow-hidden relative">
+                        {!results && (
+                          <div className="absolute inset-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm flex items-center justify-center z-10">
+                            <div className="text-center space-y-3">
+                              <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                              <div>
+                                <p className="text-sm font-medium text-slate-700 dark:text-gray-300">Analyzing Document</p>
+                                <p className="text-xs text-slate-500 dark:text-gray-400">PDF will be available once analysis completes</p>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      )}
-                      <iframe
-                        src={getFileUrl()}
-                        className="w-full h-full"
-                        title="PDF Document"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+                        )}
+                        <iframe
+                          src={getFileUrl()}
+                          className="w-full h-full"
+                          title="PDF Document"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <DocxViewer 
+                    file={file} 
+                    onTextExtracted={(text) => {
+                      // This can be used to update the interactive text tab
+                      console.log('DOCX text extracted:', text)
+                    }}
+                  />
+                )}
               </TabsContent>
             )}
 
@@ -376,12 +421,15 @@ This business plan effectively balances growth ambitions with comprehensive risk
                           Interactive Document
                           {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
                           {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal">(Preview)</span>}
+                          {isDOCX && !isDemoMode && !bypassAPI && <span className="text-xs text-blue-600 font-normal">(DOCX)</span>}
                         </CardTitle>
                         <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
                           {isDemoMode 
                             ? 'Sample document text for demo purposes' 
                             : bypassAPI 
                             ? 'Document text preview with mock data'
+                            : isDOCX
+                            ? 'DOCX document content with formatting preserved'
                             : 'Full document text with intelligent highlighting'
                           }
                         </p>
@@ -397,7 +445,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                   </div>
                 </CardHeader>
                 <CardContent className="px-3 sm:px-4">
-                  {(results?.document_text || isDemoMode || bypassAPI) ? (
+                  {(results?.document_text || isDemoMode || bypassAPI || docxContent) ? (
                     <div className="space-y-2 sm:space-y-3">
                       {/* Interactive Text Display */}
                       <div className="bg-slate-50 dark:bg-gray-800 rounded-2xl p-2 sm:p-2.5 lg:p-4 max-h-[60vh] overflow-y-auto border border-slate-200 dark:border-gray-700">
@@ -419,12 +467,34 @@ This business plan effectively balances growth ambitions with comprehensive risk
                             </p>
                           </div>
                         )}
-                        <HighlightableText 
-                          text={(isDemoMode || bypassAPI) ? mockDocumentText : results.document_text}
-                          highlights={highlights}
-                          activeHighlight={activeHighlight}
-                          onHighlightClick={handleHighlightClick}
-                        />
+                        
+                        {/* DOCX Content Display */}
+                        {docxContent && !isDemoMode && !bypassAPI ? (
+                          <div className="prose prose-sm max-w-none dark:prose-invert">
+                            <div 
+                              dangerouslySetInnerHTML={{ __html: docxContent.html }}
+                              style={{
+                                fontFamily: 'Inter, system-ui, sans-serif',
+                                lineHeight: '1.6',
+                                color: 'inherit'
+                              }}
+                            />
+                          </div>
+                        ) : docxLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="text-center space-y-3">
+                              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                              <p className="text-sm text-slate-600 dark:text-gray-400">Loading DOCX document...</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <HighlightableText 
+                            text={(isDemoMode || bypassAPI) ? mockDocumentText : results.document_text}
+                            highlights={highlights}
+                            activeHighlight={activeHighlight}
+                            onHighlightClick={handleHighlightClick}
+                          />
+                        )}
                       </div>
                       
                       {/* Instructions - Responsive Grid */}
