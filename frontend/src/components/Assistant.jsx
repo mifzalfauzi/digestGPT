@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import axios from "axios"
 import ModernSidebar from "./ModernSidebar"
 import ModernUploadInterface from "./ModernUploadInterface"
@@ -197,6 +197,15 @@ function Assistant() {
     }
   }
 
+  // File input reset handler
+  const handleFileInputReset = () => {
+    // This function will be called by the upload interface when file inputs are reset
+    // We can use this to trigger any additional cleanup if needed
+  }
+
+  // Ref to access upload interface methods
+  const uploadInterfaceRef = useRef(null)
+
   // Remove individual staged file
   const removeStagedFile = (index) => {
     setStagedFiles(prev => prev.filter((_, i) => i !== index))
@@ -237,6 +246,11 @@ function Assistant() {
       // Clear staged files and collection name immediately
       clearStagedFiles()
       setCollectionName('')
+      
+      // Reset file inputs to allow new file selection
+      if (uploadInterfaceRef.current && uploadInterfaceRef.current.resetFileInputs) {
+        uploadInterfaceRef.current.resetFileInputs()
+      }
       
       // Switch to workspace view immediately
       setCurrentView('workspace')
@@ -454,6 +468,11 @@ function Assistant() {
           setStagedFiles([])
           setFile(null)
           
+          // Reset file inputs to allow new file selection
+          if (uploadInterfaceRef.current && uploadInterfaceRef.current.resetFileInputs) {
+            uploadInterfaceRef.current.resetFileInputs()
+          }
+          
         } else if (file) {
           // Handle single file (legacy support)
           const documentId = addDocument({
@@ -471,6 +490,11 @@ function Assistant() {
           // Start analysis
           handleDocumentSubmit(documentId, file)
           setFile(null)
+          
+          // Reset file inputs to allow new file selection
+          if (uploadInterfaceRef.current && uploadInterfaceRef.current.resetFileInputs) {
+            uploadInterfaceRef.current.resetFileInputs()
+          }
           
         } else {
           setError("Please select one or more files")
@@ -852,7 +876,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="bg-background/90 backdrop-blur-xl shadow-xl border border-border hover:bg-background transition-all duration-200 p-2"
+                className="bg-background/50 backdrop-blur-xl shadow-xl border border-border hover:bg-background transition-all duration-200 p-2"
               >
                 <Menu className="h-4 w-4" />
               </Button>
@@ -911,7 +935,9 @@ This business plan effectively balances ambitious growth objectives with compreh
                 {/* Upload Interface */}
                 <div className={`w-full ${isInitialLoad ? 'animate-slide-in-up' : ''}`}>
                   <ModernUploadInterface
+                    ref={uploadInterfaceRef}
                     file={file}
+                    setFile={setFile}
                     textInput={textInput}
                     setTextInput={setTextInput}
                     inputMode={inputMode}
