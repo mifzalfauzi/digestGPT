@@ -17,7 +17,7 @@ function ChatInterface({ documentId, filename, autoExpand = false }) {
   const messagesEndRef = useRef(null)
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    messagesEndRef.current?.scrollIntoView({ behavior: "auto" })
   }
 
   useEffect(() => {
@@ -125,7 +125,7 @@ function ChatInterface({ documentId, filename, autoExpand = false }) {
 
         <CollapsibleContent>
           <CardContent className="pt-0">
-            <ScrollArea className="h-96 w-full rounded-md border p-4">
+            <ScrollArea className="h-96 w-full rounded-md border p-4 smooth-scroll">
               {messages.length === 0 ? (
                 <div className="text-center py-8 space-y-4">
                   <div className="flex justify-center">

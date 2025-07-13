@@ -807,7 +807,7 @@ This business plan effectively balances ambitious growth objectives with compreh
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 relative overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 overflow-hidden">
       {currentView === "upload" ? (
         /* ===== FULL-WIDTH UPLOAD VIEW ===== */
         <div className="h-full flex">
@@ -841,7 +841,7 @@ This business plan effectively balances ambitious growth objectives with compreh
           <div
             className={`flex-1 transition-all duration-300 ${
               sidebarCollapsed ? "lg:ml-20" : "lg:ml-80"
-            } relative min-h-full overflow-y-auto`}
+            } relative h-full`}
           >
             {/* Professional Full-Width Background */}
             <div className="absolute inset-0">
@@ -865,9 +865,24 @@ This business plan effectively balances ambitious growth objectives with compreh
               </Button>
             </div>
 
+            {/* Launch Workspace Icon - Top Right */}
+            <div className="fixed top-4 right-4 z-40">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={loadRealInterfaceWithoutAPI}
+                className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 p-2 group"
+              >
+                <MessageCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300" />
+                <span className="absolute top-full right-0 mt-2 px-2 py-1 text-xs bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                  Launch Demo Workspace (Interface with sample content)
+                </span>
+              </Button>
+            </div>
+
             {/* Centered Content Layout */}
-            <div className="relative z-10 w-full min-h-full flex items-center justify-center p-6 lg:p-8">
-              <div className="w-full max-w-4xl space-y-8">
+            <div className="relative z-10 w-full h-full flex items-center justify-center p-6 lg:p-8">
+              <div className="w-full max-w-4xl">
                 
                 {/* Simple Header */}
                 <div className="text-center">
@@ -890,22 +905,14 @@ This business plan effectively balances ambitious growth objectives with compreh
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4 max-w-2xl mx-auto">
-                  <Button
-                    onClick={loadRealInterfaceWithoutAPI}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-xl hover:shadow-2xl transform hover:-translate-y-0.5 transition-all duration-300 px-6 py-3 text-base font-semibold rounded-xl"
-                  >
-                    <MessageCircle className="h-5 w-5 mr-2" />
-                    Launch Workspace
-                  </Button>
-
-                  <Button
+                  {/* <Button
                     onClick={startDemoMode}
                     variant="outline"
                     className="flex-1 bg-white/80 hover:bg-white dark:bg-gray-900/80 dark:hover:bg-gray-900 border-2 border-gray-200 hover:border-blue-300 dark:border-gray-700 dark:hover:border-blue-600 text-gray-700 hover:text-blue-700 dark:text-gray-300 dark:hover:text-blue-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 px-6 py-3 text-base font-semibold rounded-xl backdrop-blur-sm"
                   >
                     <Eye className="h-5 w-5 mr-2" />
                     View Demo
-                  </Button>
+                  </Button> */}
                 </div>
 
                 {/* Upload Interface */}
@@ -933,11 +940,8 @@ This business plan effectively balances ambitious growth objectives with compreh
                   />
                 </div>
 
-                {/* Action Buttons */}
-               
-
                 {/* Quick Start Options */}
-                <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-xl max-w-2xl mx-auto">
+                {/* <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-xl max-w-2xl mx-auto">
                   <div className="flex items-center gap-2 mb-4">
                     <Zap className="h-4 w-4 text-blue-600" />
                     <span className="font-semibold text-gray-900 dark:text-white text-sm">Quick Start</span>
@@ -945,14 +949,14 @@ This business plan effectively balances ambitious growth objectives with compreh
                   <div className="grid sm:grid-cols-2 gap-4 text-sm">
                     <div>
                       <p className="font-semibold text-gray-900 dark:text-white mb-1">Workspace</p>
-                      <p className="text-gray-600 dark:text-gray-400">Full interface, no API usage</p>
+                      <p className="text-gray-600 dark:text-gray-400">Full interface with sample content, no API usage</p>
                     </div>
                     <div>
                       <p className="font-semibold text-gray-900 dark:text-white mb-1">Demo</p>
                       <p className="text-gray-600 dark:text-gray-400">Preview with sample content</p>
                     </div>
                   </div>
-                </div>
+                </div> */}
 
               </div>
             </div>

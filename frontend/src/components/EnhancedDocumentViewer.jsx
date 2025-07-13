@@ -170,7 +170,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                   Dashboard 
                   {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
                   {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal">(Preview)</span>}
-                </h2>
+              </h2>
                 <Badge className={`text-xs border-0 px-1 py-0.5 ${
                   isDemoMode 
                     ? 'bg-gradient-to-r from-orange-500 to-yellow-600 text-white'
@@ -185,8 +185,8 @@ This business plan effectively balances growth ambitions with comprehensive risk
                   <span className="sm:hidden">
                     {isDemoMode ? '🎭' : bypassAPI ? '👁️' : '✓'}
                   </span>
-                </Badge>
-              </div>
+                  </Badge>
+                </div>
             </div>
           </div>
         </div>
@@ -259,14 +259,14 @@ This business plan effectively balances growth ambitions with comprehensive risk
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                       <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl shadow-lg">
                         <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                      </div>
-                      <div className="min-w-0">
+                    </div>
+                    <div className="min-w-0">
                         <CardTitle className="text-sm sm:text-base lg:text-lg font-bold text-slate-900 dark:text-white">
-                          Executive Summary
-                        </CardTitle>
+                        Executive Summary
+                      </CardTitle>
                         <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
                           Summary by Claude
-                        </p>
+                      </p>
                       </div>
                     </div>
                     
