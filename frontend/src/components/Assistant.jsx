@@ -807,7 +807,7 @@ This business plan effectively balances ambitious growth objectives with compreh
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 overflow-hidden">
+    <div className="h-screen bg-background overflow-hidden">
       {currentView === "upload" ? (
         /* ===== FULL-WIDTH UPLOAD VIEW ===== */
         <div className="h-full flex">
@@ -843,15 +843,8 @@ This business plan effectively balances ambitious growth objectives with compreh
               sidebarCollapsed ? "lg:ml-20" : "lg:ml-80"
             } relative h-full`}
           >
-            {/* Professional Full-Width Background */}
-            <div className="absolute inset-0">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-50/60 via-indigo-50/40 to-purple-50/50 dark:from-blue-950/30 dark:via-indigo-950/20 dark:to-purple-950/30"></div>
-              <div className="absolute top-0 left-0 w-full h-full">
-                <div className="absolute top-1/4 left-1/6 w-96 h-96 bg-gradient-to-r from-blue-200/30 to-indigo-200/30 dark:from-blue-800/15 dark:to-indigo-800/15 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-1/4 right-1/6 w-96 h-96 bg-gradient-to-r from-purple-200/30 to-pink-200/30 dark:from-purple-800/15 dark:to-pink-800/15 rounded-full blur-3xl"></div>
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-indigo-100/15 to-blue-100/15 dark:from-indigo-900/8 dark:to-blue-900/8 rounded-full blur-3xl"></div>
-              </div>
-            </div>
+            {/* Simple Background - Matching ChatInterface */}
+            <div className="absolute inset-0 bg-background"></div>
 
             {/* Mobile Menu Button */}
             <div className="lg:hidden fixed top-4 left-4 z-40">
@@ -859,7 +852,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 hover:bg-white dark:hover:bg-gray-900 transition-all duration-200 p-2"
+                className="bg-background/90 backdrop-blur-xl shadow-xl border border-border hover:bg-background transition-all duration-200 p-2"
               >
                 <Menu className="h-4 w-4" />
               </Button>
@@ -871,10 +864,10 @@ This business plan effectively balances ambitious growth objectives with compreh
                 variant="ghost"
                 size="sm"
                 onClick={loadRealInterfaceWithoutAPI}
-                className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 p-2 group"
+                className="bg-background/90 backdrop-blur-xl shadow-xl border border-border hover:bg-accent transition-all duration-200 p-2 group"
               >
-                <MessageCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300" />
-                <span className="absolute top-full right-0 mt-2 px-2 py-1 text-xs bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                <MessageCircle className="h-4 w-4 text-primary group-hover:text-primary/80" />
+                <span className="absolute top-full right-0 mt-2 px-2 py-1 text-xs bg-popover text-popover-foreground rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
                   Launch Demo Workspace (Interface with sample content)
                 </span>
               </Button>

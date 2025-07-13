@@ -34,7 +34,7 @@ function ModernUploadInterface({
       {/* Professional Header */}
       <div className="text-center mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">
-          Document Intelligence Platform
+          What would you analyze?
         </h1>
         <p className="text-sm sm:text-base text-slate-600 dark:text-gray-300 max-w-2xl mx-auto">
           Upload documents and get instant AI-powered insights, analysis, and answers
