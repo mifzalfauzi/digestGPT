@@ -15,6 +15,9 @@ import anthropic
 from dotenv import load_dotenv
 import tempfile
 from docx2pdf import convert as docx2pdf_convert
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+from database import get_db
 
 # Load environment variables
 load_dotenv()
@@ -50,6 +53,16 @@ class ChatResponse(BaseModel):
     user_message: str
     ai_response: str
     timestamp: datetime
+    
+@app.get("/test-db")
+def test_db_connection(db: Session = Depends(get_db)):
+    try:
+        
+        # This will run a simple SQL statement
+        result = db.execute(text("SELECT 1")).fetchone()
+        return {"status": "success", "result": result[0]}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
 
 def get_client_ip(request):
     """Get client IP for usage tracking"""

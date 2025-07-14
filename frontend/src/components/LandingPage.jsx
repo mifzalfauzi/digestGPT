@@ -36,19 +36,19 @@ export default function LandingPage() {
 
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
             <Link
-              href="#features"
+              to="#features"
               className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
             >
               Features
             </Link>
             <Link
-              href="#pricing"
+              to="#pricing"
               className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
             >
               Pricing
             </Link>
             <Link
-              href="#demo"
+              to="#demo"
               className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
             >
               Demo
@@ -56,13 +56,17 @@ export default function LandingPage() {
           </nav>
 
           <div className="flex items-center space-x-3">
+            <Link to="/signin">
             <Button variant="ghost" className="hidden md:inline-flex text-sm">
               Sign In
             </Button>
+            </Link>
+            <Link to="/signup">
             <Button className="bg-blue-600 hover:bg-blue-700 text-sm">
               Get Started
               <ArrowRight className="ml-2 h-3.5 w-3.5" />
             </Button>
+            </Link>
             <Button variant="ghost" size="sm" className="md:hidden">
               <Menu className="h-4 w-4" />
             </Button>
@@ -333,65 +337,144 @@ export default function LandingPage() {
           </p>
 
           {/* Centered Pricing Card */}
-          <div className="max-w-md mx-auto mb-12">
-            <Card className="border-2 border-blue-200 dark:border-blue-800 shadow-xl relative">
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-blue-600 text-white px-4 py-1 text-sm">
-                  <Star className="mr-1 h-3 w-3" />
-                  Best Value
-                </Badge>
-              </div>
-
-              <CardHeader className="text-center pb-6 pt-8">
-                <CardTitle className="text-2xl">Pro Plan</CardTitle>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold">$2.99</span>
-                  <span className="text-lg text-gray-600 dark:text-gray-400">/month</span>
-                </div>
-                <CardDescription className="mt-3 text-base">
-                  Complete document analysis with Claude 4 Sonnet included
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
-                    <span>Unlimited document uploads</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
-                    <span>Claude 4 Sonnet analysis included</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
-                    <span>AI chat assistant</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
-                    <span>Risk assessment & insights</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
-                    <span>Mobile app access</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
-                    <span>Priority support</span>
-                  </div>
-                </div>
-
-                <Button className="w-full bg-blue-600 hover:bg-blue-700 mt-6" size="lg">
-                  Start Analyzing Documents
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-
-                <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-                  7-day free trial • No credit card required
-                </p>
-              </CardContent>
-            </Card>
+          <div className="max-w-8xl mx-auto mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <Card className="border-2 border-yellow-200 dark:border-yellow-800 shadow-xl flex flex-col justify-between">
+        <CardHeader className="text-center pb-6 pt-8">
+          <CardTitle className="text-2xl">Free Plan</CardTitle>
+          <div className="mt-4">
+            <span className="text-4xl font-bold">$0</span>
+            <span className="text-lg text-gray-600 dark:text-gray-400">/month</span>
           </div>
+          <CardDescription className="mt-3 text-base">For first-time users</CardDescription>
+        </CardHeader>
+
+        <CardContent className="flex flex-col justify-between flex-1">
+          <div className="space-y-3">
+            <div className="flex items-center text-sm">
+              <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
+              <span>Claude 4 Sonnet analysis included</span>
+            </div>
+            <div className="flex items-center text-sm">
+              <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
+              <span>Risk assessment & insights</span>
+            </div>
+            <div className="flex items-center text-sm">
+              <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
+              <span>Accessible on any device</span>
+            </div>
+            <div className="flex items-center text-sm">
+              <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
+              <span>1 document upload</span>
+            </div>
+            <div className="flex items-center text-sm">
+              <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
+              <span>3 chat assistant interactions</span>
+            </div>
+          </div>
+
+          <div className="flex justify-start pt-6">
+            <Button className="bg-white hover:bg-blue-700 px-4 py-2 text-sm" size="sm">
+              Start 
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Standard Plan */}
+      <Card className="border-2 border-green-200 dark:border-green-800 shadow-xl flex flex-col justify-between">
+        <CardHeader className="text-center pb-6 pt-8">
+          <CardTitle className="text-2xl">Standard Plan</CardTitle>
+          <div className="mt-4">
+            <span className="text-4xl font-bold">$3.99</span>
+            <span className="text-lg text-gray-600 dark:text-gray-400">/month</span>
+          </div>
+          <CardDescription className="mt-3 text-base">For moderate document analysis</CardDescription>
+        </CardHeader>
+
+        <CardContent className="flex flex-col justify-between flex-1">
+          <div className="space-y-3">
+            <div className="flex items-center text-sm">
+              <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
+              <span>All features of the Free Plan</span>
+            </div>
+            {/* <div className="flex items-center text-sm">
+              <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
+              <span>Risk assessment & insights</span>
+            </div>
+            <div className="flex items-center text-sm">
+              <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
+              <span>Accessible on any device</span>
+            </div> */}
+            <div className="flex items-center text-sm">
+              <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
+              <span>Priority support</span>
+            </div>
+            <div className="flex items-center text-sm">
+              <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
+              <span>50 document uploads</span>
+            </div>
+            <div className="flex items-center text-sm">
+              <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
+              <span>100 chat assistant interactions</span>
+            </div>
+          </div>
+
+          <div className="flex justify-start pt-6">
+            <Button className="bg-white hover:bg-blue-700 px-4 py-2 text-sm" size="sm">
+              Get Standard   
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Pro Plan */}
+      <Card className="border-2 border-blue-200 dark:border-blue-800 shadow-xl flex flex-col justify-between relative">
+        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+          <Badge className="bg-blue-600 text-white px-4 py-1 text-sm">
+            <Star className="mr-1 h-3 w-3" />
+            Best Value
+          </Badge>
+        </div>
+
+        <CardHeader className="text-center pb-6 pt-8">
+          <CardTitle className="text-2xl">Pro Plan</CardTitle>
+          <div className="mt-4">
+            <span className="text-4xl font-bold">$5.99</span>
+            <span className="text-lg text-gray-600 dark:text-gray-400">/month</span>
+          </div>
+          <CardDescription className="mt-3 text-base">For large document analysis</CardDescription>
+        </CardHeader>
+
+        <CardContent className="flex flex-col justify-between flex-1">
+          <div className="space-y-3">
+            <div className="flex items-center text-sm">
+              <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
+              <span>All features of the Standard Plan</span>
+            </div>
+            <div className="flex items-center text-sm">
+              <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
+              <span>120 document uploads</span>
+            </div>
+            <div className="flex items-center text-sm">
+              <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
+              <span>350 chat assistant interactions</span>
+            </div>
+          </div>
+
+          <div className="flex justify-start pt-6">
+            <Button className="bg-white hover:bg-blue-700 px-4 py-2 text-sm" size="sm">
+              Get Pro   
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+              
+            </div>
+          </div>
+          
+
+          
 
           {/* Stats Row */}
           <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto">

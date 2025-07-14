@@ -15,11 +15,33 @@ import {
   Shield, 
   Cpu,
   Globe,
-  X 
+  X,
+  FileText,
+  MessageCircle,
+  Database,
+  TrendingUp,
+  Clock,
+  Archive
 } from 'lucide-react'
 
 function SettingsPanel({ isOpen, onClose }) {
   const { theme, setTheme } = useTheme()
+
+  // Placeholder data - will be replaced with actual API data
+  const [usageStats, setUsageStats] = useState({
+    documentsUploaded: 42,
+    chatInteractions: 156,
+    totalFileSize: 1024, // in MB
+    monthlyLimit: {
+      documents: 100,
+      chatInteractions: 500,
+      fileSize: 5120 // 5GB
+    }
+  })
+
+  const calculatePercentage = (current, total) => {
+    return Math.min(Math.round((current / total) * 100), 100)
+  }
 
   const handleThemeChange = (isDark) => {
     setTheme(isDark ? 'dark' : 'light')
@@ -37,7 +59,7 @@ function SettingsPanel({ isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 border-0 shadow-2xl">
+      <Card className="w-full max-w-4xl max-h-[95vh] overflow-y-auto bg-white dark:bg-gray-900 border-0 shadow-2xl">
         <CardHeader className="border-b border-slate-200 dark:border-gray-700 bg-gradient-to-r from-slate-50 to-white dark:from-gray-800 dark:to-gray-900">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -65,77 +87,121 @@ function SettingsPanel({ isOpen, onClose }) {
         </CardHeader>
 
         <CardContent className="p-6 space-y-6">
-          {/* Theme Settings */}
+          {/* Usage Statistics */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Monitor className="h-5 w-5 text-slate-600 dark:text-gray-400" />
+              <TrendingUp className="h-5 w-5 text-slate-600 dark:text-gray-400" />
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                Appearance
+                Usage Statistics
               </h3>
+              <div className="flex-1 flex justify-end items-center gap-2">
+                <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                  Standard
+                </Badge>
+              </div>
             </div>
-            
-            <Card className="border border-slate-200 dark:border-gray-700 bg-gradient-to-r from-slate-50/50 to-white/50 dark:from-gray-800/50 dark:to-gray-900/50">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg">
-                      {theme === 'dark' ? (
-                        <Moon className="h-4 w-4 text-white" />
-                      ) : (
-                        <Sun className="h-4 w-4 text-white" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-900 dark:text-white">
-                        Dark Mode
-                      </p>
-                      <p className="text-sm text-slate-600 dark:text-gray-400">
-                        Switch between light and dark themes
-                      </p>
-                    </div>
-                  </div>
-                  <Switch 
-                    checked={theme === 'dark'}
-                    onCheckedChange={handleThemeChange}
-                    className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-blue-500 data-[state=checked]:to-purple-600"
-                  />
-                </div>
-              </CardContent>
-            </Card>
 
-            {/* <div className="grid grid-cols-2 gap-3">
-              <Button
-                variant={theme === 'light' ? 'default' : 'outline'}
-                onClick={() => setTheme('light')}
-                className={`flex items-center gap-2 justify-start p-3 h-auto ${
-                  theme === 'light' 
-                    ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white' 
-                    : 'hover:bg-slate-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                <Sun className="h-4 w-4" />
-                <div className="text-left">
-                  <p className="font-medium">Light</p>
-                  <p className="text-xs opacity-80">Clean & bright</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Documents Uploaded */}
+              <Card className="border border-slate-200 dark:border-gray-700">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <FileText className="h-5 w-5 text-blue-600" />
+                    <p className="text-xs text-slate-600 dark:text-gray-400">
+                      Documents
+                    </p>
+                  </div>
+                  <div className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                    {usageStats.documentsUploaded} / {usageStats.monthlyLimit.documents}
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                    <div 
+                      className="bg-blue-600 h-2.5 rounded-full" 
+                      style={{ 
+                        width: `${calculatePercentage(usageStats.documentsUploaded, usageStats.monthlyLimit.documents)}%` 
+                      }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
+                    {calculatePercentage(usageStats.documentsUploaded, usageStats.monthlyLimit.documents)}% of monthly limit
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Chat Interactions */}
+              <Card className="border border-slate-200 dark:border-gray-700">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <MessageCircle className="h-5 w-5 text-green-600" />
+                    <p className="text-xs text-slate-600 dark:text-gray-400">
+                      Chats
+                    </p>
+                  </div>
+                  <div className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                    {usageStats.chatInteractions} / {usageStats.monthlyLimit.chatInteractions}
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                    <div 
+                      className="bg-green-600 h-2.5 rounded-full" 
+                      style={{ 
+                        width: `${calculatePercentage(usageStats.chatInteractions, usageStats.monthlyLimit.chatInteractions)}%` 
+                      }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
+                    {calculatePercentage(usageStats.chatInteractions, usageStats.monthlyLimit.chatInteractions)}% of monthly limit
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Total File Size */}
+              <Card className="border border-slate-200 dark:border-gray-700">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <Database className="h-5 w-5 text-purple-600" />
+                    <p className="text-xs text-slate-600 dark:text-gray-400">
+                      Storage
+                    </p>
+                  </div>
+                  <div className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                    {usageStats.totalFileSize} MB / {usageStats.monthlyLimit.fileSize} MB
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                    <div 
+                      className="bg-purple-600 h-2.5 rounded-full" 
+                      style={{ 
+                        width: `${calculatePercentage(usageStats.totalFileSize, usageStats.monthlyLimit.fileSize)}%` 
+                      }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
+                    {calculatePercentage(usageStats.totalFileSize, usageStats.monthlyLimit.fileSize)}% of storage limit
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Usage Tips */}
+            {/* <Card className="border border-slate-200 dark:border-gray-700 mt-4">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Zap className="h-5 w-5 text-yellow-600" />
+                  <h4 className="text-sm font-semibold text-slate-900 dark:text-white">
+                    Usage Tips
+                  </h4>
                 </div>
-              </Button>
-              
-              <Button
-                variant={theme === 'dark' ? 'default' : 'outline'}
-                onClick={() => setTheme('dark')}
-                className={`flex items-center gap-2 justify-start p-3 h-auto ${
-                  theme === 'dark' 
-                    ? 'bg-gradient-to-r from-slate-700 to-gray-800 text-white' 
-                    : 'hover:bg-slate-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                <Moon className="h-4 w-4" />
-                <div className="text-left">
-                  <p className="font-medium">Dark</p>
-                  <p className="text-xs opacity-80">Easy on eyes</p>
-                </div>
-              </Button>
-            </div> */}
+                <ul className="space-y-2 text-xs text-slate-600 dark:text-gray-400">
+                  <li className="flex items-start gap-2">
+                    <Clock className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                    Optimize document uploads to save storage space
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Archive className="h-4 w-4 text-purple-500 flex-shrink-0 mt-0.5" />
+                    Manage your monthly usage to avoid hitting limits
+                  </li>
+                </ul>
+              </CardContent>
+            </Card> */}
           </div>
 
           <Separator className="my-6" />
@@ -259,6 +325,47 @@ function SettingsPanel({ isOpen, onClose }) {
                       Fast
                     </p>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Separator className="my-6" />
+
+          {/* Appearance Settings */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Monitor className="h-5 w-5 text-slate-600 dark:text-gray-400" />
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                Appearance
+              </h3>
+            </div>
+            
+            <Card className="border border-slate-200 dark:border-gray-700 bg-gradient-to-r from-slate-50/50 to-white/50 dark:from-gray-800/50 dark:to-gray-900/50">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg">
+                      {theme === 'dark' ? (
+                        <Moon className="h-4 w-4 text-white" />
+                      ) : (
+                        <Sun className="h-4 w-4 text-white" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-slate-900 dark:text-white">
+                        Dark Mode
+                      </p>
+                      <p className="text-sm text-slate-600 dark:text-gray-400">
+                        Switch between light and dark themes
+                      </p>
+                    </div>
+                  </div>
+                  <Switch 
+                    checked={theme === 'dark'}
+                    onCheckedChange={handleThemeChange}
+                    className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-blue-500 data-[state=checked]:to-purple-600"
+                  />
                 </div>
               </CardContent>
             </Card>

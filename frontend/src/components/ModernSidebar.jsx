@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { Badge } from './ui/badge'
-import { Brain, Upload, FileText, Home, MessageCircle, Settings, HelpCircle, Sparkles, Activity, X, Menu, PanelLeftClose, ChevronDown } from 'lucide-react'
+import { Brain, Upload, FileText, Home, MessageCircle, Settings, HelpCircle, Sparkles, Activity, X, Menu, PanelLeftClose, ChevronDown, LayoutDashboard } from 'lucide-react'
 import SettingsPanel from './SettingsPanel'
 
 function ModernSidebar({ 
@@ -112,20 +112,20 @@ function ModernSidebar({
           </p>
           )}
           
-          <Button 
+          {/* <Button 
             onClick={() => {
-              navigate('/')
+              navigate('/dashboard')
               onClose?.()
             }}
             variant="ghost" 
             className={`w-full text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 h-8 py-2 text-sm ${
               collapsed ? 'justify-center px-0' : 'justify-start gap-2'
             }`}
-            title={collapsed ? 'Home' : ''}
+            title={collapsed ? 'Dashboard' : ''}
           >
-            <Home className="h-3.5 w-3.5 flex-shrink-0" />
-            {!collapsed && <span>Home</span>}
-          </Button>
+            <LayoutDashboard className="h-3.5 w-3.5 flex-shrink-0" />
+            {!collapsed && <span>Dashboard</span>}
+          </Button> */}
 
           <Button 
             onClick={() => {
