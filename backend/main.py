@@ -731,10 +731,16 @@ def find_quote_position(text: str, quote: str) -> Dict:
     # Try exact match first
     start_pos = clean_text.find(clean_quote)
     if start_pos != -1:
+        # Estimate page number based on position
+        # Assume roughly 500 words per page (typical for business documents)
+        words_before = len(text[:start_pos].split())
+        estimated_page = max(1, (words_before // 500) + 1)
+        
         return {
             "start": start_pos,
             "end": start_pos + len(clean_quote),
-            "found": True
+            "found": True,
+            "page": estimated_page
         }
     
     # Try partial matching with individual words
@@ -745,10 +751,32 @@ def find_quote_position(text: str, quote: str) -> Dict:
         import re
         match = re.search(partial_quote, clean_text)
         if match:
+            # Estimate page number
+            words_before = len(text[:match.start()].split())
+            estimated_page = max(1, (words_before // 500) + 1)
+            
             return {
                 "start": match.start(),
                 "end": match.end(),
-                "found": True
+                "found": True,
+                "page": estimated_page
+            }
+    
+    # Try finding individual significant words
+    significant_words = [word for word in words if len(word) > 4]
+    if significant_words:
+        first_word = significant_words[0].lower()
+        word_pos = clean_text.find(first_word)
+        if word_pos != -1:
+            words_before = len(text[:word_pos].split())
+            estimated_page = max(1, (words_before // 500) + 1)
+            
+            return {
+                "start": word_pos,
+                "end": word_pos + len(first_word),
+                "found": True,
+                "page": estimated_page,
+                "partial": True  # Indicate this is a partial match
             }
     
     return {"start": -1, "end": -1, "found": False}
