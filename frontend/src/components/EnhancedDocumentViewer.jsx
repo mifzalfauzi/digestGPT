@@ -262,8 +262,8 @@ This business plan effectively balances growth ambitions with comprehensive risk
             {hasDocumentViewer && (
               <TabsContent value="document-viewer" className="h-full mt-1 sm:mt-2 px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter">
                 {isPDF ? (
-                  <Card className="h-full border-0 shadow-xl">
-                    <CardContent className="p-0 h-full">
+                <Card className="h-full border-0 shadow-xl">
+                  <CardContent className="p-0 h-full">
                       <div className="h-full border border-slate-200 dark:border-gray-600 rounded-xl overflow-hidden relative">
                         {!results && (
                           <div className="absolute inset-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm flex items-center justify-center z-10">
@@ -276,14 +276,14 @@ This business plan effectively balances growth ambitions with comprehensive risk
                             </div>
                           </div>
                         )}
-                        <iframe
-                          src={getFileUrl()}
-                          className="w-full h-full"
-                          title="PDF Document"
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
+                      <iframe
+                        src={getFileUrl()}
+                        className="w-full h-full"
+                        title="PDF Document"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
                 ) : (
                   <DocxViewer 
                     file={file} 
@@ -488,12 +488,12 @@ This business plan effectively balances growth ambitions with comprehensive risk
                             </div>
                           </div>
                         ) : (
-                          <HighlightableText 
+                        <HighlightableText 
                             text={(isDemoMode || bypassAPI) ? mockDocumentText : results.document_text}
-                            highlights={highlights}
-                            activeHighlight={activeHighlight}
-                            onHighlightClick={handleHighlightClick}
-                          />
+                          highlights={highlights}
+                          activeHighlight={activeHighlight}
+                          onHighlightClick={handleHighlightClick}
+                        />
                         )}
                       </div>
                       

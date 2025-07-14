@@ -9,7 +9,7 @@ import { Separator } from './ui/separator'
 import { MessageCircle, Send, Bot, User, AlertCircle, Trash2, Sparkles, Brain, Zap, ThumbsUp, ThumbsDown, Copy, Check, Clock, ChevronDown } from 'lucide-react'
 import MessageFormatter from './MessageFormatter';
 
-function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode = false, bypassAPI = false, casualMode = false, isDisabled = false, analyzingStatus = null }) {
+function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode = false, bypassAPI = false, casualMode = false, isDisabled = false, analyzingStatus = null, hasError = false }) {
   const [messages, setMessages] = useState([])
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -139,10 +139,10 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
         mockResponseIndex++
       } else {
         // Production mode: make actual API call
-        const response = await axios.post('http://localhost:8000/chat', {
-          document_id: documentId,
-          message: userMessage
-        })
+      const response = await axios.post('http://localhost:8000/chat', {
+        document_id: documentId,
+        message: userMessage
+      })
         aiResponse = response.data
       }
 
@@ -307,28 +307,60 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
             <div className="text-center py-6 sm:py-8 space-y-3 sm:space-y-4">
               <div className="flex justify-center">
                 <div className="relative">
-                  <div className="p-3 sm:p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl">
-                    <Zap className="h-6 w-6 sm:h-8 sm:w-8 text-amber-600 dark:text-amber-400 animate-pulse" />
+                  <div className={`p-3 sm:p-4 rounded-2xl ${
+                    hasError 
+                      ? 'bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20'
+                      : 'bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20'
+                  }`}>
+                    {hasError ? (
+                      <AlertCircle className="h-6 w-6 sm:h-8 sm:w-8 text-red-600 dark:text-red-400" />
+                    ) : (
+                      <Zap className="h-6 w-6 sm:h-8 sm:w-8 text-amber-600 dark:text-amber-400 animate-pulse" />
+                    )}
                   </div>
-                  <Brain className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500 absolute -top-1 -right-1" />
+                  {!hasError && <Brain className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500 absolute -top-1 -right-1" />}
                 </div>
               </div>
               
               <div className="space-y-2">
                 <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                  Documents Analyzing...
+                  {hasError ? 'Document Error' : 'Documents Analyzing...'}
                 </h3>
                 <p className="text-slate-600 dark:text-gray-300 max-w-md mx-auto text-xs sm:text-sm px-4">
-                  {analyzingStatus || "Please wait while your documents are being processed. This may take a few minutes for larger files."}
+                  {hasError 
+                    ? "This document could not be processed. It may be corrupted, unreadable, or in an unsupported format."
+                    : (analyzingStatus || "Please wait while your documents are being processed. This may take a few minutes for larger files.")
+                  }
                 </p>
                 
-                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 sm:p-4 max-w-md mx-auto">
+                <div className={`rounded-xl p-3 sm:p-4 max-w-md mx-auto ${
+                  hasError
+                    ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+                    : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'
+                }`}>
                   <div className="flex items-center gap-2 mb-2">
-                    <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                    <span className="text-sm font-medium text-amber-800 dark:text-amber-200">Analysis in Progress</span>
+                    {hasError ? (
+                      <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                    ) : (
+                      <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    )}
+                    <span className={`text-sm font-medium ${
+                      hasError 
+                        ? 'text-red-800 dark:text-red-200'
+                        : 'text-amber-800 dark:text-amber-200'
+                    }`}>
+                      {hasError ? 'Processing Failed' : 'Analysis in Progress'}
+                    </span>
                   </div>
-                  <p className="text-xs text-amber-700 dark:text-amber-300">
-                    Large files (&gt;1MB) may take longer to process. Chat will be available once all documents are ready.
+                  <p className={`text-xs ${
+                    hasError 
+                      ? 'text-red-700 dark:text-red-300'
+                      : 'text-amber-700 dark:text-amber-300'
+                  }`}>
+                    {hasError 
+                      ? "This file may be corrupted, password protected, or in an unsupported format. Please try uploading a different file."
+                      : "Large files (greater than 1MB) may take longer to process. Chat will be available once all documents are ready."
+                    }
                   </p>
                 </div>
               </div>

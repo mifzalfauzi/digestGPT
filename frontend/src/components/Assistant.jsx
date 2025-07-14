@@ -7,7 +7,8 @@ import ModernUploadInterface from "./ModernUploadInterface"
 import ModernChatPanel from "./ModernChatPanel"
 import EnhancedDocumentViewer from "./EnhancedDocumentViewer"
 import { Button } from "./ui/button"
-import { Menu, X, MessageCircle, FileText, Eye, GripVertical, Sparkles, Zap } from "lucide-react"
+import { Menu, X, MessageCircle, FileText, Eye, GripVertical, Sparkles, Zap, AlertTriangle } from "lucide-react"
+import { Card } from "./ui/card"
 
 function Assistant() {
   // Multi-document state
@@ -46,11 +47,19 @@ function Assistant() {
   const documentId = selectedDocument?.documentId || selectedDocument?.id || null
   const selectedDocumentFile = selectedDocument?.file || file
 
-  // Check if all documents are ready for chat
-  const allDocumentsReady = documents.length > 0 && documents.every(doc => doc.status === 'completed')
+  // Check if selected document is ready for chat (completed or error status means it's "done")
+  const selectedDocumentReady = selectedDocument && selectedDocument.status === 'completed'
+  const selectedDocumentIsError = selectedDocument && selectedDocument.status === 'error'
   const hasAnalyzingDocuments = documents.some(doc => doc.status === 'analyzing')
   const analyzingCount = documents.filter(doc => doc.status === 'analyzing').length
   const completedCount = documents.filter(doc => doc.status === 'completed').length
+  
+  // Check if selected document has error status
+  const selectedDocumentHasError = selectedDocument?.status === 'error'
+
+  // Add state for error modal and error document
+  const [errorModalOpen, setErrorModalOpen] = useState(false)
+  const [errorDocument, setErrorDocument] = useState(null)
 
   // Responsive state
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -71,12 +80,30 @@ function Assistant() {
   const generateDocumentId = () => `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   
   const addDocument = (documentData) => {
+    // Check for existing document with same filename to prevent duplicates
+    const existingDocument = documents.find(doc => 
+      doc.filename === documentData.filename && 
+      doc.file?.size === documentData.file?.size &&
+      doc.file?.name === documentData.file?.name
+    )
+    
+    if (existingDocument) {
+      console.log('Document already exists, returning existing ID:', existingDocument.id)
+      // Auto-select the existing document and switch to workspace view
+      setSelectedDocumentId(existingDocument.id)
+      setCurrentView("workspace")
+      setSidebarOpen(false)
+      setActivePanel("chat")
+      return existingDocument.id
+    }
+    
     const newDocument = {
       id: documentData.id || generateDocumentId(),
       uploadDate: new Date().toISOString(),
       status: documentData.status || 'uploading',
       ...documentData
     }
+    console.log('Adding new document:', newDocument.id, newDocument.filename)
     setDocuments(prev => [...prev, newDocument])
     return newDocument.id
   }
@@ -87,17 +114,23 @@ function Assistant() {
     ))
   }
   
+  // Update selectDocument to show error modal if error doc is selected
   const selectDocument = (documentId) => {
+    const doc = documents.find(d => d.id === documentId)
     setSelectedDocumentId(documentId)
-    // Clear any existing errors when switching documents
     setError("")
-    // Switch to workspace view if currently on upload view or casual chat
+    if (doc?.status === 'error') {
+      setErrorDocument(doc)
+      setErrorModalOpen(true)
+    } else {
+      setErrorDocument(null)
+      setErrorModalOpen(false)
+    }
     if (currentView === "upload" || currentView === "casual-chat") {
       setCurrentView("workspace")
       setSidebarOpen(false)
       setActivePanel("chat")
     } else {
-      // If already in workspace, switch to document panel to show the selected document
       setActivePanel("document")
     }
   }
@@ -108,6 +141,21 @@ function Assistant() {
       // Select another document if available, or clear selection
       const remainingDocs = documents.filter(doc => doc.id !== documentId)
       setSelectedDocumentId(remainingDocs.length > 0 ? remainingDocs[0].id : null)
+    }
+  }
+
+  // Add handler for removing error document and auto-selecting another valid doc
+  const handleRemoveErrorDocument = (docId) => {
+    setDocuments(prev => prev.filter(doc => doc.id !== docId))
+    setErrorModalOpen(false)
+    setErrorDocument(null)
+    // Auto-select another valid document if available
+    const nextDoc = documents.find(doc => doc.id !== docId && doc.status === 'completed')
+    if (nextDoc) {
+      setSelectedDocumentId(nextDoc.id)
+    } else {
+      setSelectedDocumentId(null)
+      setCurrentView('upload')
     }
   }
 
@@ -303,17 +351,10 @@ function Assistant() {
     const fileSize = file?.size || 0
     const isLargeFile = fileSize > 1024 * 1024 // > 1MB
     
-    // Check if document already exists
-    const existingDocument = documents.find(doc => doc.id === documentId)
-    
-    if (existingDocument) {
-      // Update existing document
-      updateDocument(documentId, { 
-        analysisStartTime: new Date().toISOString(),
-        isLargeFile: isLargeFile
-      })
-    } else {
-      // Add new document with collectionId if provided
+    // For single file uploads, we know the document should exist, so we'll update it directly
+    // For collection uploads, we need to add the document first
+    if (collectionId) {
+      // Collection upload - add document first
       const documentData = {
         id: documentId,
         filename: fileName,
@@ -321,14 +362,16 @@ function Assistant() {
         status: 'analyzing',
         analysisStartTime: new Date().toISOString(),
         isLargeFile: isLargeFile,
-        uploadDate: new Date().toISOString()
+        uploadDate: new Date().toISOString(),
+        collectionId: collectionId
       }
-      
-      if (collectionId) {
-        documentData.collectionId = collectionId
-      }
-      
       addDocument(documentData)
+    } else {
+      // Single file upload - update the existing document
+      updateDocument(documentId, { 
+        analysisStartTime: new Date().toISOString(),
+        isLargeFile: isLargeFile
+      })
     }
     
     try {
@@ -475,20 +518,32 @@ function Assistant() {
           
         } else if (file) {
           // Handle single file (legacy support)
-          const documentId = addDocument({
+          const documentId = generateDocumentId()
+          
+          // Add document first (or get existing document ID if duplicate)
+          const actualDocumentId = addDocument({
+            id: documentId,
             filename: file.name,
             file: file,
             inputMode: 'file',
             status: 'analyzing'
           })
           
-          setSelectedDocumentId(documentId)
-          setCurrentView("workspace")
-          setSidebarOpen(false)
-          setActivePanel("chat")
+          // If addDocument returned a different ID (existing document found), 
+          // don't start analysis again since it's already done
+          if (actualDocumentId === documentId) {
+            // This is a new document, so set it as selected and start analysis
+            setSelectedDocumentId(documentId)
+            setCurrentView("workspace")
+            setSidebarOpen(false)
+            setActivePanel("chat")
+            
+            // Start analysis
+            handleDocumentSubmit(documentId, file)
+          }
+          // If actualDocumentId !== documentId, it means an existing document was found
+          // and addDocument already handled the selection and view switching
           
-          // Start analysis
-          handleDocumentSubmit(documentId, file)
           setFile(null)
           
           // Reset file inputs to allow new file selection
@@ -1214,15 +1269,60 @@ This business plan effectively balances ambitious growth objectives with compreh
             <div className="lg:hidden h-full">
               {/* Chat Panel - Mobile/Tablet */}
               <div className={`h-full ${activePanel === "chat" ? "block" : "hidden"}`}>
-                {documentId ? (
+                {selectedDocument?.status === 'analyzing' ? (
+                  <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 p-6">
+                    <div className="text-center space-y-6 max-w-md">
+                      <div className="relative">
+                        <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl">
+                          <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                        <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                          <Sparkles className="h-4 w-4 text-white" />
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Processing Document</h3>
+                        <p className="text-lg text-gray-600 dark:text-gray-400">
+                          AI analysis powered by Claude 4 Sonnet is in progress...
+                        </p>
+                        <div className="flex items-center justify-center gap-2 text-blue-600 dark:text-blue-400">
+                          <Zap className="h-5 w-5" />
+                          <span className="font-semibold">Advanced AI Processing</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : selectedDocument?.status === 'error' ? (
+                  <div className="h-full flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-100/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 p-6">
+                    <div className="text-center space-y-6 max-w-md">
+                      <div className="flex items-center justify-center mb-4">
+                        <div className="p-4 rounded-full bg-red-100 dark:bg-red-900/30">
+                          <AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400" />
+                        </div>
+                      </div>
+                      <h3 className="text-2xl font-bold text-red-700 dark:text-red-400">Document Error</h3>
+                      <p className="text-base text-gray-700 dark:text-gray-300">
+                        Unable to process this file. It may be corrupted, too large, password protected, or in an unsupported format.
+                      </p>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                        <p>Possible reasons:</p>
+                        <ul className="list-disc list-inside space-y-1 ml-2">
+                          <li>File is corrupted or damaged</li>
+                          <li>File format is not supported</li>
+                          <li>File is password protected</li>
+                          <li>File size is too large</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                ) : documentId ? (
                   <ModernChatPanel
                     documentId={documentId}
                     filename={results?.filename || "Demo Document"}
                     onSetInputMessage={setChatSetInputMessage}
                     isDemoMode={isDemoMode}
                     bypassAPI={bypassAPI}
-                    isDisabled={!allDocumentsReady}
-                    analyzingStatus={hasAnalyzingDocuments ? `Analyzing ${analyzingCount} of ${documents.length} documents... (${completedCount} completed)` : null}
+                    casualMode={false}
                   />
                 ) : (
                   <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 p-6">
@@ -1273,15 +1373,60 @@ This business plan effectively balances ambitious growth objectives with compreh
                     minWidth: "25%",
                   }}
                 >
-                {documentId ? (
+                {selectedDocument?.status === 'analyzing' ? (
+                  <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 p-12">
+                    <div className="text-center space-y-8 max-w-lg">
+                      <div className="relative">
+                        <div className="w-32 h-32 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl">
+                          <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                        <div className="absolute -top-3 -right-3 w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                          <Sparkles className="h-5 w-5 text-white" />
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white">Processing Document</h3>
+                        <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed">
+                          AI analysis powered by Claude 4 Sonnet is in progress...
+                        </p>
+                        <div className="flex items-center justify-center gap-3 text-blue-600 dark:text-blue-400">
+                          <Zap className="h-6 w-6" />
+                          <span className="text-lg font-semibold">Advanced AI Processing</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : selectedDocument?.status === 'error' ? (
+                  <div className="h-full flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-100/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 p-12">
+                    <div className="text-center space-y-8 max-w-lg">
+                      <div className="flex items-center justify-center mb-4">
+                        <div className="p-5 rounded-full bg-red-100 dark:bg-red-900/30">
+                          <AlertTriangle className="h-10 w-10 text-red-600 dark:text-red-400" />
+                        </div>
+                      </div>
+                      <h3 className="text-3xl font-bold text-red-700 dark:text-red-400">Document Error</h3>
+                      <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+                        Unable to process this file. It may be corrupted, too large, password protected, or in an unsupported format.
+                      </p>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                        <p>Possible reasons:</p>
+                        <ul className="list-disc list-inside space-y-1 ml-2">
+                          <li>File is corrupted or damaged</li>
+                          <li>File format is not supported</li>
+                          <li>File is password protected</li>
+                          <li>File size is too large</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                ) : documentId ? (
                   <ModernChatPanel
                     documentId={documentId}
                     filename={results?.filename || "Demo Document"}
                     onSetInputMessage={setChatSetInputMessage}
                     isDemoMode={isDemoMode}
                     bypassAPI={bypassAPI}
-                    isDisabled={!allDocumentsReady}
-                    analyzingStatus={hasAnalyzingDocuments ? `Analyzing ${analyzingCount} of ${documents.length} documents... (${completedCount} completed)` : null}
+                    casualMode={false}
                   />
                 ) : (
                   <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 p-12">
@@ -1383,8 +1528,62 @@ This business plan effectively balances ambitious growth objectives with compreh
           )}
         </>
       )}
+      {errorModalOpen && errorDocument && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <Card className="w-full max-w-md p-6 space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
+          <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Document Error
+          </h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Unable to process this file
+          </p>
+        </div>
+      </div>
+      <div className="space-y-3">
+        <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <p className="text-sm font-medium text-gray-900 dark:text-white">
+            {errorDocument.filename}
+          </p>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+            This file may be corrupted, unreadable, or in an unsupported format.
+          </p>
+        </div>
+        <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+          <p>Possible reasons:</p>
+          <ul className="list-disc list-inside space-y-1 ml-2">
+            <li>File is corrupted or damaged</li>
+            <li>File format is not supported</li>
+            <li>File is password protected</li>
+            <li>File size is too large</li>
+          </ul>
+        </div>
+      </div>
+      <div className="flex gap-3 pt-2">
+        <Button 
+          variant="outline" 
+          onClick={() => setErrorModalOpen(false)}
+          className="flex-1"
+        >
+          Cancel
+        </Button>
+        <Button 
+          onClick={() => handleRemoveErrorDocument(errorDocument.id)}
+          className="flex-1 bg-red-600 hover:bg-red-700"
+        >
+          Remove File
+        </Button>
+      </div>
+    </Card>
+  </div>
+)}
     </div>
   )
 }
 
 export default Assistant
+ 
