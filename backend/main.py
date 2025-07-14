@@ -425,8 +425,8 @@ Document: {text[:4000]}"""
         if retry_count > 0:
             return {
                 "summary": "Document analysis completed with basic processing.",
-            "key_points": [
-                {
+                "key_points": [
+                    {
                         "text": "Document has been processed and is ready for analysis.",
                         "quote": "Document processing completed"
                     }

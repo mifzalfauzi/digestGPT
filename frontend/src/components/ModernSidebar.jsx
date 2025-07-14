@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { Badge } from './ui/badge'
-import { Brain, Upload, FileText, Home, MessageCircle, Settings, HelpCircle, Sparkles, Activity, X, Menu, PanelLeftClose, ChevronDown, AlertTriangle } from 'lucide-react'
+import { Brain, Upload, FileText, Home, MessageCircle, Settings, HelpCircle, Sparkles, Activity, X, Menu, PanelLeftClose, ChevronDown } from 'lucide-react'
 import SettingsPanel from './SettingsPanel'
 
 function ModernSidebar({ 
@@ -28,18 +28,7 @@ function ModernSidebar({
   onRemoveCollection = () => {}
 }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [errorModalOpen, setErrorModalOpen] = useState(false)
-  const [errorDocument, setErrorDocument] = useState(null)
   const navigate = useNavigate()
-  
-  const handleDocumentClick = (doc) => {
-    if (doc.status === 'error') {
-      setErrorDocument(doc)
-      setErrorModalOpen(true)
-    } else {
-      onSelectDocument(doc.id)
-    }
-  }
   
   return (
     <div className="w-full bg-white dark:bg-gray-900 h-full flex flex-col shadow-xl lg:shadow-none transition-all duration-300">
@@ -175,6 +164,80 @@ function ModernSidebar({
           </Button>
         </div>
 
+        {/* Current Document Section */}
+        {currentDocument && (
+          <div className="space-y-2">
+            {!collapsed && (
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">
+                {isDemoMode ? 'New Document' : bypassAPI ? 'Preview Document' : 'Active Document'}
+              </p>
+            )}
+            
+            <Card className={`${collapsed ? 'p-2' : 'p-2.5 sm:p-3'} border-gray-600 ${
+              isDemoMode 
+                ? 'bg-gradient-to-r from-orange-900/40 to-yellow-900/40' 
+                : bypassAPI
+                ? 'bg-gradient-to-r from-green-900/40 to-emerald-900/40'
+                : 'bg-gradient-to-r from-emerald-900/40 to-teal-900/40'
+            }`}>
+              <div className={`flex items-start ${collapsed ? 'justify-center' : 'gap-2'}`}>
+                <div className={`${collapsed ? 'p-1' : 'p-1.5'} rounded-lg flex-shrink-0 ${
+                  isDemoMode 
+                    ? 'bg-orange-800/60' 
+                    : bypassAPI
+                    ? 'bg-green-800/60'
+                    : 'bg-emerald-800/60'
+                }`} title={collapsed ? currentDocument : ''}>
+                  <FileText className={`${collapsed ? 'h-3 w-3' : 'h-3.5 w-3.5'} ${
+                    isDemoMode 
+                      ? 'text-orange-300' 
+                      : bypassAPI
+                      ? 'text-green-300'
+                      : 'text-emerald-300'
+                  }`} />
+                </div>
+                {!collapsed && (
+                <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    {currentDocument}
+                  </p>
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                    <div className="flex items-center gap-1">
+                        <Activity className={`h-2.5 w-2.5 flex-shrink-0 ${
+                          isDemoMode 
+                            ? 'text-orange-400 animate-pulse' 
+                            : bypassAPI
+                            ? 'text-green-400 animate-pulse'
+                            : 'text-emerald-400 animate-pulse'
+                        }`} />
+                        <span className={`text-xs font-medium ${
+                          isDemoMode 
+                            ? 'text-orange-300' 
+                            : bypassAPI
+                            ? 'text-green-300'
+                            : 'text-emerald-300'
+                        }`}>
+                          {isDemoMode ? 'Demo' : bypassAPI ? 'Preview' : 'Active'}
+                      </span>
+                      </div>
+                      <Badge variant="outline" className={`text-xs px-1.5 py-0.5 ${
+                        isDemoMode 
+                          ? 'border-orange-600 text-orange-300' 
+                          : bypassAPI
+                          ? 'border-green-600 text-green-300'
+                          : 'border-emerald-600 text-emerald-300'
+                      }`}>
+                        <MessageCircle className="h-2 w-2 mr-1" />
+                        {isDemoMode ? 'Preview' : bypassAPI ? 'No API' : 'Chat Ready'}
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
+        )}
+
         {/* Collections List */}
         {collections.length > 0 && (
           <div className="space-y-2">
@@ -200,14 +263,14 @@ function ModernSidebar({
                       <div className={`flex items-start ${collapsed ? 'justify-center' : 'gap-2'}`}>
                         <div className={`${collapsed ? 'p-1' : 'p-1.5'} rounded-lg flex-shrink-0 bg-purple-200 dark:bg-purple-800`} title={collapsed ? collection.name : ''}>
                           <FileText className={`${collapsed ? 'h-3 w-3' : 'h-3.5 w-3.5'} text-purple-700 dark:text-purple-300`} />
-                </div>
+                        </div>
                         {!collapsed && (
-                <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
                               <p className="text-sm font-medium text-purple-900 dark:text-purple-100 truncate">
                                 {collection.name}
-                  </p>
-                    <div className="flex items-center gap-1">
+                              </p>
+                              <div className="flex items-center gap-1">
                                 <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 text-xs px-1.5 py-0.5">
                                   {collectionDocuments.length} docs
                                 </Badge>
@@ -227,7 +290,7 @@ function ModernSidebar({
                                 {completedCount === collectionDocuments.length ? 'All Ready' :
                                  completedCount > 0 ? `${completedCount}/${collectionDocuments.length} Ready` :
                                  'Analyzing...'}
-                      </span>
+                              </span>
                             </div>
                           </div>
                         )}
@@ -240,7 +303,7 @@ function ModernSidebar({
                         {collectionDocuments.map((doc) => (
                           <div
                             key={doc.id}
-                            onClick={() => handleDocumentClick(doc)}
+                            onClick={() => onSelectDocument(doc.id)}
                             className={`p-2 rounded-lg cursor-pointer transition-all duration-200 group ${
                               selectedDocumentId === doc.id
                                 ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700'
@@ -274,20 +337,20 @@ function ModernSidebar({
                                     doc.status === 'uploading' ? 'bg-blue-500 animate-pulse' :
                                     doc.status === 'error' ? 'bg-red-500' : 'bg-gray-400'
                                   }`} />
-                                                            <span className={`text-xs ${
-                            selectedDocumentId === doc.id
-                              ? 'text-blue-700 dark:text-blue-300'
-                              : 'text-gray-500 dark:text-gray-400'
-                          }`}>
-                            {doc.status === 'completed' ? 'Ready' :
-                             doc.status === 'error' ? 'Error' :
-                             doc.status === 'analyzing' ? 'Analyzing...' :
-                             doc.status === 'uploading' ? 'Uploading...' : 'Pending'}
-                          </span>
+                                  <span className={`text-xs ${
+                                    selectedDocumentId === doc.id
+                                      ? 'text-blue-700 dark:text-blue-300'
+                                      : 'text-gray-500 dark:text-gray-400'
+                                  }`}>
+                                    {doc.status === 'completed' ? 'Ready' :
+                                     doc.status === 'analyzing' ? 'Analyzing...' :
+                                     doc.status === 'uploading' ? 'Uploading...' :
+                                     doc.status === 'error' ? 'Error' : 'Pending'}
+                                  </span>
                                 </div>
-                  </div>
-                </div>
-              </div>
+                              </div>
+                            </div>
+                          </div>
                         ))}
                       </div>
                     )}
@@ -311,13 +374,13 @@ function ModernSidebar({
               {documents.filter(doc => !doc.collectionId).map((doc) => (
                 <div
                   key={doc.id}
-                  onClick={() => handleDocumentClick(doc)}
+                  onClick={() => onSelectDocument(doc.id)}
                   className={`${collapsed ? 'p-2' : 'p-2.5 sm:p-3'} rounded-lg cursor-pointer transition-all duration-200 group ${
                     selectedDocumentId === doc.id
                       ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700'
                       : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
                   }`}
-            >
+                >
                   <div className={`flex items-start ${collapsed ? 'justify-center' : 'gap-2'}`}>
                     <div className={`${collapsed ? 'p-1' : 'p-1.5'} rounded-lg flex-shrink-0 ${
                       selectedDocumentId === doc.id
@@ -352,9 +415,9 @@ function ModernSidebar({
                               : 'text-gray-500 dark:text-gray-400'
                           }`}>
                             {doc.status === 'completed' ? 'Ready' :
-                             doc.status === 'error' ? 'Error' :
                              doc.status === 'analyzing' ? 'Analyzing...' :
-                             doc.status === 'uploading' ? 'Uploading...' : 'Pending'}
+                             doc.status === 'uploading' ? 'Uploading...' :
+                             doc.status === 'error' ? 'Error' : 'Pending'}
                           </span>
                         </div>
                       </div>
@@ -417,67 +480,6 @@ function ModernSidebar({
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
       />
-      
-      {/* Error Document Modal */}
-      {errorModalOpen && errorDocument && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md p-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
-                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Document Error
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Unable to process this file
-                </p>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {errorDocument.filename}
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                  This file may be corrupted, unreadable, or in an unsupported format.
-                </p>
-              </div>
-              
-              <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
-                <p>Possible reasons:</p>
-                <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li>File is corrupted or damaged</li>
-                  <li>File format is not supported</li>
-                  <li>File is password protected</li>
-                  <li>File size is too large</li>
-                </ul>
-              </div>
-            </div>
-            
-            <div className="flex gap-3 pt-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setErrorModalOpen(false)}
-                className="flex-1"
-              >
-                Close
-              </Button>
-              <Button 
-                onClick={() => {
-                  setErrorModalOpen(false)
-                  onRemoveDocument(errorDocument.id)
-                }}
-                className="flex-1 bg-red-600 hover:bg-red-700"
-              >
-                Remove File
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
     </div>
   )
 }

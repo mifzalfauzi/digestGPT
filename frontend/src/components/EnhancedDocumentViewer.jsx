@@ -9,22 +9,14 @@ import HighlightableText from './HighlightableText'
 import MarkdownRenderer from './MarkdownRenderer'
 import DocxViewer from './DocxViewer'
 import mammoth from 'mammoth'
-import { Document as PdfDocument, Page as PdfPage, pdfjs } from 'react-pdf'
-import CustomPDFTextLayer from './CustomPDFTextLayer';
 
-// Set workerSrc for pdfjs
-pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
-
-function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, isDemoMode = false, bypassAPI = false, highlightQuote = null }) {
+function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, isDemoMode = false, bypassAPI = false }) {
   const [activeHighlight, setActiveHighlight] = useState(null)
   const [highlights, setHighlights] = useState([])
   const [activeTab, setActiveTab] = useState('')
   const [tabChangeKey, setTabChangeKey] = useState(0)
   const [docxContent, setDocxContent] = useState(null)
   const [docxLoading, setDocxLoading] = useState(false)
-  const [numPages, setNumPages] = useState(null)
-  const [pendingHighlight, setPendingHighlight] = useState(null)
-  const [pdfTextItems, setPdfTextItems] = useState({});
 
   // Handle tab change with animation
   const handleTabChange = (newTab) => {
@@ -154,44 +146,20 @@ This business plan effectively balances growth ambitions with comprehensive risk
   }
 
   const handleShowInDocument = (id) => {
-    console.log('handleShowInDocument called with id:', id);
-    const highlight = highlights.find(h => h.id === id);
-    console.log('Found highlight:', highlight);
-    if (highlight) console.log('Highlight position:', highlight.position);
+    setActiveHighlight(id)
+    setActiveTab('document')
     
-    setActiveHighlight(id);
-    setActiveTab('document-viewer');
-    
-    if (highlight) {
-      // Set the highlight for all pages to search
-      setPendingHighlight(highlight);
-      
-      // For non-PDF documents, scroll to the highlight
-      if (!isPDF) {
-        setTimeout(() => {
-          const element = document.querySelector(`[data-highlight-id="${id}"]`);
-          if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }, 150);
-      } else {
-        // For PDF, scroll to the highlighted content when found
-        setTimeout(() => {
-          // Look for any highlight notification boxes first
-          const highlightNotification = document.querySelector('.pdf-custom-textLayer div[style*="#FF6600"]');
-          if (highlightNotification) {
-            highlightNotification.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          } else {
-            // Fallback to looking for highlighted text elements
-            const highlightElement = document.querySelector('.pdf-custom-textLayer span[style*="#FFD700"], .pdf-custom-textLayer span[style*="#FFFF00"]');
-            if (highlightElement) {
-              highlightElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-          }
-        }, 2000); // Give more time for all PDF pages to load and highlight
+    // Small delay to ensure tab switch completes before scrolling
+    setTimeout(() => {
+      const element = document.querySelector(`[data-highlight-id="${id}"]`)
+      if (element) {
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        })
       }
-    }
-  };
+    }, 150)
+  }
 
   // Load DOCX content when file changes
   useEffect(() => {
@@ -221,30 +189,6 @@ This business plan effectively balances growth ambitions with comprehensive risk
       setDocxLoading(false)
     }
   }
-
-  // PDF file URL for react-pdf
-  const pdfFileUrl = file && file.type === 'application/pdf' ? URL.createObjectURL(file) : null
-  console.log('Rendering PDF: file', file, 'pdfFileUrl', pdfFileUrl);
-
-  // Effect: If highlightQuote changes, set pending highlight
-  useEffect(() => {
-    if (highlightQuote) {
-      setPendingHighlight(highlightQuote)
-    }
-  }, [highlightQuote])
-
-  useEffect(() => {
-    if (!activeHighlight) {
-      setPendingHighlight(null);
-      return;
-    }
-    const highlight = highlights.find(h => h.id === activeHighlight);
-    if (highlight) {
-      setPendingHighlight(highlight);
-    } else {
-      setPendingHighlight(null);
-    }
-  }, [activeHighlight, highlights]);
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800">
@@ -318,9 +262,9 @@ This business plan effectively balances growth ambitions with comprehensive risk
             {hasDocumentViewer && (
               <TabsContent value="document-viewer" className="h-full mt-1 sm:mt-2 px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter">
                 {isPDF ? (
-                  <Card className="h-full border-0 shadow-xl">
-                    <CardContent className="p-0 h-full">
-                      <div className="h-full border border-slate-200 dark:border-gray-600 rounded-xl overflow-hidden relative flex flex-col">
+                <Card className="h-full border-0 shadow-xl">
+                  <CardContent className="p-0 h-full">
+                      <div className="h-full border border-slate-200 dark:border-gray-600 rounded-xl overflow-hidden relative">
                         {!results && (
                           <div className="absolute inset-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm flex items-center justify-center z-10">
                             <div className="text-center space-y-3">
@@ -332,99 +276,14 @@ This business plan effectively balances growth ambitions with comprehensive risk
                             </div>
                           </div>
                         )}
-                        
-                        {/* Highlighting Status and Controls */}
-                        {pendingHighlight && (
-                          <div className="absolute top-4 left-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-4 py-3 rounded-lg shadow-lg z-20 text-sm font-medium">
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-black rounded-full animate-pulse"></div>
-                                <span>Highlighting: "{pendingHighlight.quote?.substring(0, 30)}..."</span>
-                              </div>
-                              <button
-                                className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-bold"
-                                onClick={() => {
-                                  setPendingHighlight(null);
-                                  setActiveHighlight(null);
-                                }}
-                              >
-                                Clear
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                        {pdfFileUrl && (
-                          <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 overflow-y-auto" style={{ maxHeight: '80vh' }}>
-                            <PdfDocument
-                              file={pdfFileUrl}
-                              onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-                              loading={<div className="py-8 text-center text-gray-500">Loading PDF...</div>}
-                              error={<div className="py-8 text-center text-red-500">Failed to load PDF.</div>}
-                            >
-                              <div className="flex flex-col gap-4 py-4">
-                                {/* Render all pages in a scrollable view */}
-                                {Array.from(new Array(numPages), (el, index) => (
-                                  <div key={`page_${index + 1}`} className="relative border border-gray-300 shadow-lg">
-                                    <PdfPage
-                                      pageNumber={index + 1}
-                                      width={700}
-                                      renderTextLayer={false}
-                                      renderAnnotationLayer={true}
-                                      onGetTextSuccess={(textContent) => {
-                                        console.log(`PDF onGetTextSuccess called for page ${index + 1}`);
-                                        console.log('textContent:', textContent);
-                                        if (textContent && textContent.items) {
-                                          console.log(`Setting PDF text items for page ${index + 1}:`, textContent.items);
-                                          // Store text items for each page
-                                          setPdfTextItems(prev => ({
-                                            ...prev,
-                                            [index + 1]: textContent.items
-                                          }));
-                                        }
-                                      }}
-                                    />
-                                    {/* Render highlighting for each page if we have text items and a quote */}
-                                    {pdfTextItems[index + 1] && pendingHighlight?.quote && (
-                                      <CustomPDFTextLayer 
-                                        textItems={pdfTextItems[index + 1]} 
-                                        quote={pendingHighlight.quote}
-                                        pageNumber={index + 1}
-                                      />
-                                    )}
-                                    {/* Page number overlay */}
-                                    <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-sm">
-                                      Page {index + 1}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </PdfDocument>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* PDF Highlighting Instructions */}
-                      {isPDF && highlights.length > 0 && (
-                        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
-                          <div className="flex items-start gap-2 text-sm text-blue-800 dark:text-blue-200">
-                            <Eye className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                            <div>
-                              <p className="font-medium mb-1">📄 Scrollable PDF Highlighting:</p>
-                              <p className="text-xs">
-                                • Click insights or risks in the "Insights & Risks" tab to highlight them across all PDF pages
-                                <br />
-                                • 🌟 <strong>Gold/yellow highlighting</strong> shows the exact matching text
-                                <br />
-                                • 🔍 Scroll through the PDF to find highlighted content - it appears on all matching pages
-                                <br />
-                                • 🎯 Orange notification boxes show exactly which page has highlights
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                      <iframe
+                        src={getFileUrl()}
+                        className="w-full h-full"
+                        title="PDF Document"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
                 ) : (
                   <DocxViewer 
                     file={file} 
