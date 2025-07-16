@@ -1,4 +1,5 @@
 import os
+import requests
 import io
 import json
 import uuid
@@ -18,6 +19,8 @@ from docx2pdf import convert as docx2pdf_convert
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from database import get_db
+from models import Base
+from database import engine
 
 # Load environment variables
 load_dotenv()
@@ -32,6 +35,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+Base.metadata.drop_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 
 # Anthropic configuration
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
@@ -197,6 +202,19 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
             return text.strip()
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error reading PDF: {str(e)}")
+    
+def query_ollama(prompt: str, model: str = "phi3") -> str:
+    try:
+        response = requests.post("http://localhost:11434/api/generate", json={
+            "model": model,
+            "prompt": prompt,
+            "stream": False
+        })
+        response.raise_for_status()
+        return response.json()["response"].strip()
+    except Exception as e:
+        print(f"Ollama error: {e}")
+        return ""
 
 def extract_text_from_docx(file_bytes: bytes) -> str:
     """Extract text from DOCX using python-docx"""
@@ -209,7 +227,8 @@ def extract_text_from_docx(file_bytes: bytes) -> str:
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error reading DOCX: {str(e)}")
 
-async def analyze_document_with_claude(text: str, retry_count: int = 0) -> dict:
+async def analyze_document_with_ollama(text: str, retry_count: int = 0) -> dict:
+
     """Send text to Anthropic Claude for analysis"""
     if not client:
         raise HTTPException(status_code=500, detail="Key not configured")
@@ -286,18 +305,11 @@ Document text:
 Document: {text[:4000]}"""
     
     try:
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=1000,
-            temperature=0.3,
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
-        
-        # Get the raw response content
-        content = response.content[0].text.strip()
-        print(f"Raw Claude response: {content}")  # Debug log
+        content = query_ollama(prompt, model="phi3")
+        if not content:
+            raise HTTPException(status_code=500, detail="No response from Ollama.")
+
+        print(f"Raw Ollama response: {content}")  # Debug log
         
         # Try to find and extract JSON from the response
         json_start = content.find('{')
@@ -450,7 +462,7 @@ Document: {text[:4000]}"""
         
         # If this is the first attempt, try again with a simpler prompt
         print(f"Retrying with simplified prompt...")  # Debug log
-        return await analyze_document_with_claude(text, retry_count + 1)
+        return await analyze_document_with_ollama(text, retry_count + 1)
 
 async def analyze_document_with_chunking(text: str, enable_synthesis: bool = True) -> dict:
     """
@@ -469,7 +481,7 @@ async def analyze_document_with_chunking(text: str, enable_synthesis: bool = Tru
     # Check if document needs chunking
     if not should_chunk_document(text):
         print("Document is short enough for single analysis")
-        return await analyze_document_with_claude(text)
+        return await analyze_document_with_ollama(text)
     
     # Split document into chunks
     chunks = split_text_into_chunks(text)
@@ -477,14 +489,14 @@ async def analyze_document_with_chunking(text: str, enable_synthesis: bool = Tru
     
     if len(chunks) == 1:
         print("Only one chunk created, using single analysis")
-        return await analyze_document_with_claude(text)
+        return await analyze_document_with_ollama(text)
     
     # Analyze each chunk
     chunk_analyses = []
     for i, chunk in enumerate(chunks):
         print(f"Analyzing chunk {i+1}/{len(chunks)} ({count_words(chunk)} words)")
         try:
-            analysis = await analyze_document_with_claude(chunk)
+            analysis = await analyze_document_with_ollama(chunk)
             chunk_analyses.append(analysis)
         except Exception as e:
             print(f"Error analyzing chunk {i+1}: {e}")
@@ -812,10 +824,7 @@ def get_document(document_id: str) -> Dict:
     return document_storage[document_id]
 
 async def chat_about_document(document_id: str, user_message: str) -> str:
-    """Chat with Claude about a specific document"""
-    if not client:
-        raise HTTPException(status_code=500, detail="Anthropic API key not configured")
-    
+    """Chat with Ollama about a specific document"""
     document = get_document(document_id)
     document_text = document["text"]
     chat_history = document["chat_history"]
@@ -830,37 +839,26 @@ async def chat_about_document(document_id: str, user_message: str) -> str:
             context += f"Assistant: {chat['ai_response']}\n\n"
     
     prompt = f"""{context}
-
 The user has a question about the document above. Please provide a helpful, accurate response based on the document content.
 
 User question: {user_message}
 
 Please respond naturally and refer to specific parts of the document when relevant."""
-
-    try:
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=1000,
-            temperature=0.3,
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
-        
-        ai_response = response.content[0].text
-        
-        # Store chat exchange in history
-        chat_entry = {
-            "user_message": user_message,
-            "ai_response": ai_response,
-            "timestamp": datetime.now()
-        }
-        document["chat_history"].append(chat_entry)
-        
-        return ai_response
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Anthropic API error: {str(e)}")
+    
+    ai_response = query_ollama(prompt, model="phi3")
+    
+    if not ai_response:
+        raise HTTPException(status_code=500, detail="No response from Ollama.")
+    
+    # Store chat exchange in history
+    chat_entry = {
+        "user_message": user_message,
+        "ai_response": ai_response,
+        "timestamp": datetime.now()
+    }
+    document["chat_history"].append(chat_entry)
+    
+    return ai_response
 
 @app.get("/")
 async def root():
