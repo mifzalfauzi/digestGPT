@@ -123,10 +123,9 @@ function KeyConceptsDisplay({ concepts = [], onExplainConcept, isDemoMode = fals
             return (
               <div key={conceptId} className="space-y-1.5">
                 {/* Concept Term Button */}
-                <Button
-                  variant="outline"
+                <div
                   onClick={() => handleConceptClick(concept, index)}
-                  className={`w-full justify-between text-left h-auto p-3 transition-all duration-200 ${
+                  className={`w-full flex items-center justify-between text-left cursor-pointer p-3 transition-all duration-200 border rounded-lg ${
                     isExpanded 
                       ? isDemoMode
                         ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700 shadow-md'
@@ -140,7 +139,7 @@ function KeyConceptsDisplay({ concepts = [], onExplainConcept, isDemoMode = fals
                         : 'hover:bg-amber-50 dark:hover:bg-amber-900/10 border-slate-200 dark:border-gray-700'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <div className={`p-1.5 rounded-lg ${
                       isDemoMode 
                         ? 'bg-orange-100 dark:bg-orange-900/40' 
@@ -207,7 +206,7 @@ function KeyConceptsDisplay({ concepts = [], onExplainConcept, isDemoMode = fals
                       <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
                     )}
                   </div>
-                </Button>
+                </div>
 
                 {/* Concept Explanation */}
                 {isExpanded && (

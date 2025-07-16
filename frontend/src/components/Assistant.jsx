@@ -10,7 +10,7 @@ import EnhancedDocumentViewer from "./EnhancedDocumentViewer"
 import UsageDashboard from "./dashboard/UsageDashboard"
 import { Button } from "./ui/button"
 import { Menu, X, MessageCircle, FileText, Eye, GripVertical, Sparkles, Zap, AlertTriangle, LogOut, TrendingUp } from "lucide-react"
-import { Card } from "./ui/card"
+import { Card, CardContent } from "./ui/card"
 import { Alert, AlertDescription } from "./ui/alert"
 
 function Assistant() {
@@ -51,6 +51,50 @@ function Assistant() {
   // Computed values for selected document
   const selectedDocument = documents.find(doc => doc.id === selectedDocumentId) || null
   const currentDocument = selectedDocument?.filename || (isDemoMode ? "Demo Business Plan.pdf" : bypassAPI ? "Preview Document.pdf" : null)
+  
+  // Helper function to ensure document has text data
+  const ensureDocumentText = async (documentId) => {
+    try {
+      console.log('Fetching document text for ID:', documentId)
+      const response = await axios.get(`http://localhost:8000/documents/${documentId}`, {
+        headers: {
+          'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}`
+        }
+      })
+      
+      console.log('Backend response for document fetch:', response.data)
+      
+      updateDocument(selectedDocumentId, {
+        results: {
+          ...selectedDocument.results,
+          ...response.data,
+          document_text: response.data.document_text || response.data.text || response.data.analysis?.document_text
+        }
+      })
+      
+      console.log('Updated document with text data')
+    } catch (error) {
+      console.error('Error fetching document data:', error)
+    }
+  }
+
+  // Auto-fetch document text if missing
+  useEffect(() => {
+    if (selectedDocument && selectedDocument.status === 'completed' && 
+        selectedDocument.results && !selectedDocument.results.document_text) {
+      console.log('Document missing text, fetching from backend...')
+      
+      // Try to get the document ID from various sources
+      const docId = selectedDocument.documentId || selectedDocument.id || selectedDocument.results?.document_id
+      
+      if (docId) {
+        console.log('Using document ID for fetch:', docId)
+        ensureDocumentText(docId)
+      } else {
+        console.error('No valid document ID found for fetching text')
+      }
+    }
+  }, [selectedDocument])
 
   // Hide initial load animation after component mounts
   useEffect(() => {
@@ -59,10 +103,20 @@ function Assistant() {
     }, 800)
     return () => clearTimeout(timer)
   }, [])
-  
+
   const results = selectedDocument?.results || null
   const documentId = selectedDocument?.documentId || selectedDocument?.id || null
   const selectedDocumentFile = selectedDocument?.file || file
+
+  // Ensure document text is always available by checking multiple sources
+  const enhancedResults = results ? {
+    ...results,
+    document_text: results.document_text || 
+                   results.text || 
+                   (typeof results.analysis === 'object' ? results.analysis?.document_text : null) ||
+                   selectedDocument?.textContent ||
+                   null
+  } : null
 
   // Check if selected document is ready for chat (completed or error status means it's "done")
   const selectedDocumentReady = selectedDocument && selectedDocument.status === 'completed'
@@ -435,7 +489,11 @@ function Assistant() {
 
       updateDocument(documentId, {
         status: 'completed',
-        results: response.data,
+        results: {
+          ...response.data,
+          // Ensure document_text is available at the results level
+          document_text: response.data.document_text || response.data.text || response.data.analysis?.document_text || textContent
+        },
         documentId: response.data.document_id || documentId,
         analysisEndTime: new Date().toISOString()
       })
@@ -1277,7 +1335,7 @@ This business plan effectively balances ambitious growth objectives with compreh
             <ModernSidebar
               onNewDocument={handleNewDocument}
               onHome={resetToHome}
-              currentDocument={results?.filename || "Demo Document"}
+              currentDocument={enhancedResults?.filename || "Demo Document"}
               isDemoMode={isDemoMode}
               bypassAPI={bypassAPI}
               collapsed={sidebarCollapsed}
@@ -1416,7 +1474,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                 ) : documentId ? (
                   <ModernChatPanel
                     documentId={documentId}
-                    filename={results?.filename || "Demo Document"}
+                    filename={enhancedResults?.filename || "Demo Document"}
                     onSetInputMessage={setChatSetInputMessage}
                     isDemoMode={isDemoMode}
                     bypassAPI={bypassAPI}
@@ -1451,7 +1509,7 @@ This business plan effectively balances ambitious growth objectives with compreh
               {/* Document Viewer Panel - Mobile/Tablet */}
               <div className={`h-full ${activePanel === "document" ? "block" : "hidden"}`}>
                 <EnhancedDocumentViewer
-                  results={results}
+                  results={enhancedResults}
                   file={selectedDocumentFile}
                   inputMode={selectedDocument?.inputMode || inputMode}
                   onExplainConcept={handleExplainConcept}
@@ -1520,7 +1578,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                 ) : documentId ? (
                   <ModernChatPanel
                     documentId={documentId}
-                    filename={results?.filename || "Demo Document"}
+                    filename={enhancedResults?.filename || "Demo Document"}
                     onSetInputMessage={setChatSetInputMessage}
                     isDemoMode={isDemoMode}
                     bypassAPI={bypassAPI}
@@ -1605,7 +1663,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                 <ModernSidebar
                   onNewDocument={handleNewDocument}
                   onHome={resetToHome}
-                  currentDocument={results?.filename || "Demo Document"}
+                  currentDocument={enhancedResults?.filename || "Demo Document"}
                   onClose={() => setSidebarOpen(false)}
                   isDemoMode={isDemoMode}
                   bypassAPI={bypassAPI}

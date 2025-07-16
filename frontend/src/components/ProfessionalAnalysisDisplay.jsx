@@ -348,7 +348,9 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                       ? 'ring-2 ring-emerald-400 dark:ring-emerald-500 shadow-lg bg-emerald-50/50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700'
                       : 'border-slate-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-600'
                   }`}
-                  onClick={() => hasHighlight && onHighlightClick(insight.id)}
+                  onClick={() => {
+                    hasHighlight && onHighlightClick(insight.id);
+                  }}
                 >
                   <CardContent className="p-5">
                     <div className="flex items-start gap-4">
@@ -375,6 +377,10 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                               variant="outline"
                               size="sm"
                               className="text-xs bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 border-emerald-300 dark:border-emerald-700"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onHighlightClick(insight.id)
+                              }}
                             >
                               <Search className="h-3 w-3 mr-1" />
                               {isActive ? 'Hide highlight' : 'Show in document'}
@@ -452,7 +458,9 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                       ? 'ring-2 ring-red-400 dark:ring-red-500 shadow-lg bg-red-50/50 dark:bg-red-950/30 border-red-300 dark:border-red-600'
                       : 'border-red-200 dark:border-red-800 hover:border-red-300 dark:hover:border-red-600'
                   } bg-gradient-to-r from-red-50/80 to-orange-50/80 dark:from-red-950/20 dark:to-orange-950/20`}
-                  onClick={() => hasHighlight && onHighlightClick(risk.id)}
+                  onClick={() => {
+                    hasHighlight && onHighlightClick(risk.id);
+                  }}
                 >
                   <div className="flex items-start gap-4">
                     <div className={`p-2.5 ${getSeverityIconClasses(risk.severity)} rounded-lg flex-shrink-0`}>
@@ -486,6 +494,10 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                             variant="outline"
                             size="sm"
                             className="text-xs bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 border-red-300 dark:border-red-700"
+                            onClick={(e) => {
+                              e.stopPropagation() // Prevent alert click
+                              onHighlightClick(risk.id)
+                            }}
                           >
                             <Search className="h-3 w-3 mr-1" />
                             {isActive ? 'Hide highlight' : 'Show in document'}

@@ -49,6 +49,7 @@ class DocumentAnalysisResponse(BaseModel):
     chunk_count: int
     analysis_method: str
     analysis: dict
+    document_text: str  # Add document text for frontend highlighting
     analyzed_at: str
 
 class TextAnalysisRequest(BaseModel):
@@ -146,6 +147,7 @@ async def upload_and_analyze_document(
             chunk_count=len(chunks),
             analysis_method=analysis.get("analysis_method", "single"),
             analysis=analysis,
+            document_text=text, # Add document_text to the response
             analyzed_at=datetime.now().isoformat()
         )
         
@@ -232,6 +234,7 @@ async def analyze_text_direct(
             chunk_count=len(chunks),
             analysis_method=analysis.get("analysis_method", "single"),
             analysis=analysis,
+            document_text=text, # Add document_text to the response
             analyzed_at=datetime.now().isoformat()
         )
         

@@ -13,7 +13,7 @@ import mammoth from 'mammoth'
 function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, isDemoMode = false, bypassAPI = false }) {
   const [activeHighlight, setActiveHighlight] = useState(null)
   const [highlights, setHighlights] = useState([])
-  const [activeTab, setActiveTab] = useState('')
+  const [activeTab, setActiveTab] = useState('analysis') // Initialize with default tab
   const [tabChangeKey, setTabChangeKey] = useState(0)
   const [docxContent, setDocxContent] = useState(null)
   const [docxLoading, setDocxLoading] = useState(false)
@@ -97,7 +97,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
     }
   }, [hasDocumentViewer, activeTab, isDemoMode, bypassAPI])
 
-  // Generate highlights for text interaction
+  // Generate highlights from analysis results
   useEffect(() => {
     if (!results?.analysis) {
       setHighlights([])
@@ -152,13 +152,14 @@ This business plan effectively balances growth ambitions with comprehensive risk
     // Small delay to ensure tab switch completes before scrolling
     setTimeout(() => {
       const element = document.querySelector(`[data-highlight-id="${id}"]`)
+      
       if (element) {
         element.scrollIntoView({
           behavior: 'smooth',
           block: 'center'
         })
       }
-    }, 150)
+    }, 200) // Increased delay to ensure tab rendering completes
   }
 
   // Load DOCX content when file changes
@@ -445,6 +446,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                   </div>
                 </CardHeader>
                 <CardContent className="px-3 sm:px-4">
+                  
                   {(results?.document_text || isDemoMode || bypassAPI || docxContent) ? (
                     <div className="space-y-2 sm:space-y-3">
                       {/* Interactive Text Display */}
@@ -489,7 +491,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                           </div>
                         ) : (
                         <HighlightableText 
-                            text={(isDemoMode || bypassAPI) ? mockDocumentText : results.document_text}
+                          text={(isDemoMode || bypassAPI) ? mockDocumentText : results?.document_text}
                           highlights={highlights}
                           activeHighlight={activeHighlight}
                           onHighlightClick={handleHighlightClick}
