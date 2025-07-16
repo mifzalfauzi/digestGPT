@@ -1,8 +1,15 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Text, Enum
 from sqlalchemy.sql import func
 from sqlalchemy.ext.declarative import declarative_base
+import enum
 
 Base = declarative_base()
+
+# Enum for user plans
+class UserPlan(str, enum.Enum):
+    FREE = "free"
+    STANDARD = "standard"
+    PRO = "pro"
 
 # 1. User table
 class User(Base):
@@ -10,7 +17,10 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
+    password_hash = Column(String, nullable=False)
     name = Column(String)
+    plan = Column(Enum(UserPlan), default=UserPlan.FREE)
+    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 # 2. Document table
@@ -21,10 +31,13 @@ class Document(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     filename = Column(String)
     filesize = Column(Integer)  # in bytes
+    document_text = Column(Text)  # Store full document text
     summary = Column(Text)
-    insights = Column(Text)
-    key_concepts = Column(Text)
-    risk_assessment = Column(Text)
+    key_points = Column(Text)  # JSON string of key points
+    risk_flags = Column(Text)  # JSON string of risk flags  
+    key_concepts = Column(Text)  # JSON string of key concepts
+    word_count = Column(Integer)
+    analysis_method = Column(String)  # 'single' or 'chunked'
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
 
 # 3. Chat history table
@@ -54,10 +67,11 @@ class SubscriptionPlan(Base):
     __tablename__ = "subscription_plans"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True)  # Basic, Pro
+    name = Column(String, unique=True)  # Free, Standard, Pro
     price = Column(Float)               # Monthly price in USD
     doc_limit = Column(Integer)
     chat_limit = Column(Integer)
+    token_limit = Column(Integer)       # Token limit per month
 
 # 6. User subscription table
 class UserSubscription(Base):

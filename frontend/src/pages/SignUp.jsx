@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
-import { Eye, EyeOff, Lock, Mail, User, Zap, CheckCircle, FileText, Shield, Users, TrendingUp } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Eye, EyeOff, Lock, Mail, User, Zap, CheckCircle, FileText, Shield, Users, TrendingUp, AlertCircle, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 
 function SignUp() {
   const [formData, setFormData] = useState({
@@ -13,7 +14,18 @@ function SignUp() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [passwordStrength, setPasswordStrength] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+  const [errors, setErrors] = useState({})
+  const [success, setSuccess] = useState(false)
   const navigate = useNavigate()
+  const { register, isAuthenticated } = useAuth()
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/assistant')
+    }
+  }, [isAuthenticated, navigate])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -34,10 +46,54 @@ function SignUp() {
     }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Placeholder for future sign-up logic
-    console.log('Sign up attempt', formData)
+    
+    // Validate form
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+      setErrors({ submit: 'All fields are required' })
+      return
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      setErrors({ submit: 'Passwords do not match' })
+      return
+    }
+    
+    if (formData.password.length < 6) {
+      setErrors({ submit: 'Password must be at least 6 characters' })
+      return
+    }
+    
+    setIsLoading(true)
+    setErrors({})
+    
+    try {
+      await register({
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        password: formData.password,
+        plan: 'free' // Default to free plan
+      })
+      
+      // Show success message briefly then redirect to sign in
+      setSuccess(true)
+      setTimeout(() => {
+        navigate('/signin', { 
+          state: { 
+            message: 'Account created successfully! Please sign in with your credentials.' 
+          } 
+        })
+      }, 1500)
+      
+    } catch (error) {
+      console.error('Registration error:', error)
+      setErrors({ 
+        submit: error.response?.data?.detail || 'Registration failed. Please try again.' 
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const passwordStrengthText = [
@@ -75,6 +131,24 @@ function SignUp() {
             </p>
           </div>
 
+          {/* Error Message */}
+          {errors.submit && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-red-500" />
+              <span className="text-sm text-red-600 dark:text-red-400">{errors.submit}</span>
+            </div>
+          )}
+
+          {/* Success Message */}
+          {success && (
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <span className="text-sm text-green-600 dark:text-green-400">
+                Account created successfully! Redirecting to sign in...
+              </span>
+            </div>
+          )}
+
           {/* Sign Up Form */}
           <div className="space-y-5">
             <div className="space-y-4">
@@ -93,7 +167,8 @@ function SignUp() {
                       onChange={handleChange}
                       placeholder="First Name"
                       required
-                      className="pl-10 h-12 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      disabled={isLoading}
+                      className="pl-10 h-12 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50"
                     />
                   </div>
                 </div>
@@ -111,7 +186,8 @@ function SignUp() {
                       onChange={handleChange}
                       placeholder="Last Name"
                       required
-                      className="pl-10 h-12 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      disabled={isLoading}
+                      className="pl-10 h-12 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50"
                     />
                   </div>
                 </div>
@@ -131,7 +207,8 @@ function SignUp() {
                     onChange={handleChange}
                     placeholder="Enter your email"
                     required
-                    className="pl-10 h-12 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    disabled={isLoading}
+                    className="pl-10 h-12 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50"
                   />
                 </div>
               </div>
@@ -226,9 +303,17 @@ function SignUp() {
               <button 
                 type="submit" 
                 onClick={handleSubmit}
-                className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl text-white font-medium rounded-lg flex items-center justify-center"
+                disabled={isLoading}
+                className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl text-white font-medium rounded-lg flex items-center justify-center disabled:opacity-50"
               >
-                Create Account
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Creating Account...
+                  </div>
+                ) : (
+                  'Create Account'
+                )}
               </button>
             </div>
 

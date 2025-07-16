@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react'
 import axios from 'axios'
+import { useAuth } from '../contexts/AuthContext'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
-
 import { Badge } from './ui/badge'
 import { Card, CardHeader, CardContent } from './ui/card'
 import { Separator } from './ui/separator'
@@ -10,6 +10,15 @@ import { MessageCircle, Send, Bot, User, AlertCircle, Trash2, Sparkles, Brain, Z
 import MessageFormatter from './MessageFormatter';
 
 function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode = false, bypassAPI = false, casualMode = false, isDisabled = false, analyzingStatus = null }) {
+  // Auth context
+  const { 
+    canSendChat, 
+    canUseTokens, 
+    refreshUserData, 
+    logout,
+    isAuthenticated 
+  } = useAuth()
+
   const [messages, setMessages] = useState([])
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -17,6 +26,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
   const [messageFeedback, setMessageFeedback] = useState({}) // Store feedback for each message
   const [showScrollIndicator, setShowScrollIndicator] = useState(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const [chatError, setChatError] = useState('')
   const messagesEndRef = useRef(null)
   const textareaRef = useRef(null)
   const messagesContainerRef = useRef(null)
@@ -111,9 +121,22 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
     
     if (!inputMessage || !inputMessage.trim() || isLoading) return
 
+    // Check authentication (only for production mode)
+    if (!casualMode && !isDemoMode && !bypassAPI && !isAuthenticated) {
+      setChatError("Please sign in to chat with documents")
+      return
+    }
+
+    // Check chat limits (only for production mode)
+    if (!casualMode && !isDemoMode && !bypassAPI && !canSendChat()) {
+      setChatError("You've reached your chat limit. Please upgrade your plan to continue chatting.")
+      return
+    }
+
     const userMessage = inputMessage.trim()
     setInputMessage('')
     setIsLoading(true)
+    setChatError('')
 
     // Add user message to chat
     const newUserMessage = {
@@ -138,10 +161,15 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
         }
         mockResponseIndex++
       } else {
-        // Production mode: make actual API call
+        // Production mode: make actual API call with authentication
         const response = await axios.post('http://localhost:8000/chat', {
           document_id: documentId,
           message: userMessage
+        }, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          }
         })
         aiResponse = response.data
       }
@@ -155,16 +183,37 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
       }
       setMessages(prev => [...prev, aiMessage])
 
+      // Refresh user data to update usage statistics (only for production mode)
+      if (!casualMode && !isDemoMode && !bypassAPI) {
+        await refreshUserData()
+      }
+
     } catch (error) {
       console.error('Chat error:', error)
+      
+      let errorContent
+      
+      // Handle authentication errors
+      if (error.response?.status === 401) {
+        errorContent = "Session expired. Please login again."
+        logout()
+        return
+      } else if (error.response?.status === 403) {
+        errorContent = "Access forbidden. Please check your permissions."
+      } else if (error.response?.status === 429) {
+        errorContent = error.response.data?.detail || "You've reached your usage limit. Please upgrade your plan."
+      } else if (casualMode || isDemoMode || bypassAPI) {
+        errorContent = casualMode 
+          ? 'Oops! Something went wrong. This is just a simulation - please try again!' 
+          : 'Demo error simulation - this would normally retry the request.'
+      } else {
+        errorContent = 'Sorry, I encountered an error. Please try again.'
+      }
+      
       const errorMessage = {
         id: Date.now() + '-error',
         type: 'error',
-        content: (casualMode || isDemoMode || bypassAPI)
-          ? casualMode 
-            ? 'Oops! Something went wrong. This is just a simulation - please try again!' 
-            : 'Demo error simulation - this would normally retry the request.'
-          : 'Sorry, I encountered an error. Please try again.',
+        content: errorContent,
         timestamp: new Date().toISOString()
       }
       setMessages(prev => [...prev, errorMessage])
@@ -559,6 +608,23 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
 
       {/* Modern Input - Fixed at bottom */}
       <div className="flex-shrink-0 p-2 sm:p-3 lg:p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+        {/* Chat Error Alert */}
+        {chatError && (
+          <div className="mb-2 sm:mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-red-800 dark:text-red-300">{chatError}</p>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setChatError('')}
+                className="h-auto p-1 hover:bg-red-100 dark:hover:bg-red-800/20"
+              >
+                ✕
+              </Button>
+            </div>
+          </div>
+        )}
+        
         <form onSubmit={handleSendMessage} className="space-y-2 sm:space-y-3">
           <div className="relative">
             <Textarea

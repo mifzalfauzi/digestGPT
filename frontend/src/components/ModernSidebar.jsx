@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { Badge } from './ui/badge'
-import { Brain, Upload, FileText, Home, MessageCircle, Settings, HelpCircle, Sparkles, Activity, X, Menu, PanelLeftClose, ChevronDown, LayoutDashboard } from 'lucide-react'
+import { Brain, Upload, FileText, Home, MessageCircle, Settings, HelpCircle, Sparkles, Activity, X, Menu, PanelLeftClose, ChevronDown, LayoutDashboard, Crown, Star, Zap, TrendingUp } from 'lucide-react'
 import SettingsPanel from './SettingsPanel'
+import UsageDashboard from './dashboard/UsageDashboard'
 
 function ModernSidebar({ 
   onNewDocument, 
@@ -28,7 +30,21 @@ function ModernSidebar({
   onRemoveCollection = () => {}
 }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isUsageDashboardOpen, setIsUsageDashboardOpen] = useState(false)
   const navigate = useNavigate()
+  const { user, usage, getUsagePercentages } = useAuth()
+  
+  const planIcons = {
+    free: <Zap className="h-4 w-4" />,
+    standard: <Star className="h-4 w-4" />,
+    pro: <Crown className="h-4 w-4" />
+  }
+  
+  const planColors = {
+    free: 'from-blue-500 to-blue-600',
+    standard: 'from-purple-500 to-purple-600',
+    pro: 'from-yellow-500 to-yellow-600'
+  }
   
   return (
     <div className="w-full bg-white dark:bg-gray-900 h-full flex flex-col shadow-xl lg:shadow-none transition-all duration-300">
@@ -163,6 +179,92 @@ function ModernSidebar({
             {!collapsed && <span>Normal Chat</span>}
           </Button>
         </div>
+
+        {/* User Plan & Upgrade Section */}
+        {user && user.plan === 'free' && !collapsed && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">
+              Your Plan
+            </p>
+            
+            <Card className="p-3 border-2 border-dashed border-blue-200 dark:border-blue-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  {planIcons[user.plan]}
+                  <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                    {user.plan.toUpperCase()} PLAN
+                  </span>
+                </div>
+                <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 text-xs">
+                  Current
+                </Badge>
+              </div>
+              
+              {usage && (
+                <div className="space-y-1 mb-3">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-600 dark:text-gray-400">Documents</span>
+                    <span className="font-medium text-blue-700 dark:text-blue-300">
+                      {usage.documents.used}/1
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-600 dark:text-gray-400">Chats</span>
+                    <span className="font-medium text-blue-700 dark:text-blue-300">
+                      {usage.chats.used}/3
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-600 dark:text-gray-400">Tokens</span>
+                    <span className="font-medium text-blue-700 dark:text-blue-300">
+                      {usage.tokens.used}/3K
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              <Button
+                onClick={() => setIsUsageDashboardOpen(true)}
+                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white h-8 text-xs"
+              >
+                <Star className="h-3 w-3 mr-1" />
+                Upgrade Plan
+              </Button>
+            </Card>
+          </div>
+        )}
+        
+        {/* Non-free users: Show plan info */}
+        {user && user.plan !== 'free' && !collapsed && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">
+              Your Plan
+            </p>
+            
+            <Card className={`p-3 border border-gray-200 dark:border-gray-700 bg-gradient-to-r ${planColors[user.plan]}/10`}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  {planIcons[user.plan]}
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {user.plan.toUpperCase()} PLAN
+                  </span>
+                </div>
+                <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200 text-xs">
+                  Active
+                </Badge>
+              </div>
+              
+              <Button
+                onClick={() => setIsUsageDashboardOpen(true)}
+                variant="outline"
+                className="w-full h-8 text-xs"
+              >
+                <TrendingUp className="h-3 w-3 mr-1" />
+                View Usage
+              </Button>
+            </Card>
+          </div>
+        )}
 
         {/* Current Document Section */}
         {currentDocument && (
@@ -480,6 +582,13 @@ function ModernSidebar({
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
       />
+      
+      {/* Usage Dashboard Modal */}
+      {isUsageDashboardOpen && (
+        <UsageDashboard 
+          onClose={() => setIsUsageDashboardOpen(false)}
+        />
+      )}
     </div>
   )
 }

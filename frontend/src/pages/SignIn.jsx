@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
-import { Eye, EyeOff, Lock, Mail, Zap, AlertCircle, Loader2, Shield, Users, TrendingUp } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { Eye, EyeOff, Lock, Mail, Zap, AlertCircle, Loader2, Shield, Users, TrendingUp, CheckCircle } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 
 function SignIn() {
   const [email, setEmail] = useState('')
@@ -10,7 +11,26 @@ function SignIn() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [isMicrosoftLoading, setIsMicrosoftLoading] = useState(false)
   const [errors, setErrors] = useState({})
+  const [successMessage, setSuccessMessage] = useState('')
   const navigate = useNavigate()
+  const location = useLocation()
+  const { login, isAuthenticated } = useAuth()
+
+  // Handle success message from signup redirect
+  useEffect(() => {
+    if (location.state?.message) {
+      setSuccessMessage(location.state.message)
+      // Clear the message after 5 seconds
+      setTimeout(() => setSuccessMessage(''), 5000)
+    }
+  }, [location.state])
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/assistant')
+    }
+  }, [isAuthenticated, navigate])
   const validateForm = () => {
     const newErrors = {}
     
@@ -39,12 +59,13 @@ function SignIn() {
     setErrors({})
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      console.log('Sign in attempt', { email, password })
-      // Handle successful authentication here
+      await login({ email, password })
+      // Navigation will be handled by useEffect when isAuthenticated changes
     } catch (error) {
-      setErrors({ submit: 'Invalid email or password. Please try again.' })
+      console.error('Login error:', error)
+      setErrors({ 
+        submit: error.response?.data?.detail || 'Invalid email or password. Please try again.' 
+      })
     } finally {
       setIsLoading(false)
     }
@@ -241,6 +262,14 @@ function SignIn() {
               <span className="px-3 bg-gray-50 dark:bg-gray-950 text-gray-500">Or continue with email</span>
             </div>
           </div>
+
+          {/* Success Message */}
+          {successMessage && (
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <span className="text-sm text-green-600 dark:text-green-400">{successMessage}</span>
+            </div>
+          )}
 
           {/* Error Message */}
           {errors.submit && (

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useTheme } from './ThemeProvider'
+import { useAuth } from '../contexts/AuthContext'
 import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
@@ -26,18 +27,10 @@ import {
 
 function SettingsPanel({ isOpen, onClose }) {
   const { theme, setTheme } = useTheme()
+  const { user, usage, PLAN_LIMITS } = useAuth()
 
-  // Placeholder data - will be replaced with actual API data
-  const [usageStats, setUsageStats] = useState({
-    documentsUploaded: 42,
-    chatInteractions: 156,
-    totalFileSize: 1024, // in MB
-    monthlyLimit: {
-      documents: 100,
-      chatInteractions: 500,
-      fileSize: 5120 // 5GB
-    }
-  })
+  // Get current plan limits
+  const currentLimits = user ? PLAN_LIMITS[user.plan.toLowerCase()] : null
 
   const calculatePercentage = (current, total) => {
     return Math.min(Math.round((current / total) * 100), 100)
@@ -56,6 +49,20 @@ function SettingsPanel({ isOpen, onClose }) {
   }
 
   if (!isOpen) return null
+
+  // Show loading state if user data is not available
+  if (!user || !usage) {
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl p-6 text-center">
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-gray-300 rounded w-3/4 mx-auto"></div>
+            <div className="h-4 bg-gray-300 rounded w-1/2 mx-auto"></div>
+          </div>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -95,9 +102,15 @@ function SettingsPanel({ isOpen, onClose }) {
                 Usage Statistics
               </h3>
               <div className="flex-1 flex justify-end items-center gap-2">
-                <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                  Standard
-                </Badge>
+                {user && (
+                  <Badge variant="secondary" className={`text-xs ${
+                    user.plan === 'free' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
+                    user.plan === 'standard' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' :
+                    'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+                  }`}>
+                    {user.plan.toUpperCase()}
+                  </Badge>
+                )}
               </div>
             </div>
 
@@ -112,18 +125,18 @@ function SettingsPanel({ isOpen, onClose }) {
                     </p>
                   </div>
                   <div className="text-lg font-bold text-slate-900 dark:text-white mb-2">
-                    {usageStats.documentsUploaded} / {usageStats.monthlyLimit.documents}
+                    {usage ? usage.documents.used : 0} / {currentLimits ? currentLimits.doc_limit : 0}
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                     <div 
                       className="bg-blue-600 h-2.5 rounded-full" 
                       style={{ 
-                        width: `${calculatePercentage(usageStats.documentsUploaded, usageStats.monthlyLimit.documents)}%` 
+                        width: `${usage && currentLimits ? calculatePercentage(usage.documents.used, currentLimits.doc_limit) : 0}%` 
                       }}
                     ></div>
                   </div>
                   <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
-                    {calculatePercentage(usageStats.documentsUploaded, usageStats.monthlyLimit.documents)}% of monthly limit
+                    {usage && currentLimits ? calculatePercentage(usage.documents.used, currentLimits.doc_limit) : 0}% of monthly limit
                   </p>
                 </CardContent>
               </Card>
@@ -138,44 +151,44 @@ function SettingsPanel({ isOpen, onClose }) {
                     </p>
                   </div>
                   <div className="text-lg font-bold text-slate-900 dark:text-white mb-2">
-                    {usageStats.chatInteractions} / {usageStats.monthlyLimit.chatInteractions}
+                    {usage ? usage.chats.used : 0} / {currentLimits ? currentLimits.chat_limit : 0}
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                     <div 
                       className="bg-green-600 h-2.5 rounded-full" 
                       style={{ 
-                        width: `${calculatePercentage(usageStats.chatInteractions, usageStats.monthlyLimit.chatInteractions)}%` 
+                        width: `${usage && currentLimits ? calculatePercentage(usage.chats.used, currentLimits.chat_limit) : 0}%` 
                       }}
                     ></div>
                   </div>
                   <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
-                    {calculatePercentage(usageStats.chatInteractions, usageStats.monthlyLimit.chatInteractions)}% of monthly limit
+                    {usage && currentLimits ? calculatePercentage(usage.chats.used, currentLimits.chat_limit) : 0}% of monthly limit
                   </p>
                 </CardContent>
               </Card>
 
-              {/* Total File Size */}
+              {/* AI Tokens */}
               <Card className="border border-slate-200 dark:border-gray-700">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <Database className="h-5 w-5 text-purple-600" />
+                    <Zap className="h-5 w-5 text-purple-600" />
                     <p className="text-xs text-slate-600 dark:text-gray-400">
-                      Storage
+                      AI Tokens
                     </p>
                   </div>
                   <div className="text-lg font-bold text-slate-900 dark:text-white mb-2">
-                    {usageStats.totalFileSize} MB / {usageStats.monthlyLimit.fileSize} MB
+                    {usage ? usage.tokens.used.toLocaleString() : 0} / {currentLimits ? currentLimits.token_limit.toLocaleString() : 0}
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                     <div 
                       className="bg-purple-600 h-2.5 rounded-full" 
                       style={{ 
-                        width: `${calculatePercentage(usageStats.totalFileSize, usageStats.monthlyLimit.fileSize)}%` 
+                        width: `${usage && currentLimits ? calculatePercentage(usage.tokens.used, currentLimits.token_limit) : 0}%` 
                       }}
                     ></div>
                   </div>
                   <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
-                    {calculatePercentage(usageStats.totalFileSize, usageStats.monthlyLimit.fileSize)}% of storage limit
+                    {usage && currentLimits ? calculatePercentage(usage.tokens.used, currentLimits.token_limit) : 0}% of token limit
                   </p>
                 </CardContent>
               </Card>

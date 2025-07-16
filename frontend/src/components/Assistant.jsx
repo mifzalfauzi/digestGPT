@@ -2,15 +2,29 @@
 
 import { useState, useEffect, useRef } from "react"
 import axios from "axios"
+import { useAuth } from "../contexts/AuthContext"
 import ModernSidebar from "./ModernSidebar"
 import ModernUploadInterface from "./ModernUploadInterface"
 import ModernChatPanel from "./ModernChatPanel"
 import EnhancedDocumentViewer from "./EnhancedDocumentViewer"
+import UsageDashboard from "./dashboard/UsageDashboard"
 import { Button } from "./ui/button"
-import { Menu, X, MessageCircle, FileText, Eye, GripVertical, Sparkles, Zap, AlertTriangle } from "lucide-react"
+import { Menu, X, MessageCircle, FileText, Eye, GripVertical, Sparkles, Zap, AlertTriangle, LogOut, TrendingUp } from "lucide-react"
 import { Card } from "./ui/card"
+import { Alert, AlertDescription } from "./ui/alert"
 
 function Assistant() {
+  // Auth context
+  const { 
+    user, 
+    logout, 
+    canUploadDocument, 
+    canSendChat, 
+    canUseTokens, 
+    refreshUserData,
+    isAuthenticated 
+  } = useAuth()
+
   // Multi-document state
   const [documents, setDocuments] = useState([])
   const [selectedDocumentId, setSelectedDocumentId] = useState(null)
@@ -30,6 +44,9 @@ function Assistant() {
   const [isDemoMode, setIsDemoMode] = useState(false)
   const [bypassAPI, setBypassAPI] = useState(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
+  
+  // Usage dashboard state
+  const [showUsageDashboard, setShowUsageDashboard] = useState(false)
   
   // Computed values for selected document
   const selectedDocument = documents.find(doc => doc.id === selectedDocumentId) || null
@@ -272,6 +289,18 @@ function Assistant() {
       return
     }
 
+    // Check authentication
+    if (!isAuthenticated) {
+      setError("Please sign in to upload documents")
+      return
+    }
+
+    // Check if user can upload documents
+    if (!canUploadDocument()) {
+      setError("You've reached your document upload limit. Please upgrade your plan to upload more documents.")
+      return
+    }
+
     setLoading(true)
     setError('')
 
@@ -351,6 +380,12 @@ function Assistant() {
     const fileSize = file?.size || 0
     const isLargeFile = fileSize > 1024 * 1024 // > 1MB
     
+    // Check if user can upload documents
+    if (!canUploadDocument()) {
+      setError("You've reached your document upload limit. Please upgrade your plan to upload more documents.")
+      return
+    }
+    
     // For single file uploads, we know the document should exist, so we'll update it directly
     // For collection uploads, we need to add the document first
     if (collectionId) {
@@ -381,18 +416,19 @@ function Assistant() {
         const formData = new FormData()
         formData.append("file", file)
 
-        response = await axios.post("http://localhost:8000/analyze-file", formData, {
+        response = await axios.post("http://localhost:8000/documents/upload", formData, {
           headers: {
             "Content-Type": "multipart/form-data",
+            "Authorization": `Bearer ${user?.token || localStorage.getItem('auth_token')}`
           },
         })
       } else if (textContent) {
-        const formData = new FormData()
-        formData.append("text", textContent)
-
-        response = await axios.post("http://localhost:8000/analyze-text", formData, {
+        response = await axios.post("http://localhost:8000/documents/analyze-text", {
+          text: textContent
+        }, {
           headers: {
-            "Content-Type": "multipart/form-data",
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${user?.token || localStorage.getItem('auth_token')}`
           },
         })
       }
@@ -403,6 +439,9 @@ function Assistant() {
         documentId: response.data.document_id || documentId,
         analysisEndTime: new Date().toISOString()
       })
+      
+      // Refresh user data to update usage statistics
+      await refreshUserData()
       
       // Update collection status if this document belongs to a collection
       const document = documents.find(doc => doc.id === documentId)
@@ -430,7 +469,17 @@ function Assistant() {
     } catch (err) {
       console.error("Error:", err)
       let errorMessage = "An error occurred while processing your request"
-      if (err.response?.data?.detail) {
+      
+      // Handle authentication errors
+      if (err.response?.status === 401) {
+        errorMessage = "Session expired. Please login again."
+        logout()
+        return
+      } else if (err.response?.status === 403) {
+        errorMessage = "Access forbidden. Please check your permissions."
+      } else if (err.response?.status === 429) {
+        errorMessage = err.response.data?.detail || "You've reached your usage limit. Please upgrade your plan."
+      } else if (err.response?.data?.detail) {
         errorMessage = err.response.data.detail
       }
       
@@ -480,10 +529,24 @@ function Assistant() {
     setLoading(true)
     setError("")
     
+    // Check authentication
+    if (!isAuthenticated) {
+      setError("Please sign in to upload documents")
+      setLoading(false)
+      return
+    }
+    
     try {
       if (inputMode === "file") {
         // Handle multiple staged files
         if (stagedFiles.length > 0) {
+          // Check if user can upload documents
+          if (!canUploadDocument()) {
+            setError("You've reached your document upload limit. Please upgrade your plan to upload more documents.")
+            setLoading(false)
+            return
+          }
+
           const documentIds = []
           
           for (const selectedFile of stagedFiles) {
@@ -517,6 +580,13 @@ function Assistant() {
           }
           
         } else if (file) {
+          // Check if user can upload documents
+          if (!canUploadDocument()) {
+            setError("You've reached your document upload limit. Please upgrade your plan to upload more documents.")
+            setLoading(false)
+            return
+          }
+
           // Handle single file (legacy support)
           const documentId = generateDocumentId()
           
@@ -571,6 +641,13 @@ function Assistant() {
           return
         }
 
+        // Check if user can upload documents
+        if (!canUploadDocument()) {
+          setError("You've reached your document upload limit. Please upgrade your plan to upload more documents.")
+          setLoading(false)
+          return
+        }
+
         const documentId = addDocument({
           filename: `Text Document ${new Date().toLocaleDateString()}`,
           file: null,
@@ -591,7 +668,17 @@ function Assistant() {
       
     } catch (err) {
       console.error("Error:", err)
-      setError("An error occurred while processing your request")
+      // Handle authentication errors
+      if (err.response?.status === 401) {
+        setError("Session expired. Please login again.")
+        logout()
+      } else if (err.response?.status === 403) {
+        setError("Access forbidden. Please check your permissions.")
+      } else if (err.response?.status === 429) {
+        setError(err.response.data?.detail || "You've reached your usage limit. Please upgrade your plan.")
+      } else {
+        setError("An error occurred while processing your request")
+      }
     } finally {
       setLoading(false)
     }
@@ -937,17 +1024,28 @@ This business plan effectively balances ambitious growth objectives with compreh
               </Button>
             </div>
 
-            {/* Launch Workspace Icon - Top Right */}
-            <div className="fixed top-4 right-4 z-40">
+            {/* User Actions - Top Right */}
+            <div className="fixed top-4 right-4 z-40 flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={loadRealInterfaceWithoutAPI}
+                onClick={() => setShowUsageDashboard(true)}
                 className="bg-background/90 backdrop-blur-xl shadow-xl border border-border hover:bg-accent transition-all duration-200 p-2 group"
               >
-                <MessageCircle className="h-4 w-4 text-primary group-hover:text-primary/80" />
+                <TrendingUp className="h-4 w-4 text-primary group-hover:text-primary/80" />
                 <span className="absolute top-full right-0 mt-2 px-2 py-1 text-xs bg-popover text-popover-foreground rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                  Launch Demo Workspace (Interface with sample content)
+                  View Usage & Plan
+                </span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={logout}
+                className="bg-background/90 backdrop-blur-xl shadow-xl border border-border hover:bg-destructive hover:text-destructive-foreground transition-all duration-200 p-2 group"
+              >
+                <LogOut className="h-4 w-4 group-hover:text-destructive-foreground" />
+                <span className="absolute top-full right-0 mt-2 px-2 py-1 text-xs bg-popover text-popover-foreground rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                  Sign Out
                 </span>
               </Button>
             </div>
@@ -1581,6 +1679,31 @@ This business plan effectively balances ambitious growth objectives with compreh
     </Card>
   </div>
 )}
+
+      {/* Usage Dashboard Modal */}
+      {showUsageDashboard && (
+        <UsageDashboard onClose={() => setShowUsageDashboard(false)} />
+      )}
+
+      {/* Error Alert for Usage Limits */}
+      {error && error.includes('limit') && (
+        <div className="fixed bottom-4 right-4 z-50 max-w-md">
+          <Alert variant="destructive" className="shadow-lg">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>{error}</span>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setError('')}
+                className="ml-2 h-auto p-1 hover:bg-destructive-foreground/10"
+              >
+                ✕
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
     </div>
   )
 }
