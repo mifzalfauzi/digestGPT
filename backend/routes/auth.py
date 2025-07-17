@@ -3,7 +3,7 @@ from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from typing import Optional
-
+from uuid import UUID
 from database import get_db
 from models import User, UserPlan
 from auth import hash_password, verify_password, create_access_token, create_refresh_token, verify_token
@@ -31,7 +31,7 @@ class TokenRefresh(BaseModel):
     refresh_token: str
 
 class UserProfile(BaseModel):
-    id: int
+    id: UUID
     email: str
     name: str
     plan: str
@@ -39,7 +39,7 @@ class UserProfile(BaseModel):
     created_at: str
 
 class UserProfileWithUsage(BaseModel):
-    id: int
+    id: UUID
     email: str
     name: str
     plan: str

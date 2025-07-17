@@ -3,8 +3,10 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import json
-import io
+from io import BytesIO
 from datetime import datetime
+from database import supabase
+import uuid
 
 from database import get_db
 from models import User, Document
@@ -31,7 +33,8 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 
 # Pydantic models
 class DocumentResponse(BaseModel):
-    id: int
+    id: uuid.UUID
+    collection_id: Optional[uuid.UUID] = None
     filename: str
     filesize: int
     word_count: int
@@ -41,7 +44,8 @@ class DocumentResponse(BaseModel):
 
 class DocumentAnalysisResponse(BaseModel):
     success: bool
-    document_id: int
+    document_id: uuid.UUID
+    collection_id: Optional[uuid.UUID] = None
     filename: str
     file_size: int
     text_length: int
@@ -54,6 +58,7 @@ class DocumentAnalysisResponse(BaseModel):
 
 class TextAnalysisRequest(BaseModel):
     text: str
+    collection_id: Optional[str] = None
 
 class DocumentListResponse(BaseModel):
     documents: List[DocumentResponse]
@@ -63,6 +68,7 @@ class DocumentListResponse(BaseModel):
 async def upload_and_analyze_document(
     file: UploadFile = File(...),
     current_user: User = Depends(check_document_limit),
+    collection_id: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     """Upload and analyze a PDF or DOCX file"""
@@ -82,11 +88,51 @@ async def upload_and_analyze_document(
         )
     
     try:
+        
+        print("Supabase URL:", supabase.supabase_url)
+        print("Supabase Key exists from upload:", bool(supabase.supabase_key))
+        try:
+            buckets = supabase.storage.list_buckets()
+            print("Available Buckets:", buckets)
+
+            bucket_info = supabase.storage.get_bucket("documents-uploaded-digestifile")
+            print("Bucket info:", bucket_info.name)
+        except Exception as e:
+            print("Bucket error:", e)
+        
+        
+            
+        unique_id = uuid.uuid4().hex[:8]  
+        filename_parts = file.filename.rsplit('.', 1)
+        safe_filename = f"{filename_parts[0]}_{unique_id}.{filename_parts[1]}" if len(filename_parts) == 2 else f"{file.filename}_{unique_id}"
+
+        file_path = f"{current_user.id}/{safe_filename}"
+        print(f"Upload path: {file_path}")
+
+        response = supabase.storage.from_("documents-uploaded-digestifile").upload(
+            file_path,
+            file_bytes,
+            file_options={"content-type": file.content_type}
+        )
+        print("Upload response:", response)
+
+        if not response:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to upload file to Supabase"
+            )
+
+        file_url = supabase.storage.from_("documents-uploaded-digestifile").get_public_url(file_path)
+        print(file_url)
+        
+        
         # Extract text based on file type
         if file.filename.lower().endswith('.pdf'):
             text = extract_text_from_pdf(file_bytes)
+            print("Text from PDF:", text)
         else:  # .docx
             text = extract_text_from_docx(file_bytes)
+            # print("Text from DOCX:", text)
         
         if not text.strip():
             raise HTTPException(
@@ -103,6 +149,11 @@ async def upload_and_analyze_document(
         
         # Analyze document with chunking if needed
         analysis = await analyze_document_with_chunking(text)
+        print("Analysis result:", analysis)
+        
+        print("Key points:", analysis.get("key_points"))
+        print("Risk flags:", analysis.get("risk_flags"))
+        print("Key concepts:", analysis.get("key_concepts"))
         
         # Add position information for highlighting
         for key_point in analysis.get("key_points", []):
@@ -114,10 +165,19 @@ async def upload_and_analyze_document(
             if isinstance(risk_flag, dict) and "quote" in risk_flag:
                 position = find_quote_position(text, risk_flag["quote"])
                 risk_flag["position"] = position
+                
+        parsed_collection_id = None
+        if collection_id:
+            try:
+                parsed_collection_id = uuid.UUID(collection_id)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid collection ID.")
+
         
         # Store document in database
         new_document = Document(
             user_id=current_user.id,
+            collection_id=parsed_collection_id,
             filename=file.filename,
             filesize=len(file_bytes),
             document_text=text,
@@ -128,6 +188,8 @@ async def upload_and_analyze_document(
             word_count=word_count,
             analysis_method=analysis.get("analysis_method", "single")
         )
+        
+        print(f"Creating document with user_id: {current_user.id}, collection_id: {parsed_collection_id}")
         
         db.add(new_document)
         db.commit()
@@ -140,6 +202,7 @@ async def upload_and_analyze_document(
         return DocumentAnalysisResponse(
             success=True,
             document_id=new_document.id,
+            collection_id=parsed_collection_id,
             filename=file.filename,
             file_size=len(file_bytes),
             text_length=len(text),
@@ -154,6 +217,9 @@ async def upload_and_analyze_document(
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        print("Exception occurred:", str(e))
+        print("Full traceback:", traceback.format_exc())
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error processing file: {str(e)}"
@@ -202,9 +268,18 @@ async def analyze_text_direct(
                 position = find_quote_position(text, risk_flag["quote"])
                 risk_flag["position"] = position
         
+        # Parse collection_id if provided
+        parsed_collection_id = None
+        if request.collection_id:
+            try:
+                parsed_collection_id = uuid.UUID(request.collection_id)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid collection ID.")
+        
         # Store document in database
         new_document = Document(
             user_id=current_user.id,
+            collection_id=parsed_collection_id,
             filename="Pasted Text",
             filesize=len(text.encode('utf-8')),
             document_text=text,
@@ -227,6 +302,7 @@ async def analyze_text_direct(
         return DocumentAnalysisResponse(
             success=True,
             document_id=new_document.id,
+            collection_id=parsed_collection_id,
             filename="Pasted Text",
             file_size=len(text.encode('utf-8')),
             text_length=len(text),
@@ -241,6 +317,9 @@ async def analyze_text_direct(
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        print("Exception occurred:", str(e))
+        print("Full traceback:", traceback.format_exc())
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error analyzing text: {str(e)}"
@@ -287,7 +366,7 @@ async def get_user_documents(
 
 @router.get("/{document_id}")
 async def get_document(
-    document_id: int,
+    document_id: uuid.UUID,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -334,7 +413,7 @@ async def get_document(
 
 @router.delete("/{document_id}")
 async def delete_document(
-    document_id: int,
+    document_id: uuid.UUID,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):

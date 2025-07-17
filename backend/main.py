@@ -24,6 +24,8 @@ from routes.usage import router as usage_router
 # Load environment variables
 load_dotenv()
 
+# Base.metadata.drop_all(bind=engine)
+
 # Create database tables
 Base.metadata.create_all(bind=engine)
 

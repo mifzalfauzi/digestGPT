@@ -5,6 +5,7 @@ from typing import List, Optional
 from datetime import datetime
 import anthropic
 import os
+import uuid
 
 from database import get_db
 from models import User, Document, ChatHistory
@@ -24,24 +25,24 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 # Pydantic models
 class ChatRequest(BaseModel):
-    document_id: int
+    document_id: uuid.UUID
     message: str
 
 class ChatResponse(BaseModel):
     success: bool
-    document_id: int
+    document_id: uuid.UUID
     user_message: str
     ai_response: str
     timestamp: str
 
 class ChatHistoryItem(BaseModel):
-    id: int
+    id: uuid.UUID
     user_message: str
     ai_response: str
     timestamp: str
 
 class ChatHistoryResponse(BaseModel):
-    document_id: int
+    document_id: uuid.UUID
     filename: str
     chat_history: List[ChatHistoryItem]
     total: int
@@ -99,6 +100,8 @@ async def chat_with_document(
     db: Session = Depends(get_db)
 ):
     """Chat about a previously analyzed document"""
+    print(f"Chat request received: document_id={chat_request.document_id}, message='{chat_request.message[:50]}...'")
+    print(f"Document ID type: {type(chat_request.document_id)}")
     # Get the document
     document = (
         db.query(Document)
@@ -162,6 +165,9 @@ async def chat_with_document(
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        print("Chat exception occurred:", str(e))
+        print("Full traceback:", traceback.format_exc())
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error in chat: {str(e)}"
@@ -169,7 +175,7 @@ async def chat_with_document(
 
 @router.get("/history/{document_id}", response_model=ChatHistoryResponse)
 async def get_chat_history(
-    document_id: int,
+    document_id: uuid.UUID,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
     skip: int = 0,
@@ -296,7 +302,7 @@ async def get_all_chat_history(
 
 @router.delete("/history/{document_id}")
 async def delete_chat_history(
-    document_id: int,
+    document_id: uuid.UUID,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):

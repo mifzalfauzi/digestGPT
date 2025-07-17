@@ -374,7 +374,7 @@ const ModernUploadInterface = forwardRef(({
                       ref={fileInputRef}
                       type="file"
                       id="file-input"
-                      accept=".pdf,.docx"
+                      accept=".pdf"
                       onChange={handleFileChangeWithModal}
                       className="hidden"
                     />

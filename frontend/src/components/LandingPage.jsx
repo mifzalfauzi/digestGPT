@@ -35,24 +35,24 @@ export default function LandingPage() {
           </div>
 
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-            <Link
-              to="#features"
+            <a
+              href="#features"
               className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
             >
               Features
-            </Link>
-            <Link
-              to="#pricing"
+            </a>
+            <a
+              href="#pricing"
               className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
             >
               Pricing
-            </Link>
-            <Link
-              to="#demo"
+            </a>
+            <a
+              href="#demo"
               className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
             >
               Demo
-            </Link>
+            </a>
           </nav>
 
           <div className="flex items-center space-x-3">
@@ -75,7 +75,7 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section - Centered & Compact */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden scroll-smooth">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900" />
         <div className="absolute inset-0">
           <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-blue-200/20 dark:bg-blue-800/10 rounded-full blur-3xl" />
@@ -150,7 +150,7 @@ export default function LandingPage() {
       </section>
 
       {/* Demo Video Section - Centered */}
-      <section id="demo" className="py-16 bg-gray-50 dark:bg-gray-900/50">
+      <section id="demo" className="py-16 bg-gray-50 dark:bg-gray-900/50 scroll-smooth">
         <div className="container mx-auto px-4 text-center">
           <Badge className="mb-4 bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200 text-xs">
             <Play className="mr-1.5 h-3 w-3" />
@@ -245,7 +245,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section - Compact 3-Column Grid */}
-      <section id="features" className="py-16">
+      <section id="features" className="py-16 scroll-smooth">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Powerful document analysis features</h2>
           <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-12 max-w-2xl mx-auto">
@@ -329,7 +329,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Section - Centered Single Column */}
-      <section id="pricing" className="py-16 bg-gray-50 dark:bg-gray-900/50">
+      <section id="pricing" className="py-16 bg-gray-50 dark:bg-gray-900/50 scroll-smooth">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Simple, affordable pricing</h2>
           <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-12 max-w-2xl mx-auto">
