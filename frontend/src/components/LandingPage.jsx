@@ -97,8 +97,8 @@ export default function LandingPage() {
                 <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent whitespace-nowrap">
                   <Typewriter
                     words={["Insights", "Summaries", "Risks", "Key Concepts"]}
-                    loop
-                    cursor
+                    loop={true}
+                    cursor={true}
                     cursorStyle="|"
                     typeSpeed={100}
                     deleteSpeed={100}
