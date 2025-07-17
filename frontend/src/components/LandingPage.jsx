@@ -108,7 +108,7 @@ export default function LandingPage() {
               </h1>
               <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-8 text-left">
                 Upload documents anywhere, anytime. Drop2Chat uses Claude 4 Sonnet to analyze content, extract key insights,
-                assess risks, and provide an AI assistant you can chat with about your data.
+                assess risks, and provide an AI assistant you can chat with about your documents.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
@@ -231,7 +231,7 @@ export default function LandingPage() {
                 <MessageCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-base mb-2">Real-time Chat with Your Data</h3>
+                <h3 className="font-semibold text-base mb-2">Real-time Chat about Your Documents</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Ask questions, get clarifications, and explore your documents through natural conversation
                 </p>
@@ -350,7 +350,7 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <Card className="border-2 border-yellow-200 dark:border-yellow-800 shadow-xl flex flex-col justify-between">
                 <CardHeader className="text-center pb-6 pt-8">
-                  <CardTitle className="text-2xl">Free Plan</CardTitle>
+                  <CardTitle className="text-2xl">Demo Plan</CardTitle>
                   <div className="mt-4">
                     <span className="text-4xl font-bold">$0</span>
                     <span className="text-lg text-gray-600 dark:text-gray-400">/month</span>
