@@ -12,6 +12,7 @@ from models import User, Document, ChatHistory
 from dependencies import (
     get_current_active_user,
     check_chat_limit,
+    get_user_limits_info,
     increment_chat_usage,
     increment_token_usage,
     estimate_tokens
@@ -59,7 +60,7 @@ class ChatHistoryResponse(BaseModel):
 
 async def chat_about_document(document: Document, user_message: str, chat_history: List) -> str:
     """Chat with Claude about a specific document"""
-    if not openai_client:
+    if not client:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Anthropic API key not configured"
@@ -85,7 +86,7 @@ User question: {user_message}
 Please respond naturally and refer to specific parts of the document when relevant."""
 
     try:
-        response = openai_client.messages.create(
+        response = client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=1000,
             temperature=0.3,
@@ -100,7 +101,7 @@ Please respond naturally and refer to specific parts of the document when releva
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"OpenAI API error: {str(e)}"
+            detail=f"Anthropic API error: {str(e)}"
         )
         
 @router.post("/casual-chat", response_model=CasualChatResponse)
@@ -163,9 +164,15 @@ Assistant:"""
 
         # Usage tracking
         increment_chat_usage(current_user.id, db)
+        
+        print(f"Current user ID: {current_user.id}", increment_chat_usage(current_user.id, db))
         total_text = chat_request.message + ai_response
         estimated_tokens = estimate_tokens(total_text)
         increment_token_usage(current_user.id, estimated_tokens, db)
+        
+        get_user_limits_info(current_user, db)
+        
+        print(f"Current user ID: {current_user.id}", get_user_limits_info(current_user, db))
 
         return CasualChatResponse(
             ai_response=ai_response,
@@ -221,6 +228,8 @@ async def chat_with_document(
         .first()
     )
     
+    print(f"Document: {document}")
+    
     if not document:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -242,6 +251,8 @@ async def chat_with_document(
         
         # Get AI response
         ai_response = await chat_about_document(document, chat_request.message, chat_history)
+        
+        print(f"AI response: {ai_response}")
         
         # Store chat exchange in history
         chat_entry = ChatHistory(

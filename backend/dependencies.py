@@ -3,6 +3,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from typing import Optional
 import json
+import uuid
 
 from database import get_db
 from models import User, Usage, UserPlan
@@ -78,7 +79,7 @@ async def get_current_active_user(
         )
     return current_user
 
-def get_or_create_usage(user_id: int, db: Session) -> Usage:
+def get_or_create_usage(user_id: uuid.UUID, db: Session) -> Usage:
     """Get or create usage record for user"""
     usage = db.query(Usage).filter(Usage.user_id == user_id).first()
     if not usage:
@@ -137,19 +138,20 @@ async def check_token_limit(
     
     return current_user
 
-def increment_document_usage(user_id: int, db: Session):
+def increment_document_usage(user_id: uuid.UUID, db: Session):
     """Increment document usage for user"""
     usage = get_or_create_usage(user_id, db)
     usage.docs_used += 1
     db.commit()
 
-def increment_chat_usage(user_id: int, db: Session):
+def increment_chat_usage(user_id: uuid.UUID, db: Session):
     """Increment chat usage for user"""
     usage = get_or_create_usage(user_id, db)
-    usage.chats_used += 1
-    db.commit()
+    if usage is not None:
+        usage.chats_used = (usage.chats_used or 0) + 1
+        db.commit()
 
-def increment_token_usage(user_id: int, tokens: int, db: Session):
+def increment_token_usage(user_id: uuid.UUID, tokens: int, db: Session):
     """Increment token usage for user"""
     usage = get_or_create_usage(user_id, db)
     usage.tokens_used += tokens

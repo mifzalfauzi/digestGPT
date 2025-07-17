@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useTheme } from './ThemeProvider'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from './ui/button'
@@ -24,6 +24,7 @@ import {
   Clock,
   Archive
 } from 'lucide-react'
+import axios from 'axios'
 
 function SettingsPanel({ isOpen, onClose }) {
   const { theme, setTheme } = useTheme()
@@ -47,6 +48,26 @@ function SettingsPanel({ isOpen, onClose }) {
     capabilities: ["Document Analysis", "Natural Language", "Multi-modal", "Advanced Reasoning"],
     features: ["Enhanced Intelligence", "Context Awareness", "Latest Generation"]
   }
+
+  useEffect(() => {
+    const fetchUsage = async () => {
+      const token = localStorage.getItem("auth_token");
+      const response = await axios.get("http://localhost:8000/usage/me", {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+      });
+      console.log(response.data)
+      setUsage(response.data);
+    };
+  
+    fetchUsage(); // initial fetch
+    const interval = setInterval(fetchUsage, 5 * 60 * 1000); // every 5 mins
+  
+    return () => clearInterval(interval); // cleanup on unmount
+  }, []);
+  
 
   if (!isOpen) return null
 
