@@ -31,7 +31,7 @@ export default function LandingPage() {
               <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               <Sparkles className="h-2.5 w-2.5 text-purple-500 absolute -top-0.5 -right-0.5" />
             </div>
-            <span className="text-lg font-bold">DigesText</span>
+            <span className="text-lg font-bold">Drop2Chat</span>
           </div>
 
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
@@ -98,7 +98,7 @@ export default function LandingPage() {
               </h1>
 
               <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-8">
-                Upload documents anywhere, anytime. DigesText uses Claude 4 Sonnet to analyze content, extract key insights,
+                Upload documents anywhere, anytime. Drop2Chat uses Claude 4 Sonnet to analyze content, extract key insights,
                 assess risks, and provide an AI assistant you can chat with about your data.
               </p>
 
@@ -154,7 +154,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-4 text-center">
           <Badge className="mb-4 bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200 text-xs">
             <Play className="mr-1.5 h-3 w-3" />
-            See DigesText in action
+            See Drop2Chat in action
           </Badge>
 
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4 max-w-3xl mx-auto">
@@ -174,7 +174,7 @@ export default function LandingPage() {
                   <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center mb-4 mx-auto shadow-lg">
                     <Play className="h-8 w-8 text-blue-600 ml-0.5" />
                   </div>
-                  <p className="text-lg text-gray-600 dark:text-gray-400 font-medium">DigesText Demo</p>
+                  <p className="text-lg text-gray-600 dark:text-gray-400 font-medium">Drop2Chat Demo</p>
                   <p className="text-sm text-gray-500 dark:text-gray-500">See document analysis in action</p>
                 </div>
               </div>
@@ -374,7 +374,7 @@ export default function LandingPage() {
           </div>
 
           <div className="flex justify-start pt-6">
-            <Button className="bg-white hover:bg-blue-700 px-4 py-2 text-sm" size="sm">
+            <Button className="bg-white hover:bg-yellow-700 px-4 py-2 text-sm" size="sm">
               Start 
             </Button>
           </div>
@@ -418,10 +418,14 @@ export default function LandingPage() {
               <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
               <span>100 chat assistant interactions</span>
             </div>
+            <div className="flex items-center text-sm">
+              <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
+              <span>100k tokens per month</span>
+            </div>
           </div>
 
           <div className="flex justify-start pt-6">
-            <Button className="bg-white hover:bg-blue-700 px-4 py-2 text-sm" size="sm">
+            <Button className="bg-white hover:bg-green-700 px-4 py-2 text-sm" size="sm">
               Get Standard   
             </Button>
           </div>
@@ -440,7 +444,7 @@ export default function LandingPage() {
         <CardHeader className="text-center pb-6 pt-8">
           <CardTitle className="text-2xl">Pro Plan</CardTitle>
           <div className="mt-4">
-            <span className="text-4xl font-bold">$5.99</span>
+            <span className="text-4xl font-bold">$6.99</span>
             <span className="text-lg text-gray-600 dark:text-gray-400">/month</span>
           </div>
           <CardDescription className="mt-3 text-base">For large document analysis</CardDescription>
@@ -459,6 +463,10 @@ export default function LandingPage() {
             <div className="flex items-center text-sm">
               <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
               <span>350 chat assistant interactions</span>
+            </div>
+            <div className="flex items-center text-sm">
+              <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
+              <span>350k tokens per month</span>
             </div>
           </div>
 
@@ -504,7 +512,7 @@ export default function LandingPage() {
                   <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   <Sparkles className="h-2 w-2 text-purple-500 absolute -top-0.5 -right-0.5" />
                 </div>
-                <span className="text-lg font-bold">DigesText</span>
+                <span className="text-lg font-bold">Drop2Chat</span>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 AI-powered document analysis and insights, powered by Claude 4 Sonnet.
@@ -576,7 +584,7 @@ export default function LandingPage() {
           </div>
 
           <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between">
-            <p className="text-sm text-gray-600 dark:text-gray-400">© 2024 DigesText. All rights reserved.</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">© 2025 Drop2Chat. All rights reserved.</p>
             <div className="flex items-center space-x-4 mt-4 md:mt-0">
               <span className="text-sm text-gray-600 dark:text-gray-400">Powered by Claude 4 Sonnet</span>
               <Badge variant="outline" className="text-xs">

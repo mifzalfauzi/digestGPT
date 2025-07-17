@@ -7,6 +7,7 @@ import Assistant from './components/Assistant'
 import SignIn from './pages/SignIn'
 import SignUp from './pages/SignUp'
 import Dashboard from './pages/Dashboard'
+import ComingSoonPage from './components/ComingSoon'
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -75,9 +76,15 @@ function AppContent() {
             <SignUp />
           </PublicRoute>
         } />
-        <Route path="/" element={
+        <Route path="/main" element={
           <PublicRoute>
             <LandingPage />
+          </PublicRoute>
+        } />
+        <Route path="/" element={<Navigate to="/coming-soon" replace />} />
+        <Route path="/coming-soon" element={
+          <PublicRoute>
+            <ComingSoonPage />
           </PublicRoute>
         } />
         
