@@ -252,7 +252,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
               )}
               <TabsTrigger value="document" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
                 <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
-                <span className="hidden md:inline">Interactive Text</span>
+                <span className="hidden md:inline">Extractive Text</span>
                 <span className="md:hidden">Text</span>
               </TabsTrigger>
             </TabsList>
@@ -419,7 +419,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                       </div>
                       <div className="min-w-0">
                         <CardTitle className="text-sm sm:text-base lg:text-lg font-bold text-slate-900 dark:text-white">
-                          Interactive Document
+                          Extractive Text
                           {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
                           {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal">(Preview)</span>}
                           {isDOCX && !isDemoMode && !bypassAPI && <span className="text-xs text-blue-600 font-normal">(DOCX)</span>}
@@ -431,7 +431,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                             ? 'Document text preview with mock data'
                             : isDOCX
                             ? 'DOCX document content with formatting preserved'
-                            : 'Full document text with intelligent highlighting'
+                            : 'Claude\'s extracted document text with intelligent highlighting'
                           }
                         </p>
                       </div>
