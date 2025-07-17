@@ -163,7 +163,7 @@ Assistant:"""
         db.refresh(chat_entry)
 
         # Usage tracking
-        increment_chat_usage(current_user.id, db)
+        # increment_chat_usage(current_user.id, db)
         
         print(f"Current user ID: {current_user.id}", increment_chat_usage(current_user.id, db))
         total_text = chat_request.message + ai_response
