@@ -150,18 +150,33 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
     try {
       let aiResponse
 
-      if (casualMode || isDemoMode || bypassAPI) {
-        // Casual mode, demo mode or API bypass: use mock response with realistic delay
-        await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000)) // 1.5-2.5s delay
-        
-        const responses = casualMode ? casualMockResponses : mockResponses
+      if (casualMode) {
+        // Call the dedicated casual chat endpoint
+        const response = await axios.post('http://localhost:8000/chat/casual-chat', {
+          message: userMessage
+        }, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          }
+        }
+      )
+        aiResponse = {
+          ai_response: response.data.ai_response,
+          timestamp: response.data.timestamp
+        }
+      } else if (isDemoMode || bypassAPI) {
+        // Demo or bypass mode: return mock responses
+        await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000))
+      
+        const responses = mockResponses
         aiResponse = {
           ai_response: responses[mockResponseIndex % responses.length],
           timestamp: new Date().toISOString()
         }
         mockResponseIndex++
       } else {
-        // Production mode: make actual API call with authentication
+        // Production mode: make actual API call with document ID and auth
         const response = await axios.post('http://localhost:8000/chat', {
           document_id: documentId,
           message: userMessage
@@ -173,6 +188,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
         })
         aiResponse = response.data
       }
+      
 
       // Add AI response to chat
       const aiMessage = {

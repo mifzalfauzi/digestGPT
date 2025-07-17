@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
-import anthropic
+import anthropic, openai
 import os
 import uuid
 
@@ -21,7 +21,17 @@ from dependencies import (
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
 client = anthropic.Anthropic(api_key=anthropic_api_key) if anthropic_api_key else None
 
+openai_api_key = os.getenv("OPENAI_API_KEY")
+openai_client = openai.OpenAI(api_key=openai_api_key) if openai_api_key else None
+
 router = APIRouter(prefix="/chat", tags=["chat"])
+
+class CasualChatRequest(BaseModel):
+    message: str
+
+class CasualChatResponse(BaseModel):
+    ai_response: str
+    timestamp: str
 
 # Pydantic models
 class ChatRequest(BaseModel):
@@ -49,7 +59,7 @@ class ChatHistoryResponse(BaseModel):
 
 async def chat_about_document(document: Document, user_message: str, chat_history: List) -> str:
     """Chat with Claude about a specific document"""
-    if not client:
+    if not openai_client:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Anthropic API key not configured"
@@ -75,7 +85,7 @@ User question: {user_message}
 Please respond naturally and refer to specific parts of the document when relevant."""
 
     try:
-        response = client.messages.create(
+        response = openai_client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=1000,
             temperature=0.3,
@@ -90,8 +100,107 @@ Please respond naturally and refer to specific parts of the document when releva
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Anthropic API error: {str(e)}"
+            detail=f"OpenAI API error: {str(e)}"
         )
+        
+@router.post("/casual-chat", response_model=CasualChatResponse)
+async def casual_chat(
+    chat_request: CasualChatRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    if not client:
+        raise HTTPException(status_code=500, detail="Anthropic not configured")
+    
+    prompt = f"""This is a casual Q&A with the assistant. Please answer naturally.
+
+User: {chat_request.message}
+Assistant:"""
+    
+    try:
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1000,
+            temperature=0.7,
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        ai_response = response.content[0].text
+        
+        print(f"AI response: {ai_response}")
+        # casual_doc = (
+        #     db.query(Document)
+        #     .filter(Document.user_id == current_user.id, Document.title == "Casual Chat")
+        #     .first()
+        # )
+
+        # if not casual_doc:
+        # casual_chat = Document(
+        #         user_id=current_user.id,
+        #         title="Casual Chat",
+        #         document_text="This is a placeholder document used for casual chats.",
+        #         filename="casual.pdf"
+        #     )
+        # db.add(casual_chat)
+        # db.commit()
+        # db.refresh(casual_chat)
+        
+        # casual_chat_doc_id = uuid.UUID("00000000-0000-0000-0000-000000000001")
+
+        # Store chat in ChatHistory
+        chat_entry = ChatHistory(
+            user_id=current_user.id,
+            document_id=None,
+            question=chat_request.message,
+            answer=ai_response
+        )
+        
+        print(f"Chat entry: {chat_entry}")
+
+        db.add(chat_entry)
+        db.commit()
+        db.refresh(chat_entry)
+
+        # Usage tracking
+        increment_chat_usage(current_user.id, db)
+        total_text = chat_request.message + ai_response
+        estimated_tokens = estimate_tokens(total_text)
+        increment_token_usage(current_user.id, estimated_tokens, db)
+
+        return CasualChatResponse(
+            ai_response=ai_response,
+            timestamp=chat_entry.timestamp.isoformat()
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Anthropic error: {str(e)}")
+
+# @router.post("/casual-chat", response_model=CasualChatResponse)
+# async def casual_chat(chat_request: CasualChatRequest):
+#     if not openai.api_key:
+#         raise HTTPException(status_code=500, detail="OpenAI API key not configured")
+
+#     try:
+#         response = openai.ChatCompletion.create(
+#             model="gpt-4",
+#             messages=[
+#                 {"role": "system", "content": "You are a friendly and helpful assistant. This is a casual chat."},
+#                 {"role": "user", "content": chat_request.message}
+#             ],
+#             max_tokens=800,
+#             temperature=0.7
+#         )
+
+#         ai_response = response['choices'][0]['message']['content']
+#         print(f"AI response: {ai_response}")
+        
+#         return CasualChatResponse(
+#             ai_response=ai_response,
+#             timestamp=datetime.utcnow().isoformat()
+#         )
+
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"OpenAI error: {str(e)}")
+
 
 @router.post("/", response_model=ChatResponse)
 async def chat_with_document(
