@@ -102,7 +102,7 @@ export default function LandingPage() {
                 {" "}
                 <span className="bg-black dark:bg-white bg-clip-text text-transparent whitespace-nowrap">
                   <Typewriter
-                    words={["Obtain Valuable Insights", "Smart Document Summary", "Assess Risks On-The-Go", "Identify Key Concepts", "Instant SWOT Analysis" ]}
+                    words={["Obtain Valuable Insights", "SmartDoc Summary", "Assess Risks On-The-Go", "Identify Key Concepts", "Instant SWOT Analysis" ]}
                     loop={true}
                     cursor={true}
                     cursorStyle="|"
@@ -623,10 +623,10 @@ export default function LandingPage() {
             </span>{' '}. All rights reserved.</p>
             <div className="flex items-center space-x-4 mt-4 md:mt-0">
               <span className="text-sm text-gray-600 dark:text-gray-400">Powered by Claude 4 Sonnet</span>
-              <Badge variant="outline" className="text-xs">
+              {/* <Badge variant="outline" className="text-xs">
                 <Zap className="h-2.5 w-2.5 mr-1" />
                 AI-Powered
-              </Badge>
+              </Badge> */}
             </div>
           </div>
         </div>
