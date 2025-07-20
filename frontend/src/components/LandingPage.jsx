@@ -102,7 +102,7 @@ export default function LandingPage() {
                 {" "}
                 <span className="bg-black dark:bg-white bg-clip-text text-transparent whitespace-nowrap">
                   <Typewriter
-                    words={["Obtain Valuable Insights", "Extract Summaries Concisely", "Assess Risks On-The-Spot", "Identify Key Concepts"]}
+                    words={["Obtain Valuable Insights", "Smart Document Summary", "Assess Risks On-The-Go", "Identify Key Concepts", "Instant SWOT Analysis" ]}
                     loop={true}
                     cursor={true}
                     cursorStyle="|"
@@ -524,7 +524,7 @@ export default function LandingPage() {
               <p className="text-sm text-gray-600 dark:text-gray-400">Uptime guarantee</p>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold dark:text-white mb-2">&lt; 30s</div>
+              <div className="text-3xl font-bold dark:text-white mb-2">&lt; 60s</div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Average analysis time</p>
             </div>
           </div>
