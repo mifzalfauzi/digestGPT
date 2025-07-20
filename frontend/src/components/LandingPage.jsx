@@ -102,7 +102,7 @@ export default function LandingPage() {
                 {" "}
                 <span className="bg-black dark:bg-white bg-clip-text text-transparent whitespace-nowrap">
                   <Typewriter
-                    words={["Obtain Valuable Insights", "SmartDoc Summary", "Assess Risks On-The-Go", "Identify Key Concepts", "Instant SWOT Analysis" ]}
+                    words={["Obtain Valuable Insights", "SmartDoc Summary", "Assess Risks On-The-Go", "Identify Key Concepts", "Instant SWOT Analysis"]}
                     loop={true}
                     cursor={true}
                     cursorStyle="|"
@@ -112,8 +112,12 @@ export default function LandingPage() {
                   />
                 </span>
               </h1>
+              <p className="text-lg leading-relaxed dark:text-gray-300 mt-8 text-left">
+                Have a conversation with your documents anywhere, anytime.
+                </p>
+                
               <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-8 text-left">
-                Upload documents anywhere, anytime.{' '}
+                {' '}
                 <span className="text-lg text-center inline-block">
                   drop
                   <span className="text-blue-400">2</span>
@@ -179,17 +183,30 @@ export default function LandingPage() {
       {/* Demo Video Section - Centered */}
       <section id="demo" className="py-16 bg-gray-50 dark:bg-[#121212] scroll-smooth">
         <div className="container mx-auto px-4 text-center">
-          <Badge className="mb-4 bg-purple-100 text-purple-800 dark:bg-black dark:text-white text-xs">
-            <Play className="mr-1.5 h-3 w-3" />
-            See Drop2Chat in action
+          <Badge className="mb-4 bg-purple-100 text-purple-800 dark:bg-black dark:text-white text-xs px-2 py-1">
+            <Play className="mr-1.5 h-3 w-3 inline" />
+            See&nbsp;
+            <span className="text-center inline-block">
+              drop
+              <span className="text-blue-400">2</span>
+              chat
+              <span className="text-red-500">*</span>
+            </span>
+            &nbsp;in action
           </Badge>
+
 
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4 max-w-3xl mx-auto">
             Transform Documents into Actionable Insights
           </h2>
 
           <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-12 max-w-2xl mx-auto">
-            Watch how DigesText analyzes your documents, identifies risks, and provides intelligent insights through our
+            Watch how <span className="text-center inline-block">
+              drop
+              <span className="text-blue-400">2</span>
+              chat
+              <span className="text-red-500">*</span>
+            </span> analyzes your documents, identifies risks, and provides intelligent insights through our
             AI-powered assistant.
           </p>
 
@@ -201,7 +218,12 @@ export default function LandingPage() {
                   <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center mb-4 mx-auto shadow-lg">
                     <Play className="h-8 w-8 text-blue-600 ml-0.5" />
                   </div>
-                  <p className="text-lg text-gray-600 dark:text-gray-400 font-medium">Drop2Chat Demo</p>
+                  <p className="text-lg text-gray-600 dark:text-gray-400 font-medium"><span className="text-center inline-block">
+                    drop
+                    <span className="text-blue-400">2</span>
+                    chat
+                    <span className="text-red-500">*</span>
+                  </span> Demo</p>
                   <p className="text-sm text-gray-500 dark:text-gray-500">See document analysis in action</p>
                 </div>
               </div>
@@ -276,7 +298,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Powerful document analysis features</h2>
           <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-12 max-w-2xl mx-auto">
-            Everything you need to unlock insights from your documents, powered by Claude 4 Sonnet
+            Everything you need to unlock insights from your documents
           </p>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
@@ -360,7 +382,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Simple, affordable pricing</h2>
           <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-12 max-w-2xl mx-auto">
-            Get access to Claude 4 Sonnet's advanced capabilities at an unbeatable price
+            Get access to intelligent document capabilities at an unbeatable price
           </p>
 
           {/* Centered Pricing Card */}
