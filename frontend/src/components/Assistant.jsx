@@ -1068,7 +1068,7 @@ This business plan effectively balances ambitious growth objectives with compreh
             } relative h-full`}
           >
             {/* Simple Background - Matching ChatInterface */}
-            <div className="absolute inset-0 bg-background"></div>
+            <div className="absolute inset-0 bg-white dark:bg-[#1F1F1F]"></div>
 
             {/* Mobile Menu Button */}
             <div className="lg:hidden fixed top-4 left-4 z-40">
@@ -1088,7 +1088,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowUsageDashboard(true)}
-                className="bg-background/90 backdrop-blur-xl shadow-xl border border-border hover:bg-accent transition-all duration-200 p-2 group"
+                className="bg-[#121212] backdrop-blur-xl shadow-xl border border-border hover:bg-accent transition-all duration-200 p-2 group"
               >
                 <TrendingUp className="h-4 w-4 text-primary group-hover:text-primary/80" />
                 <span className="absolute top-full right-0 mt-2 px-2 py-1 text-xs bg-popover text-popover-foreground rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
@@ -1099,7 +1099,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                 variant="ghost"
                 size="sm"
                 onClick={logout}
-                className="bg-background/90 backdrop-blur-xl shadow-xl border border-border hover:bg-destructive hover:text-destructive-foreground transition-all duration-200 p-2 group"
+                className="bg-[#121212] backdrop-blur-xl shadow-xl border border-border hover:bg-destructive hover:text-destructive-foreground transition-all duration-200 p-2 group"
               >
                 <LogOut className="h-4 w-4 group-hover:text-destructive-foreground" />
                 <span className="absolute top-full right-0 mt-2 px-2 py-1 text-xs bg-popover text-popover-foreground rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
@@ -1439,7 +1439,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                       <div className="space-y-3">
                         <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Processing Document</h3>
                         <p className="text-lg text-gray-600 dark:text-gray-400">
-                          AI analysis powered by Claude 4 Sonnet is in progress...
+                          Analysis in progress...
                         </p>
                         <div className="flex items-center justify-center gap-2 text-blue-600 dark:text-blue-400">
                           <Zap className="h-5 w-5" />
@@ -1494,7 +1494,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                       <div className="space-y-3">
                         <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Processing Document</h3>
                         <p className="text-lg text-gray-600 dark:text-gray-400">
-                          AI analysis powered by Claude 4 Sonnet is in progress...
+                          Analysis in progress...
                         </p>
                         <div className="flex items-center justify-center gap-2 text-blue-600 dark:text-blue-400">
                           <Zap className="h-5 w-5" />
@@ -1543,7 +1543,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                       <div className="space-y-4">
                         <h3 className="text-3xl font-bold text-gray-900 dark:text-white">Processing Document</h3>
                         <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed">
-                          AI analysis powered by Claude 4 Sonnet is in progress...
+                          Analysis in progress...
                         </p>
                         <div className="flex items-center justify-center gap-3 text-blue-600 dark:text-blue-400">
                           <Zap className="h-6 w-6" />

@@ -8,6 +8,8 @@ import SignIn from './pages/SignIn'
 import SignUp from './pages/SignUp'
 import Dashboard from './pages/Dashboard'
 import ComingSoonPage from './components/ComingSoon'
+import StripeCheckout from './components/StripeCheckout'
+import { Card, CardHeader, CardTitle, CardContent } from './components/ui/card'
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -62,6 +64,11 @@ function AppContent() {
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        } />
+         <Route path="/stripe-checkout" element={
+          <ProtectedRoute>
+            <StripeCheckout />
           </ProtectedRoute>
         } />
         

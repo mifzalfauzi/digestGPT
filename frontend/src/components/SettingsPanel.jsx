@@ -88,18 +88,18 @@ function SettingsPanel({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-4xl max-h-[95vh] overflow-y-auto bg-white dark:bg-gray-900 border-0 shadow-2xl">
-        <CardHeader className="border-b border-slate-200 dark:border-gray-700 bg-gradient-to-r from-slate-50 to-white dark:from-gray-800 dark:to-gray-900">
+        <CardHeader className=" bg-white border-b border-slate-200 dark:border-gray-700 dark:bg-[#121212]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
-                <Settings className="h-5 w-5 text-white" />
+              <div className="p-2 dark:bg-[#121212] rounded-xl">
+                <Settings className="h-5 w-5 dark:text-white" />
               </div>
               <div>
                 <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
                   Settings
                 </CardTitle>
                 <p className="text-sm text-slate-600 dark:text-gray-400 mt-1">
-                  Customize your DocuChat experience
+                  Customize your drop2chat* experience
                 </p>
               </div>
             </div>
@@ -114,10 +114,10 @@ function SettingsPanel({ isOpen, onClose }) {
           </div>
         </CardHeader>
 
-        <CardContent className="p-6 space-y-6">
-          {/* Usage Statistics */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
+        <CardContent className="p-6 space-y-6 dark:bg-[#121212]">
+         
+          {/* <div className="space-y-4"> */}
+            {/* <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-slate-600 dark:text-gray-400" />
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
                 Usage Statistics
@@ -133,11 +133,11 @@ function SettingsPanel({ isOpen, onClose }) {
                   </Badge>
                 )}
               </div>
-            </div>
+            </div> */}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Documents Uploaded */}
-              <Card className="border border-slate-200 dark:border-gray-700">
+            {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4"> */}
+     
+              {/* <Card className="border border-slate-200 dark:border-gray-700">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
                     <FileText className="h-5 w-5 text-blue-600" />
@@ -160,10 +160,10 @@ function SettingsPanel({ isOpen, onClose }) {
                     {usage && currentLimits ? calculatePercentage(usage.documents.used, currentLimits.doc_limit) : 0}% of monthly limit
                   </p>
                 </CardContent>
-              </Card>
+              </Card> */}
 
-              {/* Chat Interactions */}
-              <Card className="border border-slate-200 dark:border-gray-700">
+            
+              {/* <Card className="border border-slate-200 dark:border-gray-700">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
                     <MessageCircle className="h-5 w-5 text-green-600" />
@@ -186,10 +186,9 @@ function SettingsPanel({ isOpen, onClose }) {
                     {usage && currentLimits ? calculatePercentage(usage.chats.used, currentLimits.chat_limit) : 0}% of monthly limit
                   </p>
                 </CardContent>
-              </Card>
+              </Card> */}
 
-              {/* AI Tokens */}
-              <Card className="border border-slate-200 dark:border-gray-700">
+              {/* <Card className="border border-slate-200 dark:border-gray-700">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
                     <Zap className="h-5 w-5 text-purple-600" />
@@ -212,8 +211,8 @@ function SettingsPanel({ isOpen, onClose }) {
                     {usage && currentLimits ? calculatePercentage(usage.tokens.used, currentLimits.token_limit) : 0}% of token limit
                   </p>
                 </CardContent>
-              </Card>
-            </div>
+              </Card> */}
+            {/* </div> */}
 
             {/* Usage Tips */}
             {/* <Card className="border border-slate-200 dark:border-gray-700 mt-4">
@@ -236,9 +235,9 @@ function SettingsPanel({ isOpen, onClose }) {
                 </ul>
               </CardContent>
             </Card> */}
-          </div>
-
-          <Separator className="my-6" />
+          {/* </div> */}
+{/* 
+          <Separator className="my-6" /> */}
 
           {/* AI Model Information */}
           <div className="space-y-4">

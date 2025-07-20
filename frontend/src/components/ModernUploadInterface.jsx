@@ -138,12 +138,12 @@ const ModernUploadInterface = forwardRef(({
 
     // Check for invalid file types first
     const invalidFiles = Array.from(files).filter(file => 
-      !file.name.toLowerCase().endsWith('.pdf') && !file.name.toLowerCase().endsWith('.docx')
+      !file.name.toLowerCase().endsWith('.pdf')
     )
     
     if (invalidFiles.length > 0) {
       const fileNames = invalidFiles.map(f => f.name).join(', ')
-      const errorMessage = `Invalid file type(s): ${fileNames}. Please select PDF or DOCX files only.`
+      const errorMessage = `Invalid file type(s): ${fileNames}. Please select PDF files only.`
       setModalError(errorMessage)
       setShowErrorModal(true)
       return
@@ -317,7 +317,7 @@ const ModernUploadInterface = forwardRef(({
       </div>
 
       {/* Main Upload Card - Compact and Professional */}
-      <Card className="shadow-2xl border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm animate-fade-in-scale">
+      <Card className="shadow-2xl border-0 bg-white/90 dark:bg-[#121212] backdrop-blur-sm animate-fade-in-scale">
         <CardContent className="p-6">
           <Tabs value={inputMode} onValueChange={handleTabSwitch} className="w-full">
             <TabsList className="grid w-full grid-cols-3 mb-6 bg-slate-100 dark:bg-gray-700 p-1 rounded-xl h-auto">
@@ -328,8 +328,8 @@ const ModernUploadInterface = forwardRef(({
                 <Upload className="h-4 w-4" />
                 <span className="hidden sm:inline">Single File</span>
                 <span className="sm:hidden">File</span>
-                <Badge variant="secondary" className="ml-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 text-xs px-1.5 py-0.5">
-                  PDF/DOCX
+                <Badge variant="secondary" className="ml-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 text-xs px-1.5 py-0.5 hidden sm:block">
+                  PDF
                 </Badge>
               </TabsTrigger>
               <TabsTrigger 
@@ -339,7 +339,7 @@ const ModernUploadInterface = forwardRef(({
                 <FileText className="h-4 w-4" />
                 <span className="hidden sm:inline">Collection</span>
                 <span className="sm:hidden">Collection</span>
-                <Badge variant="secondary" className="ml-1 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 text-xs px-1.5 py-0.5">
+                <Badge variant="secondary" className="ml-1 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 text-xs px-1.5 py-0.5 hidden sm:block">
                   Multiple
                 </Badge>
               </TabsTrigger>
@@ -350,7 +350,7 @@ const ModernUploadInterface = forwardRef(({
                 <FileText className="h-4 w-4" />
                 <span className="hidden sm:inline">Paste Text</span>
                 <span className="sm:hidden">Text</span>
-                <Badge variant="secondary" className="ml-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200 text-xs px-1.5 py-0.5">
+                <Badge variant="secondary" className=" ml-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200 text-xs px-1.5 py-0.5 hidden sm:block">
                   Direct
                 </Badge>
               </TabsTrigger>
@@ -485,7 +485,7 @@ const ModernUploadInterface = forwardRef(({
                   <div className="flex items-center justify-center gap-4 mt-3 text-xs text-slate-500 dark:text-gray-400">
                     <div className="flex items-center gap-1">
                       <FileText className="h-3 w-3" />
-                      <span>PDF, DOCX</span>
+                      <span>PDF</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
@@ -505,7 +505,7 @@ const ModernUploadInterface = forwardRef(({
                 {/* Collection Name Input */}
                 <div className="space-y-2">
                   <label htmlFor="collection-name" className="text-sm font-medium text-slate-700 dark:text-gray-300">
-                    Collection Name *
+                    Collection Name<span className="text-red-500">*</span>
                   </label>
                   <Input
                     id="collection-name"
@@ -537,7 +537,7 @@ const ModernUploadInterface = forwardRef(({
                       ref={collectionInputRef}
                       type="file"
                       id="collection-input"
-                      accept=".pdf,.docx"
+                      accept=".pdf"
                       multiple
                       onChange={handleFileChangeWithModal}
                       className="hidden"
@@ -631,7 +631,7 @@ const ModernUploadInterface = forwardRef(({
                   <div className="flex items-center justify-center gap-4 mt-3 text-xs text-slate-500 dark:text-gray-400">
                     <div className="flex items-center gap-1">
                       <FileText className="h-3 w-3" />
-                      <span>PDF, DOCX</span>
+                      <span>PDF</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
@@ -652,7 +652,7 @@ const ModernUploadInterface = forwardRef(({
                   <Textarea
                     value={textInput}
                     onChange={(e) => setTextInput(e.target.value)}
-                    placeholder="Paste your document text here for instant analysis..."
+                    placeholder="Paste your document text here for instant analysis."
                     className="min-h-[200px] text-sm bg-white dark:bg-gray-700 border-slate-200 dark:border-gray-600 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-gray-400 rounded-xl resize-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
                   />
                   <div className="flex items-center justify-between text-xs text-slate-500 dark:text-gray-400">
@@ -672,7 +672,7 @@ const ModernUploadInterface = forwardRef(({
                     (inputMode === 'file' && !file && stagedFiles.length === 0) || 
                     (inputMode === 'collection' && (stagedFiles.length === 0 || !collectionName?.trim())) || 
                     (inputMode === 'text' && !textInput.trim())}
-                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 dark:from-blue-600 dark:to-purple-600 dark:hover:from-blue-500 dark:hover:to-purple-500 text-white text-base font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 touch-manipulation"
+                  className="w-full h-12 dark:bg-white dark:hover:bg-[#1f1f1f] dark:hover:text-white text-black text-base font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 touch-manipulation"
                 >
                   {loading ? (
                     <>
@@ -684,11 +684,11 @@ const ModernUploadInterface = forwardRef(({
                     </>
                   ) : (
                     <>
-                      <Brain className="h-4 w-4 mr-2" />
+                      {/* <Brain className="h-4 w-4 mr-2" /> */}
                       <span>
-                        {inputMode === 'collection' ? 'Start Collection Analysis' : 'Start AI Analysis'}
+                        {inputMode === 'collection' ? 'Start Collection Analysis' : 'Start Analysis'}
                       </span>
-                      <Sparkles className="h-4 w-4 ml-2" />
+                      {/* <Sparkles className="h-4 w-4 ml-2" /> */}
                     </>
                   )}
                 </Button>
@@ -729,7 +729,7 @@ const ModernUploadInterface = forwardRef(({
             {/* Tab Switch Warning Modal */}
             {showTabWarningModal && (
               <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <Card className="w-full max-w-md shadow-2xl">
+                <Card className="w-full max-w-md shadow-2xl dark:bg-[#121212]">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <AlertTriangle className="h-5 w-5 text-amber-500" />

@@ -25,32 +25,38 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 overflow-x-hidden">
       {/* Header - Compact */}
-      <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-gray-950/95 dark:supports-[backdrop-filter]:bg-gray-950/60">
-        <div className="container mx-auto px-4 flex h-14 items-center justify-between">
+      <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-[#121212]">
+        <div className="container mx-auto px-4 flex h-14 items-center justify-between dark:bg-[#121212]">
           <div className="flex items-center space-x-2">
             <div className="relative">
-              <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              <Sparkles className="h-2.5 w-2.5 text-purple-500 absolute -top-0.5 -right-0.5" />
+              {/* <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <Sparkles className="h-2.5 w-2.5 text-purple-500 absolute -top-0.5 -right-0.5" /> */}
             </div>
-            <span className="text-lg font-bold">Drop2Chat</span>
+            <h1 className="text-lg sm:text-xl font-bold text-center">
+              drop
+              <span className="text-blue-400">2</span>
+              chat
+              <span className="text-red-500">*</span>
+            </h1>
+
           </div>
 
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
             <a
               href="#features"
-              className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
+              className="text-gray-600 hover:text-gray-900 dark:text-white dark:hover:text-gray-100 transition-colors"
             >
               Features
             </a>
             <a
               href="#pricing"
-              className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
+              className="text-gray-600 hover:text-gray-900 dark:text-white dark:hover:text-gray-100 transition-colors"
             >
               Pricing
             </a>
             <a
               href="#demo"
-              className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
+              className="text-gray-600 hover:text-gray-900 dark:text-white dark:hover:text-gray-100 transition-colors"
             >
               Demo
             </a>
@@ -63,7 +69,7 @@ export default function LandingPage() {
               </Button>
             </Link>
             <Link to="/signup">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-sm">
+              <Button className="bg-white text-black hover:bg-black hover:text-white text-sm">
                 Get Started
                 <ArrowRight className="ml-2 h-3.5 w-3.5" />
               </Button>
@@ -77,46 +83,58 @@ export default function LandingPage() {
 
       {/* Hero Section - Centered & Compact */}
       <section className="relative overflow-hidden scroll-smooth">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900" />
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 dark:bg-[#121212]" />
+        {/* <div className="absolute inset-0">
           <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-blue-200/20 dark:bg-blue-800/10 rounded-full blur-3xl" />
           <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-purple-200/20 dark:bg-purple-800/10 rounded-full blur-3xl" />
-        </div>
+        </div> */}
 
         <div className="relative container mx-auto px-4 py-16">
           <div className="grid lg:grid-cols-2 gap-24 items-center">
             {/* Left Side - Content */}
             <div className="text-center">
-              <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200 mb-6 text-xs">
+              <Badge className="bg-blue-100 text-blue-800 dark:bg-black dark:text-white mb-6 text-xs">
                 <Zap className="mr-1.5 h-3 w-3" />
                 Powered by Claude 4 Sonnet
               </Badge>
 
               <h1 className="text-4xl sm:text-5xl lg:text-5xl font-bold tracking-tight leading-tight mb-6">
-                Chat About{" "}
-                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent whitespace-nowrap">
+                {" "}
+                <span className="bg-black dark:bg-white bg-clip-text text-transparent whitespace-nowrap">
                   <Typewriter
-                    words={["Insights", "Summaries", "Risks", "Key Concepts"]}
+                    words={["Obtain Valuable Insights", "Extract Summaries Concisely", "Assess Risks On-The-Spot", "Identify Key Concepts"]}
                     loop={true}
                     cursor={true}
                     cursorStyle="|"
-                    typeSpeed={100}
-                    deleteSpeed={100}
+                    typeSpeed={70}
+                    deleteSpeed={70}
                     delaySpeed={1000}
                   />
                 </span>
               </h1>
               <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-8 text-left">
-                Upload documents anywhere, anytime. Drop2Chat uses Claude 4 Sonnet to analyze content, extract key insights,
+                Upload documents anywhere, anytime.{' '}
+                <span className="text-lg text-center inline-block">
+                  drop
+                  <span className="text-blue-400">2</span>
+                  chat
+                  <span className="text-red-500">*</span>
+                </span>{' '}
+                uses Claude 4 Sonnet to analyze content, extract key insights,
                 assess risks, and provide an AI assistant you can chat with about your documents.
               </p>
 
+
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
-                <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-base px-8">
+                <Button
+                  size="lg"
+                  className="bg-blue-700 dark:bg-white hover:bg-black hover:text-white dark:text-black dark:hover:bg-black dark:hover:text-white px-8"
+                >
                   <Upload className="mr-2 h-4 w-4" />
                   Upload & Analyze
                 </Button>
-                <Button variant="outline" size="lg" className="text-base px-8 bg-transparent">
+
+                <Button size="lg" className="text-white px-8 bg-[#000000] hover:bg-white hover:text-black">
                   <Play className="mr-2 h-4 w-4" />
                   Watch Demo
                 </Button>
@@ -140,9 +158,9 @@ export default function LandingPage() {
 
             {/* Right Side - Placeholder */}
             <div className="flex items-center justify-center lg:justify-end">
-              <div className="w-full max-w-md h-96 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl border-2 border-dashed border-blue-200 dark:border-blue-700 flex items-center justify-center">
+              <div className="w-full max-w-md h-96 dark:bg-black rounded-2xl border-2 border-dashed border-blue-200 dark:border-black flex items-center justify-center">
                 <div className="text-center p-8">
-                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center mb-4 mx-auto">
+                  <div className="w-16 h-16 bg-blue-100 dark:bg-black rounded-full flex items-center justify-center mb-4 mx-auto">
                     <Sparkles className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -159,9 +177,9 @@ export default function LandingPage() {
       </section>
 
       {/* Demo Video Section - Centered */}
-      <section id="demo" className="py-16 bg-gray-50 dark:bg-gray-900/50 scroll-smooth">
+      <section id="demo" className="py-16 bg-gray-50 dark:bg-[#121212] scroll-smooth">
         <div className="container mx-auto px-4 text-center">
-          <Badge className="mb-4 bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200 text-xs">
+          <Badge className="mb-4 bg-purple-100 text-purple-800 dark:bg-black dark:text-white text-xs">
             <Play className="mr-1.5 h-3 w-3" />
             See Drop2Chat in action
           </Badge>
@@ -178,7 +196,7 @@ export default function LandingPage() {
           {/* Demo Video - Centered */}
           <div className="max-w-4xl mx-auto mb-12">
             <div className="relative">
-              <div className="aspect-video bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-center shadow-xl">
+              <div className="aspect-video bg-black dark:bg-black rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-center shadow-xl">
                 <div className="text-center">
                   <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center mb-4 mx-auto shadow-lg">
                     <Play className="h-8 w-8 text-blue-600 ml-0.5" />
@@ -254,7 +272,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section - Compact 3-Column Grid */}
-      <section id="features" className="py-16 scroll-smooth">
+      <section id="features" className="py-16 scroll-smooth dark:bg-[#121212]">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Powerful document analysis features</h2>
           <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-12 max-w-2xl mx-auto">
@@ -262,7 +280,7 @@ export default function LandingPage() {
           </p>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            <Card className="border-0 shadow-sm hover:shadow-lg transition-all duration-300 group text-left">
+            <Card className="border-0 shadow-sm hover:shadow-lg transition-all duration-300 group text-left dark:bg-black">
               <CardHeader className="pb-4">
                 <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                   <Smartphone className="h-6 w-6 text-blue-600 dark:text-blue-400" />
@@ -274,7 +292,7 @@ export default function LandingPage() {
               </CardHeader>
             </Card>
 
-            <Card className="border-0 shadow-sm hover:shadow-lg transition-all duration-300 group text-left">
+            <Card className="border-0 shadow-sm hover:shadow-lg transition-all duration-300 group text-left dark:bg-black">
               <CardHeader className="pb-4">
                 <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                   <Brain className="h-6 w-6 text-purple-600 dark:text-purple-400" />
@@ -286,7 +304,7 @@ export default function LandingPage() {
               </CardHeader>
             </Card>
 
-            <Card className="border-0 shadow-sm hover:shadow-lg transition-all duration-300 group text-left">
+            <Card className="border-0 shadow-sm hover:shadow-lg transition-all duration-300 group text-left dark:bg-black">
               <CardHeader className="pb-4">
                 <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                   <MessageCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
@@ -298,7 +316,7 @@ export default function LandingPage() {
               </CardHeader>
             </Card>
 
-            <Card className="border-0 shadow-sm hover:shadow-lg transition-all duration-300 group text-left">
+            <Card className="border-0 shadow-sm hover:shadow-lg transition-all duration-300 group text-left dark:bg-black">
               <CardHeader className="pb-4">
                 <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                   <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
@@ -310,7 +328,7 @@ export default function LandingPage() {
               </CardHeader>
             </Card>
 
-            <Card className="border-0 shadow-sm hover:shadow-lg transition-all duration-300 group text-left">
+            <Card className="border-0 shadow-sm hover:shadow-lg transition-all duration-300 group text-left dark:bg-black">
               <CardHeader className="pb-4">
                 <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/20 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                   <Eye className="h-6 w-6 text-orange-600 dark:text-orange-400" />
@@ -322,7 +340,7 @@ export default function LandingPage() {
               </CardHeader>
             </Card>
 
-            <Card className="border-0 shadow-sm hover:shadow-lg transition-all duration-300 group text-left">
+            <Card className="border-0 shadow-sm hover:shadow-lg transition-all duration-300 group text-left dark:bg-black">
               <CardHeader className="pb-4">
                 <div className="w-12 h-12 bg-teal-100 dark:bg-teal-900/20 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                   <Shield className="h-6 w-6 text-teal-600 dark:text-teal-400" />
@@ -338,7 +356,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Section - Centered Single Column */}
-      <section id="pricing" className="py-16 bg-gray-50 dark:bg-gray-900/50 scroll-smooth">
+      <section id="pricing" className="py-16 bg-gray-50 scroll-smooth dark:bg-[#121212]">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Simple, affordable pricing</h2>
           <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-12 max-w-2xl mx-auto">
@@ -348,7 +366,7 @@ export default function LandingPage() {
           {/* Centered Pricing Card */}
           <div className="max-w-8xl mx-auto mb-12">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <Card className="border-2 border-yellow-200 dark:border-yellow-800 shadow-xl flex flex-col justify-between">
+              <Card className="border-2 border-yellow-200 dark:border-yellow-800 shadow-xl flex flex-col justify-between dark:bg-black">
                 <CardHeader className="text-center pb-6 pt-8">
                   <CardTitle className="text-2xl">Demo Plan</CardTitle>
                   <div className="mt-4">
@@ -391,15 +409,17 @@ export default function LandingPage() {
               </Card>
 
               {/* Standard Plan */}
-              <Card className="border-2 border-green-200 dark:border-green-800 shadow-xl flex flex-col justify-between">
+              <Card className="border-2 border-green-200 dark:border-green-800 shadow-xl flex flex-col justify-between dark:bg-black">
                 <CardHeader className="text-center pb-6 pt-8">
                   <CardTitle className="text-2xl">Standard Plan</CardTitle>
                   <div className="mt-4">
                     <span className="text-4xl font-bold">$3.99</span>
                     <span className="text-lg text-gray-600 dark:text-gray-400">/month</span>
+                    <span className="block text-sm text-gray-500 dark:text-gray-400 mt-1">or $40 per year</span>
                   </div>
                   <CardDescription className="mt-3 text-base">For moderate document analysis</CardDescription>
                 </CardHeader>
+
 
                 <CardContent className="flex flex-col justify-between flex-1">
                   <div className="space-y-3">
@@ -442,7 +462,7 @@ export default function LandingPage() {
               </Card>
 
               {/* Pro Plan */}
-              <Card className="border-2 border-blue-200 dark:border-blue-800 shadow-xl flex flex-col justify-between relative">
+              <Card className="border-2 border-blue-200 dark:border-blue-800 shadow-xl flex flex-col justify-between relative dark:bg-black">
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                   <Badge className="bg-blue-600 text-white px-4 py-1 text-sm">
                     <Star className="mr-1 h-3 w-3" />
@@ -496,15 +516,15 @@ export default function LandingPage() {
           {/* Stats Row */}
           <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto">
             <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600 mb-2">5,000+</div>
+              <div className="text-3xl font-bold dark:text-white mb-2">5,000+</div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Documents analyzed daily</p>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600 mb-2">99.9%</div>
+              <div className="text-3xl font-bold dark:text-white mb-2">99.9%</div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Uptime guarantee</p>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-green-600 mb-2">&lt; 30s</div>
+              <div className="text-3xl font-bold dark:text-white mb-2">&lt; 30s</div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Average analysis time</p>
             </div>
           </div>
@@ -512,16 +532,18 @@ export default function LandingPage() {
       </section>
 
       {/* Footer - Compact */}
-      <footer className="border-t bg-white dark:bg-gray-950">
+      <footer className="border-t bg-white dark:bg-[#121212]">
         <div className="container mx-auto px-4 py-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
             <div className="col-span-2 md:col-span-1">
               <div className="flex items-center space-x-2 mb-4">
-                <div className="relative">
-                  <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  <Sparkles className="h-2 w-2 text-purple-500 absolute -top-0.5 -right-0.5" />
-                </div>
-                <span className="text-lg font-bold">Drop2Chat</span>
+
+                <h1 className="text-lg sm:text-xl font-bold text-center">
+                  drop
+                  <span className="text-blue-400">2</span>
+                  chat
+                  <span className="text-red-500">*</span>
+                </h1>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 AI-powered document analysis and insights, powered by Claude 4 Sonnet.
@@ -593,7 +615,12 @@ export default function LandingPage() {
           </div>
 
           <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between">
-            <p className="text-sm text-gray-600 dark:text-gray-400">© 2025 Drop2Chat. All rights reserved.</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">© 2025  <span className="font-bold text-center inline-block">
+              drop
+              <span className="text-blue-400">2</span>
+              chat
+              <span className="text-red-500">*</span>
+            </span>{' '}. All rights reserved.</p>
             <div className="flex items-center space-x-4 mt-4 md:mt-0">
               <span className="text-sm text-gray-600 dark:text-gray-400">Powered by Claude 4 Sonnet</span>
               <Badge variant="outline" className="text-xs">

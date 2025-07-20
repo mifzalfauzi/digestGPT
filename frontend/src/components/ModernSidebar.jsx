@@ -4,114 +4,116 @@ import { useAuth } from '../contexts/AuthContext'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { Badge } from './ui/badge'
-import { Brain, Upload, FileText, Home, MessageCircle, Settings, HelpCircle, Sparkles, Activity, X, Menu, PanelLeftClose, ChevronDown, LayoutDashboard, Crown, Star, Zap, TrendingUp } from 'lucide-react'
+import { Brain, Upload, FileText, Home, MessageCircle, Settings, HelpCircle, Sparkles, Activity, X, Menu, PanelLeftClose, ChevronDown, LayoutDashboard, Crown, Star, Zap, TrendingUp, PanelTopClose, PanelLeftIcon } from 'lucide-react'
 import SettingsPanel from './SettingsPanel'
 import UsageDashboard from './dashboard/UsageDashboard'
 
-function ModernSidebar({ 
-  onNewDocument, 
-  currentDocument, 
-  onHome, 
-  onClose, 
-  isDemoMode = false, 
-  bypassAPI = false, 
-  collapsed = false, 
-  onToggleCollapse, 
+function ModernSidebar({
+  onNewDocument,
+  currentDocument,
+  onHome,
+  onClose,
+  isDemoMode = false,
+  bypassAPI = false,
+  collapsed = false,
+  onToggleCollapse,
   onCasualChat,
   // Multi-document props
   documents = [],
   selectedDocumentId = null,
-  onSelectDocument = () => {},
-  onRemoveDocument = () => {},
+  onSelectDocument = () => { },
+  onRemoveDocument = () => { },
   // Collection props
   collections = [],
   expandedCollections = new Set(),
-  onToggleCollectionExpansion = () => {},
-  onRemoveCollection = () => {}
+  onToggleCollectionExpansion = () => { },
+  onRemoveCollection = () => { }
 }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isUsageDashboardOpen, setIsUsageDashboardOpen] = useState(false)
   const navigate = useNavigate()
   const { user, usage, getUsagePercentages } = useAuth()
-  
+
   const planIcons = {
     free: <Zap className="h-4 w-4" />,
     standard: <Star className="h-4 w-4" />,
     pro: <Crown className="h-4 w-4" />
   }
-  
+
   const planColors = {
-    free: 'from-blue-500 to-blue-600',
-    standard: 'from-purple-500 to-purple-600',
-    pro: 'from-yellow-500 to-yellow-600'
+    free: 'bg-black',
+    standard: 'bg-black',
+    pro: 'bg-[#000000]'
   }
-  
+
   return (
-    <div className="w-full bg-white dark:bg-gray-900 h-full flex flex-col shadow-xl lg:shadow-none transition-all duration-300">
+    <div className="w-full bg-white dark:bg-[#121212] h-full flex flex-col shadow-xl lg:shadow-none transition-all duration-300">
       {/* Modern Logo Section */}
-      <div className="p-3 sm:p-4 border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm">
+      <div className="mt-4 sm:px-4 border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-[#121212] backdrop-blur-sm ">
         <div className="flex items-center justify-between">
           <div className={`flex items-center ${collapsed ? 'justify-center w-full' : 'gap-2'}`}>
             <div className="relative">
-              <Brain className={`${collapsed ? 'h-6 w-6' : 'h-6 w-6 sm:h-8 sm:w-8'} text-blue-600 dark:text-blue-400`} />
-              <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-purple-600 dark:text-purple-400 absolute -top-0.5 -right-0.5" />
+              {/* <Brain className={`${collapsed ? 'h-6 w-6' : 'h-6 w-6 sm:h-8 sm:w-8'} text-blue-600 dark:text-blue-400`} />
+              <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-purple-600 dark:text-purple-400 absolute -top-0.5 -right-0.5" /> */}
             </div>
             {!collapsed && (
-            <div>
-                <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
-                DocuChat
-              </h1>
+              <div>
+                <h1 className="text-lg sm:text-xl font-bold text-center">
+                  drop
+                  <span className="text-blue-400">2</span>
+                  chat
+                  <span className="text-red-500">*</span>
+                </h1>
+
                 <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
-                  {isDemoMode ? 'Demo Mode - No API Usage' : bypassAPI ? 'Preview Mode - No API Usage' : 'AI Document Analysis'}
-              </p>
-            </div>
+                  {isDemoMode ? 'Demo Mode - No API Usage' : bypassAPI ? 'Preview Mode - No API Usage' : ''}
+                </p>
+              </div>
+
             )}
           </div>
-          
+
           <div className="flex items-center gap-1">
             {/* Collapse Toggle Button - Desktop only */}
             {onToggleCollapse && (
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={onToggleCollapse}
-                className={`hidden lg:flex p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white ${collapsed ? 'w-full justify-center' : ''}`}
+                className={`hidden lg:flex p-4 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white ${collapsed ? 'w-full justify-center' : ''}`}
                 title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               >
-                {collapsed ? <Menu className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+                {collapsed ? <Menu className="h-4 w-4" /> : <PanelLeftIcon className="h-4 w-4" />}
               </Button>
             )}
-          
-          {/* Mobile Close Button */}
+
+            {/* Mobile Close Button */}
             {onClose && !collapsed && (
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={onClose}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
                 className="lg:hidden p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
-        </div>
-        
+
         {/* Demo/Preview Mode Banner */}
         {(isDemoMode || bypassAPI) && !collapsed && (
-          <div className={`mt-2 p-2 border rounded-lg ${
-            isDemoMode 
-              ? 'bg-orange-100/80 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700'
-              : 'bg-green-100/80 dark:bg-green-900/30 border-green-300 dark:border-green-700'
-          }`}>
+          <div className={`mt-2 p-2 border rounded-lg ${isDemoMode
+            ? 'bg-orange-100/80 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700'
+            : 'bg-green-100/80 dark:bg-green-900/30 border-green-300 dark:border-green-700'
+            }`}>
             <div className="flex items-center gap-2">
-              <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-                isDemoMode ? 'bg-orange-500 dark:bg-orange-400' : 'bg-green-500 dark:bg-green-400'
-              }`}></div>
-              <p className={`text-xs font-medium ${
-                isDemoMode 
-                  ? 'text-orange-700 dark:text-orange-300' 
-                  : 'text-green-700 dark:text-green-300'
-              }`}>
+              <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isDemoMode ? 'bg-orange-500 dark:bg-orange-400' : 'bg-green-500 dark:bg-green-400'
+                }`}></div>
+              <p className={`text-xs font-medium ${isDemoMode
+                ? 'text-orange-700 dark:text-orange-300'
+                : 'text-green-700 dark:text-green-300'
+                }`}>
                 {isDemoMode ? 'Demo Mode Active - Interface Preview' : 'Preview Mode - Real Interface, No API Usage'}
               </p>
             </div>
@@ -120,14 +122,14 @@ function ModernSidebar({
       </div>
 
       {/* Navigation Section */}
-      <div className="flex-1 p-2 sm:p-3 space-y-2 sm:space-y-3 overflow-y-auto">
-        <div className="space-y-1.5">
+      <div className="flex-1  sm:p-3 space-y-2 sm:space-y-3 overflow-y-auto">
+        <div className="space-y-3">
           {!collapsed && (
             <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">
-            Navigation
-          </p>
+              {/* Navigation */}
+            </p>
           )}
-          
+
           {/* <Button 
             onClick={() => {
               navigate('/dashboard')
@@ -143,36 +145,34 @@ function ModernSidebar({
             {!collapsed && <span>Dashboard</span>}
           </Button> */}
 
-          <Button 
+          <Button
             onClick={() => {
               onNewDocument()
               onClose?.()
             }}
-            className={`w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 h-8 py-2 text-sm ${
-              collapsed ? 'justify-center px-0' : 'justify-start gap-2'
-            }`}
+            className={`w-full bg-black hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 h-8 py-2 text-sm ${collapsed ? 'justify-center px-0' : 'justify-start gap-2'
+              }`}
             title={collapsed ? 'New Analysis' : ''}
           >
             <Upload className="h-3.5 w-3.5 flex-shrink-0" />
             {!collapsed && (
               <>
                 <span className="flex-1 text-left">New Analysis</span>
-                <Badge variant="secondary" className="bg-blue-100 text-blue-700 text-xs px-1.5 py-0.5">
-              AI
-            </Badge>
+                <Badge variant="secondary" className="bg-gray-800 text-white text-xs px-1.5 py-0.5">
+                  AI
+                </Badge>
               </>
             )}
           </Button>
 
-          <Button 
+          <Button
             onClick={() => {
               onCasualChat()
               onClose?.()
             }}
-            variant="ghost" 
-            className={`w-full text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 h-8 py-2 text-sm ${
-              collapsed ? 'justify-center px-0' : 'justify-start gap-2'
-            }`}
+            variant="ghost"
+            className={`w-full text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 h-8 py-2 text-sm ${collapsed ? 'justify-center px-0' : 'justify-start gap-2'
+              }`}
             title={collapsed ? 'Chat' : ''}
           >
             <MessageCircle className="h-3.5 w-3.5 flex-shrink-0" />
@@ -186,9 +186,9 @@ function ModernSidebar({
             <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">
               Your Plan
             </p>
-            
-            <Card className="p-3 border-2 border-dashed border-blue-200 dark:border-blue-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
-              <div className="flex items-center justify-between mb-2">
+
+            <Card className="p-3 ">
+              <div className="flex items-center justify-between mb-2 dark:border-[#121212]">
                 <div className="flex items-center gap-2">
                   {planIcons[user.plan]}
                   <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
@@ -199,7 +199,7 @@ function ModernSidebar({
                   Current
                 </Badge>
               </div>
-              
+
               {usage && (
                 <div className="space-y-1 mb-3">
                   <div className="flex justify-between text-xs">
@@ -222,7 +222,7 @@ function ModernSidebar({
                   </div>
                 </div>
               )}
-              
+
               <Button
                 onClick={() => setIsUsageDashboardOpen(true)}
                 className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white h-8 text-xs"
@@ -233,31 +233,31 @@ function ModernSidebar({
             </Card>
           </div>
         )}
-        
+
         {/* Non-free users: Show plan info */}
         {user && user.plan !== 'free' && !collapsed && (
           <div className="space-y-2">
             <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">
               Your Plan
             </p>
-            
+
             <Card className={`p-3 border border-gray-200 dark:border-gray-700 bg-gradient-to-r ${planColors[user.plan]}/10`}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   {planIcons[user.plan]}
                   <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {user.plan.toUpperCase()} PLAN
+                    {user.plan.toUpperCase()}
                   </span>
                 </div>
                 <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200 text-xs">
                   Active
                 </Badge>
               </div>
-              
+
               <Button
                 onClick={() => setIsUsageDashboardOpen(true)}
                 variant="outline"
-                className="w-full h-8 text-xs"
+                className="w-full bg-black h-8 text-xs text-white"
               >
                 <TrendingUp className="h-3 w-3 mr-1" />
                 View Usage
@@ -274,61 +274,55 @@ function ModernSidebar({
                 {isDemoMode ? 'New Document' : bypassAPI ? 'Preview Document' : 'Active Document'}
               </p>
             )}
-            
-            <Card className={`${collapsed ? 'p-2' : 'p-2.5 sm:p-3'} border-gray-600 ${
-              isDemoMode 
-                ? 'bg-gradient-to-r from-orange-900/40 to-yellow-900/40' 
-                : bypassAPI
+
+            <Card className={`${collapsed ? 'p-2' : 'p-2.5 sm:p-3'} border-gray-600 ${isDemoMode
+              ? 'bg-gradient-to-r from-orange-900/40 to-yellow-900/40'
+              : bypassAPI
                 ? 'bg-gradient-to-r from-green-900/40 to-emerald-900/40'
                 : 'bg-gradient-to-r from-emerald-900/40 to-teal-900/40'
-            }`}>
+              }`}>
               <div className={`flex items-start ${collapsed ? 'justify-center' : 'gap-2'}`}>
-                <div className={`${collapsed ? 'p-1' : 'p-1.5'} rounded-lg flex-shrink-0 ${
-                  isDemoMode 
-                    ? 'bg-orange-800/60' 
-                    : bypassAPI
+                <div className={`${collapsed ? 'p-1' : 'p-1.5'} rounded-lg flex-shrink-0 ${isDemoMode
+                  ? 'bg-orange-800/60'
+                  : bypassAPI
                     ? 'bg-green-800/60'
                     : 'bg-emerald-800/60'
-                }`} title={collapsed ? currentDocument : ''}>
-                  <FileText className={`${collapsed ? 'h-3 w-3' : 'h-3.5 w-3.5'} ${
-                    isDemoMode 
-                      ? 'text-orange-300' 
-                      : bypassAPI
+                  }`} title={collapsed ? currentDocument : ''}>
+                  <FileText className={`${collapsed ? 'h-3 w-3' : 'h-3.5 w-3.5'} ${isDemoMode
+                    ? 'text-orange-300'
+                    : bypassAPI
                       ? 'text-green-300'
                       : 'text-emerald-300'
-                  }`} />
+                    }`} />
                 </div>
                 {!collapsed && (
-                <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                    {currentDocument}
-                  </p>
+                      {currentDocument}
+                    </p>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                    <div className="flex items-center gap-1">
-                        <Activity className={`h-2.5 w-2.5 flex-shrink-0 ${
-                          isDemoMode 
-                            ? 'text-orange-400 animate-pulse' 
-                            : bypassAPI
+                      <div className="flex items-center gap-1">
+                        <Activity className={`h-2.5 w-2.5 flex-shrink-0 ${isDemoMode
+                          ? 'text-orange-400 animate-pulse'
+                          : bypassAPI
                             ? 'text-green-400 animate-pulse'
                             : 'text-emerald-400 animate-pulse'
-                        }`} />
-                        <span className={`text-xs font-medium ${
-                          isDemoMode 
-                            ? 'text-orange-300' 
-                            : bypassAPI
+                          }`} />
+                        <span className={`text-xs font-medium ${isDemoMode
+                          ? 'text-orange-300'
+                          : bypassAPI
                             ? 'text-green-300'
                             : 'text-emerald-300'
-                        }`}>
+                          }`}>
                           {isDemoMode ? 'Demo' : bypassAPI ? 'Preview' : 'Active'}
-                      </span>
+                        </span>
                       </div>
-                      <Badge variant="outline" className={`text-xs px-1.5 py-0.5 ${
-                        isDemoMode 
-                          ? 'border-orange-600 text-orange-300' 
-                          : bypassAPI
+                      <Badge variant="outline" className={`text-xs px-1.5 py-0.5 ${isDemoMode
+                        ? 'border-orange-600 text-orange-300'
+                        : bypassAPI
                           ? 'border-green-600 text-green-300'
                           : 'border-emerald-600 text-emerald-300'
-                      }`}>
+                        }`}>
                         <MessageCircle className="h-2 w-2 mr-1" />
                         {isDemoMode ? 'Preview' : bypassAPI ? 'No API' : 'Chat Ready'}
                       </Badge>
@@ -348,13 +342,13 @@ function ModernSidebar({
                 Collections ({collections.length})
               </p>
             )}
-            
+
             <div className="space-y-1 max-h-64 overflow-y-auto">
               {collections.map((collection) => {
                 const isExpanded = expandedCollections.has(collection.id)
                 const collectionDocuments = documents.filter(doc => doc.collectionId === collection.id)
                 const completedCount = collectionDocuments.filter(doc => doc.status === 'completed').length
-                
+
                 return (
                   <div key={collection.id} className="space-y-1">
                     {/* Collection Header */}
@@ -376,29 +370,27 @@ function ModernSidebar({
                                 <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 text-xs px-1.5 py-0.5">
                                   {collectionDocuments.length} docs
                                 </Badge>
-                                <ChevronDown 
-                                  className={`h-3 w-3 text-purple-600 dark:text-purple-400 transition-transform duration-200 ${
-                                    isExpanded ? 'rotate-180' : ''
-                                  }`} 
+                                <ChevronDown
+                                  className={`h-3 w-3 text-purple-600 dark:text-purple-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''
+                                    }`}
                                 />
                               </div>
                             </div>
                             <div className="flex items-center gap-1.5 mt-1">
-                              <div className={`w-2 h-2 rounded-full ${
-                                completedCount === collectionDocuments.length ? 'bg-green-500' :
+                              <div className={`w-2 h-2 rounded-full ${completedCount === collectionDocuments.length ? 'bg-green-500' :
                                 completedCount > 0 ? 'bg-yellow-500' : 'bg-blue-500 animate-pulse'
-                              }`} />
+                                }`} />
                               <span className="text-xs text-purple-700 dark:text-purple-300">
                                 {completedCount === collectionDocuments.length ? 'All Ready' :
-                                 completedCount > 0 ? `${completedCount}/${collectionDocuments.length} Ready` :
-                                 'Analyzing...'}
+                                  completedCount > 0 ? `${completedCount}/${collectionDocuments.length} Ready` :
+                                    'Analyzing...'}
                               </span>
                             </div>
                           </div>
                         )}
                       </div>
                     </div>
-                    
+
                     {/* Collection Documents (when expanded) */}
                     {isExpanded && !collapsed && (
                       <div className="ml-4 space-y-1">
@@ -406,48 +398,42 @@ function ModernSidebar({
                           <div
                             key={doc.id}
                             onClick={() => onSelectDocument(doc.id)}
-                            className={`p-2 rounded-lg cursor-pointer transition-all duration-200 group ${
-                              selectedDocumentId === doc.id
-                                ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700'
-                                : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
-                            }`}
+                            className={`p-2 rounded-lg cursor-pointer transition-all duration-200 group ${selectedDocumentId === doc.id
+                              ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700'
+                              : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
+                              }`}
                           >
                             <div className="flex items-start gap-2">
-                              <div className={`p-1 rounded-lg flex-shrink-0 ${
-                                selectedDocumentId === doc.id
-                                  ? 'bg-blue-200 dark:bg-blue-800'
-                                  : 'bg-gray-200 dark:bg-gray-700 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40'
-                              }`}>
-                                <FileText className={`h-3 w-3 ${
-                                  selectedDocumentId === doc.id
-                                    ? 'text-blue-700 dark:text-blue-300'
-                                    : 'text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
-                                }`} />
+                              <div className={`p-1 rounded-lg flex-shrink-0 ${selectedDocumentId === doc.id
+                                ? 'bg-blue-200 dark:bg-blue-800'
+                                : 'bg-gray-200 dark:bg-gray-700 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40'
+                                }`}>
+                                <FileText className={`h-3 w-3 ${selectedDocumentId === doc.id
+                                  ? 'text-blue-700 dark:text-blue-300'
+                                  : 'text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
+                                  }`} />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className={`text-sm font-medium truncate ${
-                                  selectedDocumentId === doc.id
-                                    ? 'text-blue-900 dark:text-blue-100'
-                                    : 'text-gray-900 dark:text-white'
-                                }`}>
+                                <p className={`text-sm font-medium truncate ${selectedDocumentId === doc.id
+                                  ? 'text-blue-900 dark:text-blue-100'
+                                  : 'text-gray-900 dark:text-white'
+                                  }`}>
                                   {doc.filename}
                                 </p>
                                 <div className="flex items-center gap-1.5 mt-1">
-                                  <div className={`w-2 h-2 rounded-full ${
-                                    doc.status === 'completed' ? 'bg-green-500' :
+                                  <div className={`w-2 h-2 rounded-full ${doc.status === 'completed' ? 'bg-green-500' :
                                     doc.status === 'analyzing' ? 'bg-yellow-500 animate-pulse' :
-                                    doc.status === 'uploading' ? 'bg-blue-500 animate-pulse' :
-                                    doc.status === 'error' ? 'bg-red-500' : 'bg-gray-400'
-                                  }`} />
-                                  <span className={`text-xs ${
-                                    selectedDocumentId === doc.id
-                                      ? 'text-blue-700 dark:text-blue-300'
-                                      : 'text-gray-500 dark:text-gray-400'
-                                  }`}>
+                                      doc.status === 'uploading' ? 'bg-blue-500 animate-pulse' :
+                                        doc.status === 'error' ? 'bg-red-500' : 'bg-gray-400'
+                                    }`} />
+                                  <span className={`text-xs ${selectedDocumentId === doc.id
+                                    ? 'text-blue-700 dark:text-blue-300'
+                                    : 'text-gray-500 dark:text-gray-400'
+                                    }`}>
                                     {doc.status === 'completed' ? 'Ready' :
-                                     doc.status === 'analyzing' ? 'Analyzing...' :
-                                     doc.status === 'uploading' ? 'Uploading...' :
-                                     doc.status === 'error' ? 'Error' : 'Pending'}
+                                      doc.status === 'analyzing' ? 'Analyzing...' :
+                                        doc.status === 'uploading' ? 'Uploading...' :
+                                          doc.status === 'error' ? 'Error' : 'Pending'}
                                   </span>
                                 </div>
                               </div>
@@ -471,55 +457,49 @@ function ModernSidebar({
                 Individual Documents ({documents.filter(doc => !doc.collectionId).length})
               </p>
             )}
-            
+
             <div className="space-y-1 max-h-64 overflow-y-auto">
               {documents.filter(doc => !doc.collectionId).map((doc) => (
                 <div
                   key={doc.id}
                   onClick={() => onSelectDocument(doc.id)}
-                  className={`${collapsed ? 'p-2' : 'p-2.5 sm:p-3'} rounded-lg cursor-pointer transition-all duration-200 group ${
-                    selectedDocumentId === doc.id
-                      ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700'
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
-                  }`}
+                  className={`${collapsed ? 'p-2' : 'p-2.5 sm:p-3'} rounded-lg cursor-pointer transition-all duration-200 group ${selectedDocumentId === doc.id
+                    ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700'
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
+                    }`}
                 >
                   <div className={`flex items-start ${collapsed ? 'justify-center' : 'gap-2'}`}>
-                    <div className={`${collapsed ? 'p-1' : 'p-1.5'} rounded-lg flex-shrink-0 ${
-                      selectedDocumentId === doc.id
-                        ? 'bg-blue-200 dark:bg-blue-800'
-                        : 'bg-gray-200 dark:bg-gray-700 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40'
-                    }`} title={collapsed ? doc.filename : ''}>
-                      <FileText className={`${collapsed ? 'h-3 w-3' : 'h-3.5 w-3.5'} ${
-                        selectedDocumentId === doc.id
-                          ? 'text-blue-700 dark:text-blue-300'
-                          : 'text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
-                      }`} />
+                    <div className={`${collapsed ? 'p-1' : 'p-1.5'} rounded-lg flex-shrink-0 ${selectedDocumentId === doc.id
+                      ? 'bg-blue-200 dark:bg-blue-800'
+                      : 'bg-gray-200 dark:bg-gray-700 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40'
+                      }`} title={collapsed ? doc.filename : ''}>
+                      <FileText className={`${collapsed ? 'h-3 w-3' : 'h-3.5 w-3.5'} ${selectedDocumentId === doc.id
+                        ? 'text-blue-700 dark:text-blue-300'
+                        : 'text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
+                        }`} />
                     </div>
                     {!collapsed && (
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium truncate ${
-                          selectedDocumentId === doc.id
-                            ? 'text-blue-900 dark:text-blue-100'
-                            : 'text-gray-900 dark:text-white'
-                        }`}>
+                        <p className={`text-sm font-medium truncate ${selectedDocumentId === doc.id
+                          ? 'text-blue-900 dark:text-blue-100'
+                          : 'text-gray-900 dark:text-white'
+                          }`}>
                           {doc.filename}
                         </p>
                         <div className="flex items-center gap-1.5 mt-1">
-                          <div className={`w-2 h-2 rounded-full ${
-                            doc.status === 'completed' ? 'bg-green-500' :
+                          <div className={`w-2 h-2 rounded-full ${doc.status === 'completed' ? 'bg-green-500' :
                             doc.status === 'analyzing' ? 'bg-yellow-500 animate-pulse' :
-                            doc.status === 'uploading' ? 'bg-blue-500 animate-pulse' :
-                            doc.status === 'error' ? 'bg-red-500' : 'bg-gray-400'
-                          }`} />
-                          <span className={`text-xs ${
-                            selectedDocumentId === doc.id
-                              ? 'text-blue-700 dark:text-blue-300'
-                              : 'text-gray-500 dark:text-gray-400'
-                          }`}>
+                              doc.status === 'uploading' ? 'bg-blue-500 animate-pulse' :
+                                doc.status === 'error' ? 'bg-red-500' : 'bg-gray-400'
+                            }`} />
+                          <span className={`text-xs ${selectedDocumentId === doc.id
+                            ? 'text-blue-700 dark:text-blue-300'
+                            : 'text-gray-500 dark:text-gray-400'
+                            }`}>
                             {doc.status === 'completed' ? 'Ready' :
-                             doc.status === 'analyzing' ? 'Analyzing...' :
-                             doc.status === 'uploading' ? 'Uploading...' :
-                             doc.status === 'error' ? 'Error' : 'Pending'}
+                              doc.status === 'analyzing' ? 'Analyzing...' :
+                                doc.status === 'uploading' ? 'Uploading...' :
+                                  doc.status === 'error' ? 'Error' : 'Pending'}
                           </span>
                         </div>
                       </div>
@@ -527,41 +507,39 @@ function ModernSidebar({
                   </div>
                 </div>
               ))}
+            </div>
           </div>
-        </div>
         )}
 
 
       </div>
 
       {/* Modern Footer */}
-      <div className="p-2 sm:p-3 border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 space-y-1.5">        
+      <div className="p-2 sm:p-3 border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-[#121212] space-y-1.5">
         <div className={`flex ${collapsed ? 'flex-col' : ''} gap-1.5`}>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="sm"
             onClick={() => setIsSettingsOpen(true)}
-            className={`text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 h-7 py-1.5 touch-manipulation text-xs ${
-              collapsed ? 'justify-center w-full' : 'flex-1 justify-start gap-1.5'
-            }`}
+            className={`text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 h-7 py-1.5 touch-manipulation text-xs ${collapsed ? 'justify-center w-full' : 'flex-1 justify-start gap-1.5'
+              }`}
             title={collapsed ? 'Settings' : ''}
           >
             <Settings className="h-3 w-3 flex-shrink-0" />
             {!collapsed && <span>Settings</span>}
           </Button>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="sm"
-            className={`text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 h-7 py-1.5 touch-manipulation text-xs ${
-              collapsed ? 'justify-center w-full' : 'flex-1 justify-start gap-1.5'
-            }`}
+            className={`text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 h-7 py-1.5 touch-manipulation text-xs ${collapsed ? 'justify-center w-full' : 'flex-1 justify-start gap-1.5'
+              }`}
             title={collapsed ? 'Help' : ''}
           >
             <HelpCircle className="h-3 w-3 flex-shrink-0" />
             {!collapsed && <span>Help</span>}
           </Button>
         </div>
-        
+
         {!collapsed && (
           <div className=" pt-1.5 border-gray-200 dark:border-gray-700">
             <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
@@ -572,20 +550,20 @@ function ModernSidebar({
               ) : (
                 <></>
               )}
-          </p>
-        </div>
+            </p>
+          </div>
         )}
       </div>
-      
+
       {/* Settings Panel */}
-      <SettingsPanel 
+      <SettingsPanel
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
       />
-      
+
       {/* Usage Dashboard Modal */}
       {isUsageDashboardOpen && (
-        <UsageDashboard 
+        <UsageDashboard
           onClose={() => setIsUsageDashboardOpen(false)}
         />
       )}

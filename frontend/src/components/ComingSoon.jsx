@@ -56,7 +56,7 @@ export default function ComingSoonPage() {
     }
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-background to-secondary/20 p-4 relative overflow-hidden">
+        <div className="min-h-screen flex flex-col items-center justify-center dark:bg-[#121212] p-4 relative overflow-hidden">
             {/* Theme Toggle and Landing Page Button */}
             <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
                 {/* <Link to="/main">
@@ -73,7 +73,7 @@ export default function ComingSoonPage() {
                     <br className="">
                     </br>
                     <span className="text-primary"><Typewriter
-                        words={["Coming Soon", "Powered by Claude AI", "Gearing Up",]}
+                        words={["Coming Soon", "Powered by Claude", "Gearing Up",]}
                         loop={true}
                         cursor={true}
                         cursorStyle="|"
@@ -83,12 +83,15 @@ export default function ComingSoonPage() {
                 </h1>
 
                 <p className="text-xl text-muted-foreground max-w-xl mx-auto animate-in slide-in-from-bottom-4 duration-1000 ease-out delay-200">
-                    We're working hard to bring you something extraordinary. Stay tuned!
+                    We're working hard to bring you something helpful. 
+                </p>
+                <p className="text-xl text-muted-foreground max-w-xl mx-auto animate-in slide-in-from-bottom-4 duration-1000 ease-out delay-300">
+                    Feel free to explore our <Link to="/main" className="text-primary hover:underline">landing page</Link> in the meantime.
                 </p>
 
                 <div className="grid grid-cols-4 gap-4 max-w-lg mx-auto animate-in zoom-in duration-1000 delay-400">
                     {Object.entries(countdown).map(([unit, value]) => (
-                        <Card key={unit} className="p-4 flex flex-col items-center justify-center">
+                        <Card key={unit} className="p-4 flex flex-col items-center justify-center dark:bg-[#1f1f1f]">
                             <span className="text-3xl font-bold">{value}</span>
                             <span className="text-xs text-muted-foreground capitalize">{unit}</span>
                         </Card>

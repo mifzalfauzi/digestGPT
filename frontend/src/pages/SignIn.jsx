@@ -106,39 +106,39 @@ function SignIn() {
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Branding & Features */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-[#1f1f1f] relative overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-72 h-72 bg-white rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+          {/* <div className="absolute top-0 left-0 w-72 h-72 bg-white rounded-full -translate-x-1/2 -translate-y-1/2"></div>
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/2 translate-y-1/2"></div>
-          <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-white rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+          <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-white rounded-full -translate-x-1/2 -translate-y-1/2"></div> */}
         </div>
         
         <div className="relative z-10 flex flex-col justify-center px-12 py-16 text-white">
           <div className="space-y-8">
             {/* Logo */}
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+              {/* <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
                 <Zap className="h-8 w-8 text-white" />
               </div>
               <div>
                 <h1 className="text-4xl font-bold">DigesText</h1>
                 <p className="text-blue-200">Intelligent text processing</p>
-              </div>
+              </div> */}
             </div>
             
             {/* Hero Text */}
-            <div className="space-y-4">
+            {/* <div className="space-y-4">
               <h2 className="text-3xl font-bold leading-tight">
                 Transform your workflow with AI-powered text processing
               </h2>
               <p className="text-lg text-blue-100 leading-relaxed">
                 Join thousands of professionals who trust DigesText to streamline their document processing and boost productivity.
               </p>
-            </div>
+            </div> */}
             
             {/* Features */}
-            <div className="space-y-6">
+            {/* <div className="space-y-6">
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
                   <Shield className="h-5 w-5 text-white" />
@@ -168,10 +168,10 @@ function SignIn() {
                   <p className="text-blue-100">Seamless sharing and real-time collaboration</p>
                 </div>
               </div>
-            </div>
+            </div> */}
             
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-6 pt-8 border-t border-white/20">
+            {/* <div className="grid grid-cols-3 gap-6 pt-8 border-t border-white/20">
               <div className="text-center">
                 <div className="text-2xl font-bold">50K+</div>
                 <div className="text-sm text-blue-200">Active Users</div>
@@ -184,13 +184,13 @@ function SignIn() {
                 <div className="text-2xl font-bold">99.9%</div>
                 <div className="text-sm text-blue-200">Uptime</div>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
       
       {/* Right Side - Sign In Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-8">
+      <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 dark:bg-[#121212] p-8">
         <div className="w-full max-w-md space-y-8">
           {/* Mobile Logo */}
           <div className="lg:hidden text-center space-y-4">
@@ -210,7 +210,7 @@ function SignIn() {
               Welcome back
             </h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Sign in to continue to your workspace
+              State-of-the-art AI-powered document analysis.
             </p>
           </div>
 
@@ -234,7 +234,7 @@ function SignIn() {
               Continue with Google
             </button>
 
-            <button 
+            {/* <button 
               onClick={handleMicrosoftSignIn}
               disabled={isMicrosoftLoading || isLoading || isGoogleLoading}
               className="w-full h-12 border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-medium rounded-lg flex items-center justify-center gap-3 hover:shadow-md disabled:opacity-50"
@@ -250,7 +250,7 @@ function SignIn() {
                 </svg>
               )}
               Continue with Microsoft
-            </button>
+            </button> */}
           </div>
 
           {/* Divider */}
@@ -259,7 +259,7 @@ function SignIn() {
               <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-3 bg-gray-50 dark:bg-gray-950 text-gray-500">Or continue with email</span>
+              <span className="px-3 bg-gray-50 dark:bg-gray-950 text-gray-500">OR</span>
             </div>
           </div>
 
@@ -353,7 +353,7 @@ function SignIn() {
             <button 
               onClick={handleSubmit}
               disabled={isLoading || isGoogleLoading || isMicrosoftLoading}
-              className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 text-white font-medium rounded-lg flex items-center justify-center"
+              className="w-full h-12 dark:bg-white text-black hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 font-medium rounded-lg flex items-center justify-center"
             >
               {isLoading ? (
                 <div className="flex items-center gap-2">
