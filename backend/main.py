@@ -27,7 +27,7 @@ load_dotenv()
 # Base.metadata.drop_all(bind=engine)
 
 # Create database tables
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="DocuChat API", 
@@ -41,7 +41,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3001",
         "http://localhost:3000", 
-        "http://localhost:5173"
+        "http://localhost:5173",
+        "https://drop2chat.com",  
     ],
     allow_credentials=True,
     allow_methods=["*"],

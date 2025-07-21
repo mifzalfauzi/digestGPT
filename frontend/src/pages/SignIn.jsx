@@ -193,7 +193,7 @@ function SignIn() {
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 dark:bg-[#121212] p-8">
         <div className="w-full max-w-md space-y-8">
           {/* Mobile Logo */}
-          <div className="lg:hidden text-center space-y-4">
+          {/* <div className="lg:hidden text-center space-y-4">
             <div className="flex items-center justify-center gap-3">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
                 <Zap className="h-6 w-6 text-white" />
@@ -202,7 +202,7 @@ function SignIn() {
                 DigesText
               </h1>
             </div>
-          </div>
+          </div> */}
           
           {/* Header */}
           <div className="text-center space-y-2">
@@ -259,7 +259,7 @@ function SignIn() {
               <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-3 bg-gray-50 dark:bg-gray-950 text-gray-500">OR</span>
+              <span className="px-3 bg-gray-50 dark:bg-[#121212] text-gray-500">OR</span>
             </div>
           </div>
 

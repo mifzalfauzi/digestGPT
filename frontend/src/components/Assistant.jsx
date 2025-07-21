@@ -1031,7 +1031,7 @@ This business plan effectively balances ambitious growth objectives with compreh
   }
 
   return (
-    <div className="h-screen bg-background overflow-hidden">
+    <div className="h-screen dark:bg-[#121212] overflow-hidden">
       {currentView === "upload" ? (
         /* ===== FULL-WIDTH UPLOAD VIEW ===== */
         <div className="h-full flex">
@@ -1426,7 +1426,7 @@ This business plan effectively balances ambitious growth objectives with compreh
               {/* Chat Panel - Mobile/Tablet */}
               <div className={`h-full ${activePanel === "chat" ? "block" : "hidden"}`}>
                 {selectedDocument?.status === 'analyzing' ? (
-                  <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 p-6">
+                  <div className="h-full flex items-center justify-center bg-white dark:bg-background p-6">
                     <div className="text-center space-y-6 max-w-md">
                       <div className="relative">
                         <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl">
@@ -1439,17 +1439,14 @@ This business plan effectively balances ambitious growth objectives with compreh
                       <div className="space-y-3">
                         <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Processing Document</h3>
                         <p className="text-lg text-gray-600 dark:text-gray-400">
-                          Analysis in progress...
+                          Analysis is in progress...
                         </p>
-                        <div className="flex items-center justify-center gap-2 text-blue-600 dark:text-blue-400">
-                          <Zap className="h-5 w-5" />
-                          <span className="font-semibold">Advanced AI Processing</span>
-                        </div>
+                
                       </div>
                     </div>
                   </div>
                 ) : selectedDocument?.status === 'error' ? (
-                  <div className="h-full flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-100/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 p-6">
+                  <div className="h-full flex items-center justify-center  dark:bg-background p-6">
                     <div className="text-center space-y-6 max-w-md">
                       <div className="flex items-center justify-center mb-4">
                         <div className="p-4 rounded-full bg-red-100 dark:bg-red-900/30">
@@ -1460,15 +1457,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                       <p className="text-base text-gray-700 dark:text-gray-300">
                         Unable to process this file. It may be corrupted, too large, password protected, or in an unsupported format.
                       </p>
-                      <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
-                        <p>Possible reasons:</p>
-                        <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li>File is corrupted or damaged</li>
-                          <li>File format is not supported</li>
-                          <li>File is password protected</li>
-                          <li>File size is too large</li>
-                        </ul>
-                      </div>
+                     
                     </div>
                   </div>
                 ) : documentId ? (
@@ -1481,7 +1470,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                     casualMode={false}
                   />
                 ) : (
-                  <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 p-6">
+                  <div className="h-full flex items-center justify-center bg-white dark:bg-background p-6">
                     <div className="text-center space-y-6 max-w-md">
                       <div className="relative">
                         <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl">
@@ -1496,10 +1485,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                         <p className="text-lg text-gray-600 dark:text-gray-400">
                           Analysis in progress...
                         </p>
-                        <div className="flex items-center justify-center gap-2 text-blue-600 dark:text-blue-400">
-                          <Zap className="h-5 w-5" />
-                          <span className="font-semibold">Advanced AI Processing</span>
-                        </div>
+                     
                       </div>
                     </div>
                   </div>
@@ -1530,7 +1516,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                   }}
                 >
                 {selectedDocument?.status === 'analyzing' ? (
-                  <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 p-12">
+                  <div className="h-full flex items-center justify-center bg-white dark:bg-background p-12">
                     <div className="text-center space-y-8 max-w-lg">
                       <div className="relative">
                         <div className="w-32 h-32 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl">
@@ -1543,17 +1529,14 @@ This business plan effectively balances ambitious growth objectives with compreh
                       <div className="space-y-4">
                         <h3 className="text-3xl font-bold text-gray-900 dark:text-white">Processing Document</h3>
                         <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed">
-                          Analysis in progress...
+                          Analysis is in progress...
                         </p>
-                        <div className="flex items-center justify-center gap-3 text-blue-600 dark:text-blue-400">
-                          <Zap className="h-6 w-6" />
-                          <span className="text-lg font-semibold">Advanced AI Processing</span>
-                        </div>
+                    
                       </div>
                     </div>
                   </div>
                 ) : selectedDocument?.status === 'error' ? (
-                  <div className="h-full flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-100/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 p-12">
+                  <div className="h-full flex items-center justify-center dark:bg-[#1f1f1f] p-12">
                     <div className="text-center space-y-8 max-w-lg">
                       <div className="flex items-center justify-center mb-4">
                         <div className="p-5 rounded-full bg-red-100 dark:bg-red-900/30">
@@ -1564,15 +1547,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                       <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
                         Unable to process this file. It may be corrupted, too large, password protected, or in an unsupported format.
                       </p>
-                      <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
-                        <p>Possible reasons:</p>
-                        <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li>File is corrupted or damaged</li>
-                          <li>File format is not supported</li>
-                          <li>File is password protected</li>
-                          <li>File size is too large</li>
-                        </ul>
-                      </div>
+                      
                     </div>
                   </div>
                 ) : documentId ? (
@@ -1585,7 +1560,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                     casualMode={false}
                   />
                 ) : (
-                  <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 p-12">
+                  <div className="h-full flex items-center justify-center bg-white dark:bg-background p-12">
                     <div className="text-center space-y-8 max-w-lg">
                       <div className="relative">
                         <div className="w-32 h-32 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl">
@@ -1598,7 +1573,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                       <div className="space-y-4">
                         <h3 className="text-3xl font-bold text-gray-900 dark:text-white">Processing Document</h3>
                         <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed">
-                          AI analysis powered by Claude 4 Sonnet is in progress...
+                          Analysis is in progress...
                         </p>
                         <div className="flex items-center justify-center gap-3 text-blue-600 dark:text-blue-400">
                           <Zap className="h-6 w-6" />
@@ -1710,13 +1685,7 @@ This business plan effectively balances ambitious growth objectives with compreh
           </p>
         </div>
         <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
-          <p>Possible reasons:</p>
-          <ul className="list-disc list-inside space-y-1 ml-2">
-            <li>File is corrupted or damaged</li>
-            <li>File format is not supported</li>
-            <li>File is password protected</li>
-            <li>File size is too large</li>
-          </ul>
+          
         </div>
       </div>
       <div className="flex gap-3 pt-2">

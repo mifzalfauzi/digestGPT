@@ -239,12 +239,10 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     <div className="space-y-6 p-4 sm:p-6 h-full overflow-y-auto">
       {/* Executive Summary - Only show if showSummary is true */}
       {showSummary && (
-        <Card className="border-0 shadow-xl bg-gradient-to-br from-slate-50 to-white dark:from-gray-800 dark:to-gray-900">
+        <Card className="border-0 shadow-xl dark:bg-black">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl shadow-lg">
-                <Brain className="h-6 w-6 text-white" />
-              </div>
+             
               <div>
                 <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
                   Executive Summary
@@ -285,7 +283,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                 </p>
               </div>
 
-              <div className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 rounded-xl p-4 border border-amber-200/50 dark:border-amber-800/30">
+              <div className=" dark:bg-black rounded-xl p-4 border border-amber-200/50 dark:border-amber-800/30">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                   <span className="text-xs font-medium text-amber-800 dark:text-amber-200">Concepts</span>
@@ -310,7 +308,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       )}
 
       {/* Key Insights Section */}
-      <Card className="border-0 shadow-xl">
+      <Card className="border-0 shadow-xl dark:bg-black">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -415,7 +413,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       </Card>
 
       {/* Risk Assessment Section */}
-      <Card className="border-0 shadow-xl">
+      <Card className="border-0 shadow-xl dark:bg-black">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

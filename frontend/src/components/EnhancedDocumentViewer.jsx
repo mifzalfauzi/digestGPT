@@ -148,11 +148,11 @@ This business plan effectively balances growth ambitions with comprehensive risk
   const handleShowInDocument = (id) => {
     setActiveHighlight(id)
     setActiveTab('document')
-    
+
     // Small delay to ensure tab switch completes before scrolling
     setTimeout(() => {
       const element = document.querySelector(`[data-highlight-id="${id}"]`)
-      
+
       if (element) {
         element.scrollIntoView({
           behavior: 'smooth',
@@ -178,7 +178,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
     try {
       const arrayBuffer = await file.arrayBuffer()
       const result = await mammoth.convertToHtml({ arrayBuffer })
-      
+
       setDocxContent({
         html: result.value,
         messages: result.messages
@@ -193,27 +193,26 @@ This business plan effectively balances growth ambitions with comprehensive risk
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800">
-            {/* Enhanced Header - Fixed at top */}
-      <div className="flex-shrink-0 px-2 sm:px-3 lg:px-4 py-2 sm:py-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+      {/* Enhanced Header - Fixed at top */}
+      <div className="border-b flex-shrink-0 px-2 sm:px-3 lg:px-4 py-2 sm:py-3 bg-white/80 dark:bg-[#121212] backdrop-blur-sm">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 lg:gap-0">
           <div className="flex items-center gap-2">
-            <div className="p-1 sm:p-1.5 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/40 dark:to-purple-900/40 rounded-xl">
+            {/* <div className="p-1 sm:p-1.5 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/40 dark:to-purple-900/40 rounded-xl">
               <Brain className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4 text-blue-600 dark:text-blue-400" />
-            </div>
+            </div> */}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <h2 className="text-xs sm:text-sm lg:text-base font-bold text-slate-900 dark:text-white">
-                  Dashboard 
+                  Dashboard
                   {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
                   {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal">(Preview)</span>}
-              </h2>
-                <Badge className={`text-xs border-0 px-1 py-0.5 ${
-                  isDemoMode 
-                    ? 'bg-gradient-to-r from-orange-500 to-yellow-600 text-white'
-                    : bypassAPI
+                </h2>
+                <Badge className={`text-xs border-0 px-1 py-0.5 ${isDemoMode
+                  ? 'bg-gradient-to-r from-orange-500 to-yellow-600 text-white'
+                  : bypassAPI
                     ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
                     : 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white'
-                }`}>
+                  }`}>
                   <Sparkles className="h-1.5 w-1.5 sm:h-2 sm:w-2 mr-0.5" />
                   <span className="hidden sm:inline">
                     {isDemoMode ? 'Demo Data' : bypassAPI ? 'Preview Data' : 'Analyzed'}
@@ -221,8 +220,8 @@ This business plan effectively balances growth ambitions with comprehensive risk
                   <span className="sm:hidden">
                     {isDemoMode ? '🎭' : bypassAPI ? '👁️' : '✓'}
                   </span>
-                  </Badge>
-                </div>
+                </Badge>
+              </div>
             </div>
           </div>
         </div>
@@ -231,9 +230,9 @@ This business plan effectively balances growth ambitions with comprehensive risk
       {/* Enhanced Content - Scrollable */}
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
-          <div className="flex-shrink-0 px-2 sm:px-3 lg:px-4 pt-2 sm:pt-3">
-            <TabsList className={`grid w-full ${hasDocumentViewer ? 'grid-cols-4' : 'grid-cols-3'} bg-slate-100 dark:bg-gray-700 p-0.5 sm:p-1 rounded-xl h-auto`}>
-            <TabsTrigger value="analysis" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
+          <div className="flex-shrink-0 px-2 sm:px-3 lg:px-4 pt-2 sm:pt-3 dark:bg-[#121212]">
+            <TabsList className={`grid w-full ${hasDocumentViewer ? 'grid-cols-4' : 'grid-cols-3'} bg-slate-100 dark:bg-[#000000] dark:text-white p-0.5 sm:p-1 rounded-xl h-auto`}>
+              <TabsTrigger value="analysis" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
                 <Brain className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
                 <span className="hidden md:inline">Analysis</span>
                 <span className="md:hidden">AI</span>
@@ -258,13 +257,13 @@ This business plan effectively balances growth ambitions with comprehensive risk
             </TabsList>
           </div>
 
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden dark:bg-[#121212]">
             {/* Document Viewer Tab (PDF or DOCX) */}
             {hasDocumentViewer && (
               <TabsContent value="document-viewer" className="h-full mt-1 sm:mt-2 px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter">
                 {isPDF ? (
-                <Card className="h-full border-0 shadow-xl">
-                  <CardContent className="p-0 h-full">
+                  <Card className="h-full border-0 shadow-xl">
+                    <CardContent className="p-0 h-full">
                       <div className="h-full border border-slate-200 dark:border-gray-600 rounded-xl overflow-hidden relative">
                         {!results && (
                           <div className="absolute inset-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm flex items-center justify-center z-10">
@@ -277,17 +276,17 @@ This business plan effectively balances growth ambitions with comprehensive risk
                             </div>
                           </div>
                         )}
-                      <iframe
-                        src={getFileUrl()}
-                        className="w-full h-full"
-                        title="PDF Document"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+                        <iframe
+                          src={getFileUrl()}
+                          className="w-full h-full"
+                          title="PDF Document"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
                 ) : (
-                  <DocxViewer 
-                    file={file} 
+                  <DocxViewer
+                    file={file}
                     onTextExtracted={(text) => {
                       // This can be used to update the interactive text tab
                       console.log('DOCX text extracted:', text)
@@ -302,20 +301,21 @@ This business plan effectively balances growth ambitions with comprehensive risk
               <Card className="border-0 mt-2 sm:mt-3 shadow-lg">
                 <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <div className="flex items-center gap-2">
                       <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl shadow-lg">
                         <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                    </div>
-                    <div className="min-w-0">
+                      </div>
+                      <div className="min-w-0">
                         <CardTitle className="text-sm sm:text-base lg:text-lg font-bold text-slate-900 dark:text-white">
-                        Executive Summary
-                      </CardTitle>
+                          Executive Summary
+                        </CardTitle>
                         <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
                           Summary by Claude
-                      </p>
+                        </p>
                       </div>
                     </div>
-                    
+
+
                     {/* Document Analyzed Timestamp */}
                     {results?.analyzed_at && (
                       <div className="flex items-center gap-2 bg-gradient-to-r from-slate-50/80 to-gray-50/80 dark:from-gray-800/80 dark:to-gray-900/80 rounded-lg p-2 border border-slate-200/50 dark:border-gray-700/50">
@@ -336,12 +336,12 @@ This business plan effectively balances growth ambitions with comprehensive risk
                 </CardHeader>
                 <CardContent className="space-y-2 sm:space-y-3 px-3 sm:px-4">
                   <div className="bg-gradient-to-r from-purple-50/80 to-blue-50/80 dark:from-purple-950/30 dark:to-blue-950/30 rounded-2xl p-3 sm:p-4 border border-purple-200/50 dark:border-purple-800/30">
-                    <MarkdownRenderer 
+                    <MarkdownRenderer
                       content={results?.analysis?.summary || 'Comprehensive analysis will appear here after document processing...'}
                       className="text-slate-800 dark:text-slate-100 leading-relaxed text-sm font-medium"
                     />
                   </div>
-                  
+
                   {/* Quick Stats - Responsive Grid */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-3 sm:mt-4">
                     <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-emerald-200/50 dark:border-emerald-800/30">
@@ -353,7 +353,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                         {isDemoMode ? '12' : bypassAPI ? '4' : (results?.analysis?.key_points?.length || 0)}
                       </p>
                     </div>
-                    
+
                     <div className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-red-200/50 dark:border-red-800/30">
                       <div className="flex items-center gap-1">
                         <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-red-600 dark:text-red-400" />
@@ -373,7 +373,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                         {isDemoMode ? '3' : bypassAPI ? '3' : (results?.analysis?.key_concepts?.length || 0)}
                       </p>
                     </div>
-                    
+
                     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-blue-200/50 dark:border-blue-800/30">
                       <div className="flex items-center gap-1">
                         <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-blue-600 dark:text-blue-400" />
@@ -386,10 +386,10 @@ This business plan effectively balances growth ambitions with comprehensive risk
                   </div>
                 </CardContent>
               </Card>
-              
+
               {/* Key Concepts Section */}
               <div className="mt-3 sm:mt-4">
-                <KeyConceptsDisplay 
+                <KeyConceptsDisplay
                   concepts={isDemoMode ? results?.key_concepts || [] : bypassAPI ? results?.analysis?.key_concepts || [] : (results?.analysis?.key_concepts || [])}
                   onExplainConcept={onExplainConcept}
                   isDemoMode={isDemoMode}
@@ -400,7 +400,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
 
             {/* Insights & Risks Tab */}
             <TabsContent value="insights" className="h-full mt-1 sm:mt-2 overflow-y-auto animate-tab-enter">
-              <ProfessionalAnalysisDisplay 
+              <ProfessionalAnalysisDisplay
                 results={results}
                 onHighlightClick={handleShowInDocument}
                 activeHighlight={activeHighlight}
@@ -425,13 +425,13 @@ This business plan effectively balances growth ambitions with comprehensive risk
                           {isDOCX && !isDemoMode && !bypassAPI && <span className="text-xs text-blue-600 font-normal">(DOCX)</span>}
                         </CardTitle>
                         <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
-                          {isDemoMode 
-                            ? 'Sample document text for demo purposes' 
-                            : bypassAPI 
-                            ? 'Document text preview with mock data'
-                            : isDOCX
-                            ? 'DOCX document content with formatting preserved'
-                            : 'Claude\'s extracted document text with intelligent highlighting'
+                          {isDemoMode
+                            ? 'Sample document text for demo purposes'
+                            : bypassAPI
+                              ? 'Document text preview with mock data'
+                              : isDOCX
+                                ? 'DOCX document content with formatting preserved'
+                                : 'Claude\'s extracted document text with intelligent highlighting'
                           }
                         </p>
                       </div>
@@ -446,34 +446,32 @@ This business plan effectively balances growth ambitions with comprehensive risk
                   </div>
                 </CardHeader>
                 <CardContent className="px-3 sm:px-4">
-                  
+
                   {(results?.document_text || isDemoMode || bypassAPI || docxContent) ? (
                     <div className="space-y-2 sm:space-y-3">
                       {/* Interactive Text Display */}
                       <div className="bg-slate-50 dark:bg-gray-800 rounded-2xl p-2 sm:p-2.5 lg:p-4 max-h-[60vh] overflow-y-auto border border-slate-200 dark:border-gray-700">
                         {(isDemoMode || bypassAPI) && (
-                          <div className={`mb-3 p-2 border rounded-lg ${
-                            isDemoMode 
-                              ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
-                              : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-                          }`}>
-                            <p className={`text-xs font-medium ${
-                              isDemoMode 
-                                ? 'text-orange-700 dark:text-orange-300' 
-                                : 'text-green-700 dark:text-green-300'
+                          <div className={`mb-3 p-2 border rounded-lg ${isDemoMode
+                            ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
+                            : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
                             }`}>
-                              {isDemoMode 
+                            <p className={`text-xs font-medium ${isDemoMode
+                              ? 'text-orange-700 dark:text-orange-300'
+                              : 'text-green-700 dark:text-green-300'
+                              }`}>
+                              {isDemoMode
                                 ? '📄 Demo Document - This is sample content to showcase the interface'
                                 : '📄 Preview Mode - Document loaded with mock analysis to save API quota'
                               }
                             </p>
                           </div>
                         )}
-                        
+
                         {/* DOCX Content Display */}
                         {docxContent && !isDemoMode && !bypassAPI ? (
                           <div className="prose prose-sm max-w-none dark:prose-invert">
-                            <div 
+                            <div
                               dangerouslySetInnerHTML={{ __html: docxContent.html }}
                               style={{
                                 fontFamily: 'Inter, system-ui, sans-serif',
@@ -490,15 +488,15 @@ This business plan effectively balances growth ambitions with comprehensive risk
                             </div>
                           </div>
                         ) : (
-                        <HighlightableText 
-                          text={(isDemoMode || bypassAPI) ? mockDocumentText : results?.document_text}
-                          highlights={highlights}
-                          activeHighlight={activeHighlight}
-                          onHighlightClick={handleHighlightClick}
-                        />
+                          <HighlightableText
+                            text={(isDemoMode || bypassAPI) ? mockDocumentText : results?.document_text}
+                            highlights={highlights}
+                            activeHighlight={activeHighlight}
+                            onHighlightClick={handleHighlightClick}
+                          />
                         )}
                       </div>
-                      
+
                       {/* Instructions - Responsive Grid */}
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
                         <div className="p-2 sm:p-2.5 lg:p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
@@ -507,15 +505,15 @@ This business plan effectively balances growth ambitions with comprehensive risk
                             Key Insights
                           </div>
                           <p className="text-xs text-emerald-700 dark:text-emerald-300">
-                            {isDemoMode 
+                            {isDemoMode
                               ? 'In the full version, insights from the AI analysis would be highlighted in green when clicked.'
                               : bypassAPI
-                              ? 'In normal operation, AI insights would be highlighted here when clicked from the analysis tab.'
-                              : 'Navigate to the Analysis tab and click on any insight to see it highlighted here in green.'
+                                ? 'In normal operation, AI insights would be highlighted here when clicked from the analysis tab.'
+                                : 'Navigate to the Analysis tab and click on any insight to see it highlighted here in green.'
                             }
                           </p>
                         </div>
-                        
+
                         <div className="p-2 sm:p-2.5 lg:p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
                           <div className="flex items-center gap-2 text-red-800 dark:text-red-200 font-medium mb-1.5 text-sm">
                             <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
@@ -525,8 +523,8 @@ This business plan effectively balances growth ambitions with comprehensive risk
                             {isDemoMode
                               ? 'Risk assessments would be highlighted in red when selected from the analysis tab.'
                               : bypassAPI
-                              ? 'Risk flags from AI analysis would normally be highlighted here in red when selected.'
-                              : 'Click on any risk assessment in the Analysis tab to see it highlighted here in red.'
+                                ? 'Risk flags from AI analysis would normally be highlighted here in red when selected.'
+                                : 'Click on any risk assessment in the Analysis tab to see it highlighted here in red.'
                             }
                           </p>
                         </div>

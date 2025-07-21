@@ -23,7 +23,7 @@ import { Link } from "react-router-dom"
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 overflow-x-hidden">
+    <div className="min-h-screen bg-white dark:bg-gray-950">
       {/* Header - Compact */}
       <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-[#121212]">
         <div className="container mx-auto px-4 flex h-14 items-center justify-between dark:bg-[#121212]">
@@ -114,8 +114,8 @@ export default function LandingPage() {
               </h1>
               <p className="text-lg leading-relaxed dark:text-gray-300 mt-8 text-left">
                 Have a conversation with your documents anywhere, anytime.
-                </p>
-                
+              </p>
+
               <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-8 text-left">
                 {' '}
                 <span className="text-lg text-center inline-block">
@@ -388,7 +388,7 @@ export default function LandingPage() {
           {/* Centered Pricing Card */}
           <div className="max-w-8xl mx-auto mb-12">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <Card className="border-2 border-yellow-200 dark:border-yellow-800 shadow-xl flex flex-col justify-between dark:bg-black">
+              <Card className=" shadow-xl flex flex-col justify-between dark:bg-black">
                 <CardHeader className="text-center pb-6 pt-8">
                   <CardTitle className="text-2xl">Demo Plan</CardTitle>
                   <div className="mt-4">
@@ -400,9 +400,13 @@ export default function LandingPage() {
 
                 <CardContent className="flex flex-col justify-between flex-1">
                   <div className="space-y-3">
+                    <div className="flex items-center text-sm font-medium text-gray-300">
+                      
+                      <span>Includes</span>
+                    </div>
                     <div className="flex items-center text-sm">
                       <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
-                      <span>Claude 4 Sonnet analysis included</span>
+                      <span>Claude 4 Sonnet analysis</span>
                     </div>
                     <div className="flex items-center text-sm">
                       <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
@@ -431,23 +435,23 @@ export default function LandingPage() {
               </Card>
 
               {/* Standard Plan */}
-              <Card className="border-2 border-green-200 dark:border-green-800 shadow-xl flex flex-col justify-between dark:bg-black">
+              <Card className=" shadow-xl flex flex-col justify-between dark:bg-black">
                 <CardHeader className="text-center pb-6 pt-8">
                   <CardTitle className="text-2xl">Standard Plan</CardTitle>
                   <div className="mt-4">
                     <span className="text-4xl font-bold">$3.99</span>
                     <span className="text-lg text-gray-600 dark:text-gray-400">/month</span>
-                    <span className="block text-sm text-gray-500 dark:text-gray-400 mt-1">or $40 per year</span>
+                    {/* <span className="block text-sm text-gray-500 dark:text-gray-400 mt-1">or $40 per year</span> */}
                   </div>
-                  <CardDescription className="mt-3 text-base">For moderate document analysis</CardDescription>
+                  <CardDescription className="mt-3 text-base">Ideal for students, hobbyists, and casual users</CardDescription>
                 </CardHeader>
 
 
                 <CardContent className="flex flex-col justify-between flex-1">
                   <div className="space-y-3">
-                    <div className="flex items-center text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
-                      <span>All features of the Free Plan</span>
+                    <div className="flex items-center text-sm font-medium text-gray-300">
+                      
+                      <span>All features of the Free Plan, plus</span>
                     </div>
                     {/* <div className="flex items-center text-sm">
               <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
@@ -484,7 +488,7 @@ export default function LandingPage() {
               </Card>
 
               {/* Pro Plan */}
-              <Card className="border-2 border-blue-200 dark:border-blue-800 shadow-xl flex flex-col justify-between relative dark:bg-black">
+              <Card className=" shadow-xl flex flex-col justify-between relative dark:bg-black">
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                   <Badge className="bg-blue-600 text-white px-4 py-1 text-sm">
                     <Star className="mr-1 h-3 w-3" />
@@ -494,18 +498,19 @@ export default function LandingPage() {
 
                 <CardHeader className="text-center pb-6 pt-8">
                   <CardTitle className="text-2xl">Pro Plan</CardTitle>
-                  <div className="mt-4">
+                   <div className="mt-4">
                     <span className="text-4xl font-bold">$6.99</span>
                     <span className="text-lg text-gray-600 dark:text-gray-400">/month</span>
+                    {/* <span className="block text-sm text-gray-500 dark:text-gray-400 mt-1">or $60 per year</span> */}
                   </div>
-                  <CardDescription className="mt-3 text-base">For large document analysis</CardDescription>
+                  <CardDescription className="mt-3 text-base">Perfect for researchers and professionals</CardDescription>
                 </CardHeader>
 
                 <CardContent className="flex flex-col justify-between flex-1">
                   <div className="space-y-3">
-                    <div className="flex items-center text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
-                      <span>All features of the Standard Plan</span>
+                    <div className="flex items-center text-sm font-medium text-gray-300">
+                      
+                      <span>All features of the Standard Plan, plus</span>
                     </div>
                     <div className="flex items-center text-sm">
                       <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
@@ -519,6 +524,7 @@ export default function LandingPage() {
                       <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
                       <span>350k tokens per month</span>
                     </div>
+                    
                   </div>
 
                   <div className="flex justify-start pt-6">
@@ -536,6 +542,7 @@ export default function LandingPage() {
 
 
           {/* Stats Row */}
+          
           <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto">
             <div className="text-center">
               <div className="text-3xl font-bold dark:text-white mb-2">5,000+</div>
@@ -550,6 +557,8 @@ export default function LandingPage() {
               <p className="text-sm text-gray-600 dark:text-gray-400">Average analysis time</p>
             </div>
           </div>
+          <br></br>
+          
         </div>
       </section>
 
