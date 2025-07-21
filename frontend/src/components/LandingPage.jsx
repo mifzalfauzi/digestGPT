@@ -98,7 +98,7 @@ export default function LandingPage() {
                 Powered by Claude 4 Sonnet
               </Badge>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-5xl font-bold tracking-tight leading-tight mb-6">
+              <h1 className="text-2xl sm:text-5xl lg:text-5xl font-bold tracking-tight leading-tight mb-6">
                 {" "}
                 <span className="bg-black dark:bg-white bg-clip-text text-transparent whitespace-nowrap">
                   <Typewriter
