@@ -7,7 +7,8 @@ import { Badge } from './ui/badge'
 import { Card, CardHeader, CardContent } from './ui/card'
 import { Separator } from './ui/separator'
 import { MessageCircle, Send, Bot, User, AlertCircle, Trash2, Sparkles, Brain, Zap, ThumbsUp, ThumbsDown, Copy, Check, Clock, ChevronDown } from 'lucide-react'
-import MessageFormatter from './MessageFormatter';
+import MessageFormatter from './MessageFormatter'
+import TypewriterText from './TypewriterText'
 
 function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode = false, bypassAPI = false, casualMode = false, isDisabled = false, analyzingStatus = null }) {
   // Auth context
@@ -27,9 +28,14 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
   const [showScrollIndicator, setShowScrollIndicator] = useState(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [chatError, setChatError] = useState('')
+  const [typewriterMessageId, setTypewriterMessageId] = useState(null)
   const messagesEndRef = useRef(null)
   const textareaRef = useRef(null)
   const messagesContainerRef = useRef(null)
+  const [isUserNearBottom, setIsUserNearBottom] = useState(true)
+  const scrollTimeoutRef = useRef(null)
+  const lastScrollHeightRef = useRef(0)
+  const scrollThresholdRef = useRef(0)
 
   // Mock responses for demo mode and API bypass mode
   const mockResponses = [
@@ -66,8 +72,43 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
     }
   }, [inputMessage])
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  const scrollToBottom = (force = false, behavior = "smooth") => {
+    if (!messagesContainerRef.current || !messagesEndRef.current) return
+    
+    const container = messagesContainerRef.current
+    const currentScrollHeight = container.scrollHeight
+    
+    // Only scroll if user is near bottom or force is true
+    if (!isUserNearBottom && !force) return
+    
+    // For typewriter effect: only scroll when height increases by a significant amount
+    if (typewriterMessageId && !force) {
+      const heightDiff = currentScrollHeight - lastScrollHeightRef.current
+      
+      // Only scroll if height increased by at least 30px (approximately 2 lines)
+      if (heightDiff < 30) return
+      
+      // Clear any pending scroll
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
+      
+      // Debounced smooth scroll
+      scrollTimeoutRef.current = setTimeout(() => {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: "auto" // Use auto during typing to prevent animation conflicts
+        })
+        lastScrollHeightRef.current = container.scrollHeight
+      }, 50)
+    } else {
+      // Immediate scroll for new messages or forced scroll
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: behavior
+      })
+      lastScrollHeightRef.current = container.scrollHeight
+    }
   }
 
   // Check if user can scroll down
@@ -75,24 +116,62 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
     if (messagesContainerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current
       const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
+      setIsUserNearBottom(isNearBottom)
       setShowScrollIndicator(!isNearBottom && messages.length > 2)
     }
   }
 
   useEffect(() => {
-    scrollToBottom()
+    // Auto-scroll when new messages are added
+    if (messages.length > 0) {
+      scrollToBottom(true, "smooth")
+      // Update scroll height reference
+      if (messagesContainerRef.current) {
+        lastScrollHeightRef.current = messagesContainerRef.current.scrollHeight
+      }
+    }
     // Hide initial load animation after first render
     if (isInitialLoad) {
       setTimeout(() => setIsInitialLoad(false), 1000)
     }
-  }, [messages])
+  }, [messages.length])
 
-  // Add scroll listener
+  // Add scroll listener and intersection observer for bottom sentinel
   useEffect(() => {
     const container = messagesContainerRef.current
+    const sentinel = messagesEndRef.current
+    
     if (container) {
       container.addEventListener('scroll', checkScrollPosition)
-      return () => container.removeEventListener('scroll', checkScrollPosition)
+      checkScrollPosition() // Initial check
+      // Initialize scroll height reference
+      lastScrollHeightRef.current = container.scrollHeight
+    }
+    
+    // Intersection Observer for smooth auto-scrolling
+    let observer
+    if (sentinel) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0]
+          setIsUserNearBottom(entry.isIntersecting)
+        },
+        {
+          root: container,
+          threshold: 0.1,
+          rootMargin: '0px 0px -50px 0px' // Trigger slightly before reaching bottom
+        }
+      )
+      observer.observe(sentinel)
+    }
+    
+    return () => {
+      if (container) {
+        container.removeEventListener('scroll', checkScrollPosition)
+      }
+      if (observer) {
+        observer.disconnect()
+      }
     }
   }, [messages.length])
 
@@ -151,6 +230,15 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
     
     loadChatHistory()
   }, [documentId, casualMode, isDemoMode, bypassAPI])
+
+  // Cleanup scroll timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
+    }
+  }, [])
 
   // Create wrapper function that sets input and focuses textarea
   const setInputMessageAndFocus = (message) => {
@@ -254,6 +342,9 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
         timestamp: aiResponse.timestamp
       }
       setMessages(prev => [...prev, aiMessage])
+      
+      // Set this message to use typewriter effect
+      setTypewriterMessageId(aiMessage.id)
 
       // Refresh user data to update usage statistics (only for production mode)
       if (!casualMode && !isDemoMode && !bypassAPI) {
@@ -289,6 +380,9 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
         timestamp: new Date().toISOString()
       }
       setMessages(prev => [...prev, errorMessage])
+      
+      // Clear typewriter effect for error messages
+      setTypewriterMessageId(null)
     } finally {
       setIsLoading(false)
     }
@@ -334,6 +428,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
   const clearChat = () => {
     setMessages([])
     setMessageFeedback({})
+    setTypewriterMessageId(null)
   }
 
   const suggestedQuestions = casualMode ? [
@@ -368,7 +463,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <h2 className="text-xs sm:text-sm lg:text-base font-bold text-slate-900 dark:text-white">
-                  {casualMode ? 'Elva*' : 'Assistant'}
+                  {casualMode ? 'Elva*' : 'Elva*'}
                   {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
                   {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal">(Preview)</span>}
                 </h2>
@@ -518,8 +613,8 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                   {message.type !== 'user' && (
                     <div className="flex-shrink-0 mt-1">
                       {message.type === 'ai' ? (
-                        <div className="p-1 sm:p-1.5 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/40 dark:to-purple-900/40 rounded-xl">
-                          <Bot className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-blue-600 dark:text-blue-400" />
+                        <div className="p-1 sm:p-1.5 ">
+                         
                         </div>
                       ) : (
                         <div className="p-1 sm:p-1.5 bg-red-100 dark:bg-red-900/40 rounded-xl">
@@ -529,19 +624,38 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                     </div>
                   )}
 
-                  <div className={`max-w-[85%] sm:max-w-[75%] ${message.type === 'user' ? 'order-first' : ''}`}>
+                  <div className={`max-w-[85%] sm:max-w-[100%] ${message.type === 'user' ? 'order-first' : ''}`}>
                     <Card className={`shadow-sm border-0 ${message.type === 'user'
-                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white ml-auto'
+                        ? 'bg-black text-white dark:bg-[#3f3f3f] ml-auto'
                         : message.type === 'error'
                           ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
-                          : 'bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700'
+                          : 'bg-white dark:bg-background'
                       }`}>
                       <CardContent className="p-2.5 sm:p-3">
                         {message.type === 'ai' ? (
-                          <MessageFormatter
-                            content={message.content}
-                            className="text-slate-700 dark:text-gray-200 text-xs sm:text-sm"
-                          />
+                          message.id === typewriterMessageId ? (
+                            <TypewriterText
+                              content={message.content}
+                              speed={25}
+                              className="text-slate-700 dark:text-gray-200 text-xs sm:text-sm"
+                              useFormatter={true}
+                              onProgress={(progress) => {
+                                // Height-based scrolling during typewriter progress
+                                scrollToBottom(false, "auto")
+                              }}
+                              onComplete={() => {
+                                // Clear typewriter effect after completion
+                                setTimeout(() => setTypewriterMessageId(null), 1000)
+                                // Final scroll to ensure we're at bottom
+                                scrollToBottom(true, "smooth")
+                              }}
+                            />
+                          ) : (
+                            <MessageFormatter
+                              content={message.content}
+                              className="text-slate-700 dark:text-gray-200 text-xs sm:text-sm"
+                            />
+                          )
                         ) : (
                           <p className={`text-xs sm:text-sm leading-relaxed ${message.type === 'user'
                               ? 'text-white'
@@ -620,8 +734,8 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
 
                   {message.type === 'user' && (
                     <div className="flex-shrink-0 mt-1">
-                      <div className="p-1 sm:p-1.5 bg-blue-600 rounded-xl">
-                        <User className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white" />
+                      <div className="   ">
+                        {/* <User className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white" /> */}
                       </div>
                     </div>
                   )}
@@ -644,8 +758,8 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                             <div className="w-1.5 h-1.5 bg-blue-600 dark:bg-blue-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
                             <div className="w-1.5 h-1.5 bg-blue-600 dark:bg-blue-400 rounded-full animate-bounce"></div>
                           </div>
-                          <span className="text-xs sm:text-sm text-slate-600 dark:text-gray-300">Thinking...</span>
-                          <Zap className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-blue-500 animate-pulse" />
+                          {/* <span className="text-xs sm:text-sm text-slate-600 dark:text-gray-300">Thinking...</span>
+                          <Zap className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-blue-500 animate-pulse" /> */}
                         </div>
                       </CardContent>
                     </Card>
