@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from './ui/button'
@@ -230,6 +230,19 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
 
     loadChatHistory()
   }, [documentId, casualMode, isDemoMode, bypassAPI])
+
+  // Stable callback functions for TypewriterText
+  const handleTypewriterProgress = useCallback(() => {
+    // Height-based scrolling during typewriter progress - throttled
+    scrollToBottom(false, "auto")
+  }, [])
+
+  const handleTypewriterComplete = useCallback(() => {
+    // Clear typewriter effect after completion
+    setTimeout(() => setTypewriterMessageId(null), 1000)
+    // Final scroll to ensure we're at bottom
+    scrollToBottom(true, "smooth")
+  }, [])
 
   // Cleanup scroll timeout on unmount
   useEffect(() => {
@@ -652,16 +665,8 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                               speed={25}
                               className="text-slate-700 dark:text-gray-200 text-xs sm:text-sm"
                               useFormatter={true}
-                              onProgress={(progress) => {
-                                // Height-based scrolling during typewriter progress
-                                scrollToBottom(false, "auto")
-                              }}
-                              onComplete={() => {
-                                // Clear typewriter effect after completion
-                                setTimeout(() => setTypewriterMessageId(null), 1000)
-                                // Final scroll to ensure we're at bottom
-                                scrollToBottom(true, "smooth")
-                              }}
+                              onProgress={handleTypewriterProgress}
+                              onComplete={handleTypewriterComplete}
                             />
                           ) : (
                             <MessageFormatter

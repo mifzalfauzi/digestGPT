@@ -123,15 +123,16 @@ function MessageFormatter({ content, className = "" }) {
           }
           
           formattedLines.push(
-            <div key={`${pIndex}-${index}`} className={`group flex gap-2 items-center mt-3 mb-2 p-2 rounded-lg `}>
-              <div className="flex-shrink-0  ">
-                <Circle className="w-2 h-2 text-purple-600 dark:text-white dark:fill-white" />
-              </div>
-              <MarkdownRenderer 
-                content={headerText}
-                className={`text-slate-900  dark:text-white ${headerClasses[level]}`}
-              />
-            </div>
+            <div key={`${pIndex}-${index}`} className="group flex items-center gap-2 mt-3 mb-2 p-2 rounded-lg">
+  <div className="flex items-center justify-center h-full">
+    <Circle className="w-2 h-2 text-purple-600 dark:text-white dark:fill-white mt-[2px]" />
+  </div>
+  <MarkdownRenderer 
+    content={headerText}
+    className={`text-slate-900 dark:text-white ${headerClasses[level]}`}
+  />
+</div>
+
           )
           return
         }

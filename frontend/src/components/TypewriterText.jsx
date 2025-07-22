@@ -14,8 +14,14 @@ function TypewriterText({
   const [isComplete, setIsComplete] = useState(false)
   const timeoutRef = useRef(null)
   const isTypingRef = useRef(false)
+  const lastContentRef = useRef('')
 
   useEffect(() => {
+    // Don't restart if it's the same content and we're already typing
+    if (content === lastContentRef.current && isTypingRef.current) {
+      return
+    }
+
     // Cleanup previous timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
@@ -29,6 +35,7 @@ function TypewriterText({
       return
     }
 
+    lastContentRef.current = content
     setDisplayedText('')
     setIsComplete(false)
     isTypingRef.current = true
@@ -39,13 +46,15 @@ function TypewriterText({
       
       const typeChar = () => {
         // Check if component was unmounted or content changed
-        if (!isTypingRef.current) return
+        if (!isTypingRef.current || content !== lastContentRef.current) {
+          return
+        }
         
         if (currentIndex < content.length) {
           const newText = content.slice(0, currentIndex + 1)
           setDisplayedText(newText)
           
-          // Call onProgress every 30 characters to trigger height-based scrolling
+          // Call onProgress occasionally to trigger scrolling
           const now = Date.now()
           if (onProgress && (currentIndex % 30 === 0 || now - lastProgressCall > 300)) {
             onProgress(currentIndex / content.length)
@@ -56,12 +65,12 @@ function TypewriterText({
           timeoutRef.current = setTimeout(typeChar, speed)
         } else {
           // Ensure completion
-          setDisplayedText(content) // Set final complete text
+          setDisplayedText(content)
           setIsComplete(true)
           isTypingRef.current = false
           
           if (onProgress) {
-            onProgress(1) // Final progress call
+            onProgress(1)
           }
           if (onComplete) {
             onComplete()
