@@ -118,14 +118,16 @@ export default function LandingPage() {
 
               <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-8 text-left">
                 {' '}
-                <span className="text-lg text-center inline-block">
+                <span className="text-lg text-center inline-block font-bold">
                   drop
                   <span className="text-blue-400">2</span>
                   chat
                   <span className="text-red-500">*</span>
                 </span>{' '}
-                uses Claude 4 Sonnet to analyze content, extract key insights,
-                assess risks, and provide an AI assistant you can chat with about your documents.
+                introduces <span className="text-lg text-center inline-block font-bold">
+                  Elva
+                  <span className="text-red-500">*</span>
+                </span> (powered by Claude 4 Sonnet), an AI assistant that analyzes your documents, extracts key insights, identifies potential risks, and generates a concise executive summary.
               </p>
 
 
@@ -187,9 +189,7 @@ export default function LandingPage() {
             <Play className="mr-1.5 h-3 w-3 inline" />
             See&nbsp;
             <span className="text-center inline-block">
-              drop
-              <span className="text-blue-400">2</span>
-              chat
+              Elva
               <span className="text-red-500">*</span>
             </span>
             &nbsp;in action
@@ -201,13 +201,10 @@ export default function LandingPage() {
           </h2>
 
           <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-12 max-w-2xl mx-auto">
-            Watch how <span className="text-center inline-block">
-              drop
-              <span className="text-blue-400">2</span>
-              chat
-              <span className="text-red-500">*</span>
-            </span> analyzes your documents, identifies risks, and provides intelligent insights through our
-            AI-powered assistant.
+             <span className="text-lg text-center inline-block font-bold">
+                  Elva
+                  <span className="text-red-500">*</span>
+                  </span> analyzes documents, identifies risks, and provides intelligent insights.
           </p>
 
           {/* Demo Video - Centered */}
@@ -401,7 +398,7 @@ export default function LandingPage() {
                 <CardContent className="flex flex-col justify-between flex-1">
                   <div className="space-y-3">
                     <div className="flex items-center text-sm font-medium text-gray-300">
-                      
+
                       <span>Includes</span>
                     </div>
                     <div className="flex items-center text-sm">
@@ -450,7 +447,7 @@ export default function LandingPage() {
                 <CardContent className="flex flex-col justify-between flex-1">
                   <div className="space-y-3">
                     <div className="flex items-center text-sm font-medium text-gray-300">
-                      
+
                       <span>All features of the Free Plan, plus</span>
                     </div>
                     {/* <div className="flex items-center text-sm">
@@ -498,7 +495,7 @@ export default function LandingPage() {
 
                 <CardHeader className="text-center pb-6 pt-8">
                   <CardTitle className="text-2xl">Pro Plan</CardTitle>
-                   <div className="mt-4">
+                  <div className="mt-4">
                     <span className="text-4xl font-bold">$6.99</span>
                     <span className="text-lg text-gray-600 dark:text-gray-400">/month</span>
                     {/* <span className="block text-sm text-gray-500 dark:text-gray-400 mt-1">or $60 per year</span> */}
@@ -509,7 +506,7 @@ export default function LandingPage() {
                 <CardContent className="flex flex-col justify-between flex-1">
                   <div className="space-y-3">
                     <div className="flex items-center text-sm font-medium text-gray-300">
-                      
+
                       <span>All features of the Standard Plan, plus</span>
                     </div>
                     <div className="flex items-center text-sm">
@@ -524,7 +521,7 @@ export default function LandingPage() {
                       <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
                       <span>350k tokens per month</span>
                     </div>
-                    
+
                   </div>
 
                   <div className="flex justify-start pt-6">
@@ -542,7 +539,7 @@ export default function LandingPage() {
 
 
           {/* Stats Row */}
-          
+
           <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto">
             <div className="text-center">
               <div className="text-3xl font-bold dark:text-white mb-2">5,000+</div>
@@ -558,7 +555,7 @@ export default function LandingPage() {
             </div>
           </div>
           <br></br>
-          
+
         </div>
       </section>
 
@@ -577,7 +574,7 @@ export default function LandingPage() {
                 </h1>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                AI-powered document analysis and insights, powered by Claude 4 Sonnet.
+                Document analysis and insights, powered by Claude 4 Sonnet through <span className="text-center inline-block font-bold">Elva<span className="text-red-500">*</span></span>.
               </p>
             </div>
 

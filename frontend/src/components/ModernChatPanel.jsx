@@ -96,6 +96,62 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
     }
   }, [messages.length])
 
+  // Load chat history when documentId changes
+  useEffect(() => {
+    const loadChatHistory = async () => {
+      if (!documentId || casualMode || isDemoMode || bypassAPI) return
+      
+      try {
+        const token = localStorage.getItem('auth_token')
+        if (!token) return
+        
+        const response = await axios.get(
+          `http://localhost:8000/chat/history/${documentId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }
+        )
+        
+        if (response.data?.chat_history) {
+          // Convert backend chat history to component message format
+          const historicalMessages = []
+          
+          // Sort chat history by timestamp (oldest first)
+          const sortedHistory = [...response.data.chat_history].sort(
+            (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+          )
+          
+          sortedHistory.forEach((chat, index) => {
+            // Add user message
+            historicalMessages.push({
+              id: `${chat.id}_user`,
+              type: 'user',  // Use 'type' instead of 'role' for consistency
+              content: chat.question || chat.user_message,
+              timestamp: new Date(chat.timestamp),
+              isHistorical: true
+            })
+            // Add AI response
+            historicalMessages.push({
+              id: `${chat.id}_ai`,
+              type: 'ai',    // Use 'type' instead of 'role' for consistency
+              content: chat.answer || chat.ai_response,
+              timestamp: new Date(chat.timestamp),
+              isHistorical: true
+            })
+          })
+          
+          setMessages(historicalMessages)
+        }
+      } catch (error) {
+        console.error('Error loading chat history:', error)
+      }
+    }
+    
+    loadChatHistory()
+  }, [documentId, casualMode, isDemoMode, bypassAPI])
+
   // Create wrapper function that sets input and focuses textarea
   const setInputMessageAndFocus = (message) => {
     const safeMessage = message || ''
@@ -304,19 +360,19 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <div className="relative">
-              <div className="p-1 sm:p-1.5 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/40 dark:to-purple-900/40 rounded-xl">
+              {/* <div className="p-1 sm:p-1.5 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/40 dark:to-purple-900/40 rounded-xl">
                 <MessageCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 sm:w-2 sm:h-2 lg:w-2.5 lg:h-2.5 bg-green-500 rounded-full border border-white dark:border-gray-800"></div>
+              </div> */}
+              {/* <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 sm:w-2 sm:h-2 lg:w-2.5 lg:h-2.5 bg-green-500 rounded-full border border-white dark:border-gray-800"></div> */}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <h2 className="text-xs sm:text-sm lg:text-base font-bold text-slate-900 dark:text-white">
-                  {casualMode ? 'Claude Assistant' : 'Assistant'}
+                  {casualMode ? 'Elva*' : 'Assistant'}
                   {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
                   {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal">(Preview)</span>}
                 </h2>
-                <Badge className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 px-1 py-0.5">
+                {/* <Badge className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 px-1 py-0.5">
                   <Brain className="h-1.5 w-1.5 sm:h-2 sm:w-2 mr-0.5" />
                   <span className="hidden sm:inline text-xs">
                     {casualMode ? 'Normal Chat' : isDemoMode ? 'Demo Mode' : bypassAPI ? 'Preview Mode' : 'Claude 4 Sonnet'}
@@ -324,7 +380,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                   <span className="sm:hidden text-xs">
                     {casualMode ? 'Chat' : isDemoMode ? 'Demo' : bypassAPI ? 'Preview' : 'Claude'}
                   </span>
-                </Badge>
+                </Badge> */}
               </div>
             </div>
           </div>
@@ -647,7 +703,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                   handleSendMessage(e)
                 }
               }}
-              placeholder={isDisabled ? "Documents are being analyzed..." : (casualMode ? "Type your message here..." : "Enter question here to inquire on the document.")}
+              placeholder={isDisabled ? "Documents are being analyzed..." : (casualMode ? "Ask anything" : "Enter question here to inquire on the document.")}
               className="min-h-[40px] sm:min-h-[44px] lg:min-h-[48px] max-h-[80px] sm:max-h-[100px] resize-none bg-white dark:bg-[#2f2f2f] dark:border-gray-400 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-gray-400 rounded-xl pr-10 sm:pr-12 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"
               disabled={isLoading || isDisabled}
             />
@@ -667,7 +723,14 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
               <Sparkles className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
               <span className="hidden sm:inline text-xs">
                 {casualMode ? (
-                  <>Powered by <span className="font-medium text-blue-400">Claude 4 Sonnet</span></>
+                  <>Powered by <a
+                  href="https://www.anthropic.com/claude/sonnet"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-blue-400 underline hover:text-blue-600"
+                >
+                  Claude 4 Sonnet
+                </a></>
                 ) : isDemoMode ? (
                   'Demo Mode - No API calls'
                 ) : bypassAPI ? (

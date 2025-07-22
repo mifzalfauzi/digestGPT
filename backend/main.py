@@ -20,6 +20,7 @@ from routes.auth import router as auth_router
 from routes.documents import router as documents_router
 from routes.chat import router as chat_router
 from routes.usage import router as usage_router
+from routes.collections import router as collections_router
 
 # Load environment variables
 load_dotenv()
@@ -54,6 +55,7 @@ app.include_router(auth_router)
 app.include_router(documents_router)
 app.include_router(chat_router)
 app.include_router(usage_router)
+app.include_router(collections_router)
 
 # Anthropic configuration
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")

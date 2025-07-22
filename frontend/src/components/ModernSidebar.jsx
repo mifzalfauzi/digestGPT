@@ -1,10 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { Badge } from './ui/badge'
-import { Brain, Upload, FileText, Home, MessageCircle, Settings, HelpCircle, Sparkles, Activity, X, Menu, PanelLeftClose, ChevronDown, LayoutDashboard, Crown, Star, Zap, TrendingUp, PanelTopClose, PanelLeftIcon } from 'lucide-react'
+import { Brain, Upload, FileText, Home, MessageCircle, Settings, HelpCircle, Sparkles, Activity, X, Menu, PanelLeftClose, ChevronDown, LayoutDashboard, Crown, Star, Zap, TrendingUp, PanelTopClose, PanelLeftIcon, Clock, MessageSquare, History } from 'lucide-react'
 import SettingsPanel from './SettingsPanel'
 import UsageDashboard from './dashboard/UsageDashboard'
 
@@ -27,7 +27,9 @@ function ModernSidebar({
   collections = [],
   expandedCollections = new Set(),
   onToggleCollectionExpansion = () => { },
-  onRemoveCollection = () => { }
+  onRemoveCollection = () => { },
+  // History drawer
+  onOpenHistory = () => { }
 }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isUsageDashboardOpen, setIsUsageDashboardOpen] = useState(false)
@@ -44,6 +46,22 @@ function ModernSidebar({
     free: 'bg-black',
     standard: 'bg-black',
     pro: 'bg-[#000000]'
+  }
+
+
+
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return 'No activity'
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffTime = Math.abs(now - date)
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    
+    if (diffDays === 1) return 'Today'
+    if (diffDays === 2) return 'Yesterday'
+    if (diffDays <= 7) return `${diffDays - 1} days ago`
+    return date.toLocaleDateString()
   }
 
   return (
@@ -177,6 +195,22 @@ function ModernSidebar({
           >
             <MessageCircle className="h-3.5 w-3.5 flex-shrink-0" />
             {!collapsed && <span>Normal Chat</span>}
+          </Button>
+
+          <Button
+            onClick={() => {
+              if (onOpenHistory) {
+                onOpenHistory()
+                onClose?.()
+              }
+            }}
+            variant="ghost"
+            className={`w-full text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 h-8 py-2 text-sm ${collapsed ? 'justify-center px-0' : 'justify-start gap-2'
+              }`}
+            title={collapsed ? 'History' : ''}
+          >
+            <History className="h-3.5 w-3.5 flex-shrink-0" />
+            {!collapsed && <span>History</span>}
           </Button>
         </div>
 
@@ -510,6 +544,7 @@ function ModernSidebar({
             </div>
           </div>
         )}
+
 
 
       </div>

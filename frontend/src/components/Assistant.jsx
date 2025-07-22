@@ -8,6 +8,7 @@ import ModernUploadInterface from "./ModernUploadInterface"
 import ModernChatPanel from "./ModernChatPanel"
 import EnhancedDocumentViewer from "./EnhancedDocumentViewer"
 import UsageDashboard from "./dashboard/UsageDashboard"
+import HistoryDrawer from "./HistoryDrawer"
 import { Button } from "./ui/button"
 import { Menu, X, MessageCircle, FileText, Eye, GripVertical, Sparkles, Zap, AlertTriangle, LogOut, TrendingUp } from "lucide-react"
 import { Card, CardContent } from "./ui/card"
@@ -30,6 +31,10 @@ function Assistant() {
   const [selectedDocumentId, setSelectedDocumentId] = useState(null)
   const [uploadingDocuments, setUploadingDocuments] = useState([])
   
+  // Document history state
+  const [historicalDocuments, setHistoricalDocuments] = useState([])
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+  
   // File staging for upload (before analysis)
   const [stagedFiles, setStagedFiles] = useState([])
   
@@ -48,9 +53,127 @@ function Assistant() {
   // Usage dashboard state
   const [showUsageDashboard, setShowUsageDashboard] = useState(false)
   
+  // History drawer state
+  const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false)
+
+  // Load historical documents when component mounts
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      loadHistoricalDocuments()
+      loadHistoricalCollections()
+    }
+  }, [isAuthenticated, user])
+
+  // Function to load historical documents from backend
+  const loadHistoricalDocuments = async () => {
+    if (!user?.token && !localStorage.getItem('auth_token')) return
+    
+    setIsLoadingHistory(true)
+    try {
+      const response = await axios.get('http://localhost:8000/documents/', {
+        headers: {
+          'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}`
+        },
+        params: {
+          skip: 0,
+          limit: 50 // Load recent 50 documents
+        }
+      })
+      
+      if (response.data?.documents) {
+        setHistoricalDocuments(response.data.documents)
+      }
+    } catch (error) {
+      console.error('Error loading historical documents:', error)
+      if (error.response?.status === 401) {
+        logout()
+      }
+    } finally {
+      setIsLoadingHistory(false)
+    }
+  }
+
+  // Function to load historical collections from backend
+  const loadHistoricalCollections = async () => {
+    if (!user?.token && !localStorage.getItem('auth_token')) return
+    
+    try {
+      const response = await axios.get('http://localhost:8000/collections/', {
+        headers: { 'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}` },
+        params: { skip: 0, limit: 50 }
+      })
+      
+      if (response.data) {
+        setCollections(response.data)
+        console.log('Loaded historical collections:', response.data)
+      }
+    } catch (error) {
+      console.error('Error loading historical collections:', error)
+      if (error.response?.status === 401) { logout() }
+    }
+  }
+
+  // Function to load a historical document's full data
+  const loadHistoricalDocument = async (documentId) => {
+    if (!user?.token && !localStorage.getItem('auth_token')) return null
+    
+    try {
+      const response = await axios.get(`http://localhost:8000/documents/${documentId}`, {
+        headers: {
+          'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}`
+        }
+      })
+      
+      return response.data
+    } catch (error) {
+      console.error('Error loading historical document:', error)
+      if (error.response?.status === 401) {
+        logout()
+      }
+      throw error
+    }
+  }
+
+  // Function to refresh historical documents and collections (can be called after new document upload)
+  const refreshHistoricalDocuments = async () => {
+    await loadHistoricalDocuments()
+    await loadHistoricalCollections()
+  }
+
+  // Function to handle collection selection from history
+  const selectCollectionFromHistory = async (collectionId) => {
+    const collection = collections.find(c => c.id === collectionId)
+    if (!collection) return
+
+    // Load all documents in the collection
+    const collectionDocuments = documents.filter(doc => doc.collectionId === collectionId)
+    
+    // If collection documents are already loaded, just select the first one
+    if (collectionDocuments.length > 0) {
+      setSelectedDocumentId(collectionDocuments[0].id)
+      setCurrentView("workspace")
+      setSidebarOpen(false)
+      setActivePanel("chat")
+      setIsHistoryDrawerOpen(false)
+      return
+    }
+
+    // Otherwise load from historical documents
+    const historicalCollectionDocs = historicalDocuments.filter(doc => doc.collection_id === collectionId)
+    if (historicalCollectionDocs.length > 0) {
+      // Load the first document in the collection
+      await selectDocument(historicalCollectionDocs[0].id, historicalCollectionDocs[0])
+      setIsHistoryDrawerOpen(false)
+    }
+  }
+
+  
   // Computed values for selected document
   const selectedDocument = documents.find(doc => doc.id === selectedDocumentId) || null
   const currentDocument = selectedDocument?.filename || (isDemoMode ? "Demo Business Plan.pdf" : bypassAPI ? "Preview Document.pdf" : null)
+  
+  // Get the current collection ID if the selected document is part of a collection
+  const currentCollectionId = selectedDocument?.collectionId || null
   
   // Helper function to ensure document has text data
   const ensureDocumentText = async (documentId) => {
@@ -185,18 +308,178 @@ function Assistant() {
     ))
   }
   
-  // Update selectDocument to show error modal if error doc is selected
-  const selectDocument = (documentId) => {
-    const doc = documents.find(d => d.id === documentId)
+  // Enhanced selectDocument function to handle both current session and historical documents
+  const selectDocument = async (documentId, historicalDocument = null) => {
     setSelectedDocumentId(documentId)
     setError("")
-    if (doc?.status === 'error') {
-      setErrorDocument(doc)
-      setErrorModalOpen(true)
-    } else {
-      setErrorDocument(null)
-      setErrorModalOpen(false)
+    
+    // Check if it's a current session document
+    const currentDoc = documents.find(d => d.id === documentId)
+    
+    if (currentDoc) {
+      // Handle current session document
+      if (currentDoc.status === 'error') {
+        setErrorDocument(currentDoc)
+        setErrorModalOpen(true)
+      } else {
+        setErrorDocument(null)
+        setErrorModalOpen(false)
+      }
+    } else if (historicalDocument) {
+      // Handle historical document - need to load its full data and add to current session
+      try {
+        setLoading(true)
+        
+        // Load the full document data from backend
+        const fullDocumentData = await loadHistoricalDocument(documentId)
+      
+        console.log("Full document data:", fullDocumentData)
+        console.log("Raw key_points type:", typeof fullDocumentData.key_points)
+        console.log("Raw key_points value:", fullDocumentData.key_points)
+        console.log("Raw risk_flags type:", typeof fullDocumentData.risk_flags)
+        console.log("Raw risk_flags:", fullDocumentData.risk_flags)
+        console.log("Raw key_concepts type:", typeof fullDocumentData.key_concepts)
+        console.log("Raw key_concepts:", fullDocumentData.key_concepts)
+        
+        // Parse JSON fields safely - FIXED LOGIC
+        let keyPoints = []
+        let riskFlags = []
+        let keyConcepts = []
+        
+        try {
+          // key_points is a JSON STRING - needs parsing
+          if (fullDocumentData.key_points) {
+            if (typeof fullDocumentData.key_points === 'string') {
+              keyPoints = JSON.parse(fullDocumentData.key_points)
+            } else if (Array.isArray(fullDocumentData.key_points)) {
+              keyPoints = fullDocumentData.key_points
+            }
+          }
+          console.log("Parsed key points:", keyPoints)
+          console.log("Key points length:", keyPoints.length)
+        } catch (e) {
+          console.error('Error parsing key_points:', e)
+          console.error('key_points value that failed:', fullDocumentData.key_points)
+        }
+        
+        try {
+          // risk_flags is already an ARRAY - no parsing needed
+          if (fullDocumentData.risk_flags) {
+            if (Array.isArray(fullDocumentData.risk_flags)) {
+              riskFlags = fullDocumentData.risk_flags
+            } else if (typeof fullDocumentData.risk_flags === 'string') {
+              riskFlags = JSON.parse(fullDocumentData.risk_flags)
+            }
+          }
+          console.log("Processed risk flags:", riskFlags)
+          console.log("Risk flags length:", riskFlags.length)
+        } catch (e) {
+          console.error('Error processing risk_flags:', e)
+        }
+        
+        try {
+          // key_concepts is already an ARRAY - no parsing needed  
+          if (fullDocumentData.key_concepts) {
+            if (Array.isArray(fullDocumentData.key_concepts)) {
+              keyConcepts = fullDocumentData.key_concepts
+            } else if (typeof fullDocumentData.key_concepts === 'string') {
+              keyConcepts = JSON.parse(fullDocumentData.key_concepts)
+            }
+          }
+          console.log("Processed key concepts:", keyConcepts)
+          console.log("Key concepts length:", keyConcepts.length)
+        } catch (e) {
+          console.error('Error processing key_concepts:', e)
+        }
+      
+        // Also check if the data is nested in analysis object
+        if (fullDocumentData.analysis) {
+          console.log("Found analysis object:", fullDocumentData.analysis)
+          
+          // Use analysis data if main fields are empty
+          if (keyPoints.length === 0 && fullDocumentData.analysis.key_points) {
+            if (typeof fullDocumentData.analysis.key_points === 'string') {
+              keyPoints = JSON.parse(fullDocumentData.analysis.key_points)
+            } else if (Array.isArray(fullDocumentData.analysis.key_points)) {
+              keyPoints = fullDocumentData.analysis.key_points
+            }
+            console.log("Used analysis.key_points:", keyPoints)
+          }
+          
+          if (riskFlags.length === 0 && fullDocumentData.analysis.risk_flags) {
+            if (Array.isArray(fullDocumentData.analysis.risk_flags)) {
+              riskFlags = fullDocumentData.analysis.risk_flags
+            } else if (typeof fullDocumentData.analysis.risk_flags === 'string') {
+              riskFlags = JSON.parse(fullDocumentData.analysis.risk_flags)
+            }
+            console.log("Used analysis.risk_flags:", riskFlags)
+          }
+          
+          if (keyConcepts.length === 0 && fullDocumentData.analysis.key_concepts) {
+            if (Array.isArray(fullDocumentData.analysis.key_concepts)) {
+              keyConcepts = fullDocumentData.analysis.key_concepts
+            } else if (typeof fullDocumentData.analysis.key_concepts === 'string') {
+              keyConcepts = JSON.parse(fullDocumentData.analysis.key_concepts)
+            }
+            console.log("Used analysis.key_concepts:", keyConcepts)
+          }
+        }
+        
+        // Final verification
+        console.log("=== FINAL PARSED DATA ===")
+        console.log("keyPoints:", keyPoints)
+        console.log("keyPoints length:", keyPoints.length)
+        console.log("riskFlags:", riskFlags)
+        console.log("riskFlags length:", riskFlags.length)
+        console.log("keyConcepts:", keyConcepts)
+        console.log("keyConcepts length:", keyConcepts.length)
+        console.log("========================")
+        
+        // Create a document object for the current session
+        const sessionDocument = {
+          id: documentId,
+          filename: fullDocumentData.filename || historicalDocument.filename,
+          file: null, // Historical documents don't have file objects
+          status: 'completed',
+          inputMode: 'historical',
+          uploadDate: fullDocumentData.uploaded_at || historicalDocument.uploaded_at,
+          documentId: documentId,
+          results: {
+            filename: fullDocumentData.filename || historicalDocument.filename,
+            document_id: documentId,
+            document_text: fullDocumentData.document_text,
+            analysis: {
+              summary: fullDocumentData.summary,
+              key_points: keyPoints,
+              risk_flags: riskFlags,
+              key_concepts: keyConcepts
+            },
+            // Also include at root level for compatibility
+            summary: fullDocumentData.summary,
+            key_points: keyPoints,
+            risk_flags: riskFlags,
+            key_concepts: keyConcepts,
+            word_count: fullDocumentData.word_count,
+            analysis_method: fullDocumentData.analysis_method
+          }
+        }
+        
+        // Add to current session documents if not already there
+        const existingDoc = documents.find(doc => doc.id === documentId)
+        if (!existingDoc) {
+          setDocuments(prev => [sessionDocument, ...prev])
+        }
+        
+      } catch (error) {
+        console.error('Error loading historical document:', error)
+        setError('Failed to load document. Please try again.')
+        return
+      } finally {
+        setLoading(false)
+      }
     }
+    
+    // Switch to workspace view if needed
     if (currentView === "upload" || currentView === "casual-chat") {
       setCurrentView("workspace")
       setSidebarOpen(false)
@@ -231,7 +514,10 @@ function Assistant() {
   }
 
   // Collection management functions
-  const generateCollectionId = () => `collection_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  const generateCollectionId = () => {
+    // Generate a proper UUID v4 for collection ID
+    return crypto.randomUUID()
+  }
   
   const addCollection = (collectionData) => {
     const newCollection = {
@@ -362,16 +648,28 @@ function Assistant() {
       // Store staged files before clearing them
       const filesToProcess = [...stagedFiles]
       
-      // Create collection
-      const collectionId = generateCollectionId()
+      // Create collection in backend first
+      const collectionResponse = await axios.post("http://localhost:8000/collections/", {
+        name: collectionName.trim(),
+        description: `Collection created with ${stagedFiles.length} documents`
+      }, {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user?.token || localStorage.getItem('auth_token')}`
+        }
+      })
+      
+      const collectionId = collectionResponse.data.id
+      console.log(`Created collection in backend: ${collectionId}`)
+      
+      // Add collection to local state
       const newCollection = {
         id: collectionId,
         name: collectionName.trim(),
-        createdAt: new Date().toISOString(),
+        createdAt: collectionResponse.data.created_at,
         documents: []
       }
       
-      // Add collection to state
       setCollections(prev => [...prev, newCollection])
 
       // Clear staged files and collection name immediately
@@ -469,6 +767,12 @@ function Assistant() {
       if (file) {
         const formData = new FormData()
         formData.append("file", file)
+        
+        // Add collection_id if this is part of a collection upload
+        if (collectionId) {
+          formData.append("collection_id", collectionId)
+          console.log(`Adding collection_id to upload: ${collectionId}`)
+        }
 
         response = await axios.post("http://localhost:8000/documents/upload", formData, {
           headers: {
@@ -477,9 +781,17 @@ function Assistant() {
           },
         })
       } else if (textContent) {
-        response = await axios.post("http://localhost:8000/documents/analyze-text", {
+        const textPayload = {
           text: textContent
-        }, {
+        }
+        
+        // Add collection_id if this is part of a collection upload
+        if (collectionId) {
+          textPayload.collection_id = collectionId
+          console.log(`Adding collection_id to text analysis: ${collectionId}`)
+        }
+        
+        response = await axios.post("http://localhost:8000/documents/analyze-text", textPayload, {
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${user?.token || localStorage.getItem('auth_token')}`
@@ -500,6 +812,9 @@ function Assistant() {
       
       // Refresh user data to update usage statistics
       await refreshUserData()
+      
+      // Refresh historical documents to include the newly analyzed document
+      await refreshHistoricalDocuments()
       
       // Update collection status if this document belongs to a collection
       const document = documents.find(doc => doc.id === documentId)
@@ -1058,6 +1373,7 @@ This business plan effectively balances ambitious growth objectives with compreh
               expandedCollections={expandedCollections}
               onToggleCollectionExpansion={toggleCollectionExpansion}
               onRemoveCollection={removeCollection}
+              onOpenHistory={() => setIsHistoryDrawerOpen(true)}
             />
           </div>
 
@@ -1232,24 +1548,25 @@ This business plan effectively balances ambitious growth objectives with compreh
               sidebarCollapsed ? "w-20" : "w-80"
             }`}
           >
-            <ModernSidebar
-              onNewDocument={handleNewDocument}
-              onHome={resetToHome}
-              currentDocument="Normal Chat"
-              isDemoMode={false}
-              bypassAPI={false}
-              collapsed={sidebarCollapsed}
-              onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-              onCasualChat={handleCasualChat}
-              documents={documents}
-              selectedDocumentId={selectedDocumentId}
-              onSelectDocument={selectDocument}
-              onRemoveDocument={removeDocument}
-              collections={collections}
-              expandedCollections={expandedCollections}
-              onToggleCollectionExpansion={toggleCollectionExpansion}
-              onRemoveCollection={removeCollection}
-            />
+                      <ModernSidebar
+            onNewDocument={handleNewDocument}
+            onHome={resetToHome}
+            currentDocument="Normal Chat"
+            isDemoMode={false}
+            bypassAPI={false}
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+            onCasualChat={handleCasualChat}
+            documents={documents}
+            selectedDocumentId={selectedDocumentId}
+            onSelectDocument={selectDocument}
+            onRemoveDocument={removeDocument}
+            collections={collections}
+            expandedCollections={expandedCollections}
+            onToggleCollectionExpansion={toggleCollectionExpansion}
+            onRemoveCollection={removeCollection}
+            onOpenHistory={() => setIsHistoryDrawerOpen(true)}
+          />
           </div>
 
           {/* Professional Full-Width Mobile Header */}
@@ -1318,6 +1635,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                   expandedCollections={expandedCollections}
                   onToggleCollectionExpansion={toggleCollectionExpansion}
                   onRemoveCollection={removeCollection}
+                  onOpenHistory={() => setIsHistoryDrawerOpen(true)}
                 />
               </div>
             </>
@@ -1349,6 +1667,7 @@ This business plan effectively balances ambitious growth objectives with compreh
               expandedCollections={expandedCollections}
               onToggleCollectionExpansion={toggleCollectionExpansion}
               onRemoveCollection={removeCollection}
+              onOpenHistory={() => setIsHistoryDrawerOpen(true)}
             />
           </div>
 
@@ -1653,6 +1972,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                   expandedCollections={expandedCollections}
                   onToggleCollectionExpansion={toggleCollectionExpansion}
                   onRemoveCollection={removeCollection}
+                  onOpenHistory={() => setIsHistoryDrawerOpen(true)}
                 />
               </div>
             </>
@@ -1711,6 +2031,22 @@ This business plan effectively balances ambitious growth objectives with compreh
       {showUsageDashboard && (
         <UsageDashboard onClose={() => setShowUsageDashboard(false)} />
       )}
+
+      {/* History Drawer */}
+      <HistoryDrawer
+        isOpen={isHistoryDrawerOpen}
+        onClose={() => setIsHistoryDrawerOpen(false)}
+        historicalDocuments={historicalDocuments}
+        collections={collections}
+        currentDocumentId={selectedDocumentId}
+        currentCollectionId={currentCollectionId}
+        isLoadingHistory={isLoadingHistory}
+        onSelectHistoricalDocument={async (docId, doc) => {
+          await selectDocument(docId, doc)
+          setIsHistoryDrawerOpen(false)
+        }}
+        onSelectCollection={selectCollectionFromHistory}
+      />
 
       {/* Error Alert for Usage Limits */}
       {error && error.includes('limit') && (

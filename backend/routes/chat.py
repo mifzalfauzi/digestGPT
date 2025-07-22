@@ -1,13 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 import anthropic, openai
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
 import uuid
+import tiktoken
+import re
 
 from database import get_db
 from models import User, Document, ChatHistory
@@ -25,9 +27,6 @@ load_dotenv()
 # Import Anthropic client configuration
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
 client = anthropic.Anthropic(api_key=anthropic_api_key) if anthropic_api_key else None
-
-# openai_api_key = os.getenv("OPENAI_API_KEY")
-# openai_client = openai.OpenAI(api_key=openai_api_key) if openai_api_key else None
 
 openai_client = OpenAI(
     base_url="https://openrouter.ai/api/v1", api_key=os.getenv("OPENROUTER_API_KEY")
@@ -72,10 +71,107 @@ class ChatHistoryResponse(BaseModel):
     total: int
 
 
+def estimate_tokens_tiktoken(text: str, model: str = "gpt-3.5-turbo") -> int:
+    """Estimate token count for a given text using tiktoken"""
+    try:
+        encoding = tiktoken.encoding_for_model(model)
+        return len(encoding.encode(text))
+    except:
+        # Fallback estimation: roughly 4 characters per token
+        return len(text) // 4
+
+
+def chunk_document(document_content: str, max_chunk_tokens: int = 3000, overlap_tokens: int = 200) -> List[Dict[str, Any]]:
+    """
+    Split document into overlapping chunks that fit within token limits
+    """
+    if not document_content:
+        return []
+    
+    # Estimate characters per token (rough approximation)
+    chars_per_token = 4
+    max_chunk_chars = max_chunk_tokens * chars_per_token
+    overlap_chars = overlap_tokens * chars_per_token
+    
+    chunks = []
+    start = 0
+    chunk_index = 0
+    
+    while start < len(document_content):
+        # Calculate end position for this chunk
+        end = min(start + max_chunk_chars, len(document_content))
+        
+        # Try to break at a natural boundary (paragraph, sentence, etc.)
+        if end < len(document_content):
+            # Look for paragraph break first
+            last_paragraph = document_content.rfind('\n\n', start, end)
+            if last_paragraph > start:
+                end = last_paragraph
+            else:
+                # Look for sentence break
+                last_sentence = document_content.rfind('.', start, end)
+                if last_sentence > start:
+                    end = last_sentence + 1
+                else:
+                    # Look for any whitespace
+                    last_space = document_content.rfind(' ', start, end)
+                    if last_space > start:
+                        end = last_space
+        
+        chunk_text = document_content[start:end].strip()
+        
+        if chunk_text:
+            chunks.append({
+                'index': chunk_index,
+                'text': chunk_text,
+                'start_pos': start,
+                'end_pos': end,
+                'token_count': estimate_tokens_tiktoken(chunk_text)
+            })
+            chunk_index += 1
+        
+        # Move start position, accounting for overlap
+        if end >= len(document_content):
+            break
+        start = max(end - overlap_chars, start + 1)
+    
+    return chunks
+
+
+def find_relevant_chunks(chunks: List[Dict[str, Any]], query: str, top_k: int = 3) -> List[Dict[str, Any]]:
+    """
+    Find the most relevant chunks for a given query using keyword matching
+    """
+    query_words = set(query.lower().split())
+    
+    chunk_scores = []
+    for chunk in chunks:
+        chunk_words = set(chunk['text'].lower().split())
+        # Simple scoring based on word overlap
+        overlap = len(query_words.intersection(chunk_words))
+        score = overlap / len(query_words) if query_words else 0
+        
+        # Boost score for exact phrase matches
+        query_lower = query.lower()
+        chunk_lower = chunk['text'].lower()
+        if query_lower in chunk_lower:
+            score += 0.5
+        
+        chunk_scores.append({
+            'chunk': chunk,
+            'score': score
+        })
+    
+    # Sort by relevance score
+    chunk_scores.sort(key=lambda x: x['score'], reverse=True)
+    
+    return [item['chunk'] for item in chunk_scores[:top_k]]
+
+
 async def chat_about_document(
     document: Document, user_message: str, chat_history: List
 ) -> str:
-    """Chat with Claude about a specific document"""
+    """Enhanced chat with Claude about a specific document using chunking"""
     if not client:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -83,15 +179,55 @@ async def chat_about_document(
         )
 
     document_text = document.document_text
-
-    # Build context with document and chat history
-    context = f"Document content:\n{document_text[:6000]}\n\n"
-
+    
+    # Calculate available tokens for document content
+    max_context_tokens = 8000  # Conservative limit for Claude
+    
+    # Reserve tokens for user message and chat history
+    reserved_tokens = estimate_tokens_tiktoken(user_message) + 2000  # 2000 for response buffer
+    
+    # Add chat history tokens
+    history_text = ""
     if chat_history:
-        context += "Previous conversation:\n"
         for chat in chat_history[-5:]:  # Include last 5 exchanges
-            context += f"User: {chat.question}\n"
-            context += f"Assistant: {chat.answer}\n\n"
+            history_text += f"User: {chat.question}\nAssistant: {chat.answer}\n\n"
+    reserved_tokens += estimate_tokens_tiktoken(history_text)
+    
+    available_tokens = max_context_tokens - reserved_tokens
+    
+    # Check if document fits in available context
+    document_tokens = estimate_tokens_tiktoken(document_text)
+    
+    if document_tokens <= available_tokens:
+        # Document fits, use it directly
+        context = f"Document content:\n{document_text}\n\n"
+    else:
+        # Document is too large, use chunking
+        chunks = chunk_document(document_text, max_chunk_tokens=available_tokens // 3)
+        
+        if not chunks:
+            return "Sorry, I couldn't process this document. It appears to be empty or unreadable."
+        
+        # Find most relevant chunks
+        relevant_chunks = find_relevant_chunks(chunks, user_message, top_k=3)
+        
+        # Combine relevant chunks
+        combined_content = ""
+        chunk_info = []
+        
+        for i, chunk in enumerate(relevant_chunks):
+            combined_content += f"\n--- Document Section {chunk['index'] + 1} ---\n{chunk['text']}\n"
+            chunk_info.append(f"Section {chunk['index'] + 1}")
+        
+        context = f"Document content (showing most relevant sections):\n{combined_content}\n\n"
+        
+        # Add note about chunking if we're not showing the full document
+        if len(chunks) > len(relevant_chunks):
+            context += f"Note: This document has {len(chunks)} sections total. Showing sections: {', '.join(chunk_info)}\n\n"
+
+    # Add chat history to context
+    if history_text:
+        context += f"Previous conversation:\n{history_text}"
 
     prompt = f"""{context}
 
@@ -110,6 +246,14 @@ Please respond naturally and refer to specific parts of the document when releva
         )
 
         ai_response = response.content[0].text
+        
+        # Add contextual note if we used chunking
+        if document_tokens > available_tokens:
+            total_chunks = len(chunk_document(document_text, max_chunk_tokens=available_tokens // 3))
+            relevant_count = min(3, total_chunks)
+            if total_chunks > relevant_count:
+                ai_response += f"\n\n*Note: I analyzed the most relevant sections of your document for this question. If you need information from other parts, please ask more specific questions.*"
+        
         return ai_response
 
     except Exception as e:
@@ -144,24 +288,6 @@ Assistant:"""
         ai_response = response.content[0].text
 
         print(f"AI response: {ai_response}")
-        # casual_doc = (
-        #     db.query(Document)
-        #     .filter(Document.user_id == current_user.id, Document.title == "Casual Chat")
-        #     .first()
-        # )
-
-        # if not casual_doc:
-        # casual_chat = Document(
-        #         user_id=current_user.id,
-        #         title="Casual Chat",
-        #         document_text="This is a placeholder document used for casual chats.",
-        #         filename="casual.pdf"
-        #     )
-        # db.add(casual_chat)
-        # db.commit()
-        # db.refresh(casual_chat)
-
-        # casual_chat_doc_id = uuid.UUID("00000000-0000-0000-0000-000000000001")
 
         # Store chat in ChatHistory
         chat_entry = ChatHistory(
@@ -178,8 +304,6 @@ Assistant:"""
         db.refresh(chat_entry)
 
         # Usage tracking
-        # increment_chat_usage(current_user.id, db)
-
         print(
             f"Current user ID: {current_user.id}",
             increment_chat_usage(current_user.id, db),
@@ -203,7 +327,7 @@ Assistant:"""
 
 
 @router.post("/casual-chat-gemini", response_model=CasualChatResponse)
-async def casual_chat(chat_request: CasualChatRequest):
+async def casual_chat_gemini(chat_request: CasualChatRequest):
     if not openai_client:
         raise HTTPException(status_code=500, detail="OpenAI API key not configured")
 
@@ -225,7 +349,7 @@ async def casual_chat(chat_request: CasualChatRequest):
 
         print(f"Response: {response}")
 
-        ai_response = response["choices"][0]["message"]["content"]
+        ai_response = response.choices[0].message.content  # Fixed attribute access
         print(f"AI response: {ai_response}")
 
         return CasualChatResponse(
@@ -242,11 +366,12 @@ async def chat_with_document(
     current_user: User = Depends(check_chat_limit),
     db: Session = Depends(get_db),
 ):
-    """Chat about a previously analyzed document"""
+    """Chat about a previously analyzed document with chunking support"""
     print(
         f"Chat request received: document_id={chat_request.document_id}, message='{chat_request.message[:50]}...'"
     )
     print(f"Document ID type: {type(chat_request.document_id)}")
+    
     # Get the document
     document = (
         db.query(Document)
@@ -276,7 +401,7 @@ async def chat_with_document(
             .all()
         )
 
-        # Get AI response
+        # Get AI response using enhanced chunking approach
         ai_response = await chat_about_document(
             document, chat_request.message, chat_history
         )

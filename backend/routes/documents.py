@@ -377,6 +377,7 @@ async def get_document(
         .filter(Document.id == document_id, Document.user_id == current_user.id)
         .first()
     )
+    print("Document:", document)
     
     if not document:
         raise HTTPException(
@@ -387,8 +388,11 @@ async def get_document(
     # Parse JSON fields
     try:
         key_points = json.loads(document.key_points) if document.key_points else []
+        print("Key points:", key_points)
         risk_flags = json.loads(document.risk_flags) if document.risk_flags else []
         key_concepts = json.loads(document.key_concepts) if document.key_concepts else []
+        print("Risk flags:", risk_flags)
+        print("Key concepts:", key_concepts)
     except json.JSONDecodeError:
         key_points = []
         risk_flags = []
@@ -396,6 +400,7 @@ async def get_document(
     
     return {
         "id": document.id,
+        "collection_id": document.collection_id,
         "filename": document.filename,
         "filesize": document.filesize,
         "word_count": document.word_count,
@@ -403,9 +408,12 @@ async def get_document(
         "analysis_method": document.analysis_method,
         "uploaded_at": document.uploaded_at.isoformat(),
         "document_text": document.document_text,
+        "key_points": key_points,  # Add parsed data at root level
+        "risk_flags": risk_flags,
+        "key_concepts": key_concepts,
         "analysis": {
             "summary": document.summary,
-            "key_points": key_points,
+            "key_points": key_points,  # Use parsed arrays instead of raw strings
             "risk_flags": risk_flags,
             "key_concepts": key_concepts
         }

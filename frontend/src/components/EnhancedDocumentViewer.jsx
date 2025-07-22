@@ -74,14 +74,56 @@ Our proprietary AI technology creates significant barriers to entry while our st
 This business plan effectively balances growth ambitions with comprehensive risk management. The combination of strong financial positioning, innovative technology, and strategic market opportunities positions us for sustained success in the evolving AI landscape.`
 
   const getFileUrl = () => {
+    if (isDemoMode) {
+      // For demo mode, return a placeholder PDF URL
+      return "data:application/pdf;base64,JVBERi0xLjMKMSAwIG9iaiAiZGVtbyI="
+    }
+    
+    if (bypassAPI) {
+      // For bypass mode, return another placeholder
+      return "data:application/pdf;base64,JVBERi0xLjMKMSAwIG9iaiAiYnlwYXNzIgo="
+    }
+    
     if (file && file.type === 'application/pdf') {
       return URL.createObjectURL(file)
     }
+    
+    // For historical documents, fetch from Supabase
+    if (results?.filename && results?.document_id && (results.filename.endsWith('.pdf'))) {
+      // Get user ID from auth context or localStorage
+      const authData = JSON.parse(localStorage.getItem('auth') || '{}')
+      const userId = authData.user?.id || localStorage.getItem('user_id') || 'unknown'
+
+      console.table("Auth data:", authData)
+      console.table("User ID:", userId)
+      
+      // Extract file extension
+      const fileExtension = results.filename.split('.').pop()
+      const documentId = results.document_id.slice(0, 8) // First 8 chars of UUID
+      const safeFilename = `${results.filename.replace(/\.[^/.]+$/, "")}_${documentId}.${fileExtension}`
+      
+      // Construct Supabase URL
+      const supabaseUrl = "https://vlijwmcpzkrzbjmntbsx.supabase.co"
+      const bucketName = "documents-uploaded-digestifile"
+      const filePath = `${userId}/${safeFilename}`
+      
+      console.log('PDF URL for historical document:', {
+        userId,
+        safeFilename,
+        filePath,
+        fullUrl: `${supabaseUrl}/storage/v1/object/public/${bucketName}/${filePath}`
+      })
+      
+      return `${supabaseUrl}/storage/v1/object/public/${bucketName}/${filePath}`
+    }
+    
     return null
   }
 
-  const isPDF = file && file.type === 'application/pdf' && !isDemoMode && !bypassAPI
-  const isDOCX = file && file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' && !isDemoMode && !bypassAPI
+  const isPDF = (file && file.type === 'application/pdf' && !isDemoMode && !bypassAPI) || 
+                (results?.filename?.endsWith('.pdf') && !isDemoMode && !bypassAPI)
+  const isDOCX = (file && file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' && !isDemoMode && !bypassAPI) ||
+                 (results?.filename?.endsWith('.docx') && !isDemoMode && !bypassAPI)
   const hasDocumentViewer = isPDF || isDOCX
 
   // Set default tab based on document availability
