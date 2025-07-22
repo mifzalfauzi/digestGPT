@@ -1,5 +1,5 @@
 import React from 'react'
-import { CheckCircle2, ArrowRight, Zap, AlertTriangle, Info, Star } from 'lucide-react'
+import { CheckCircle2, ArrowRight, Zap, AlertTriangle, Info, Star, Circle } from 'lucide-react'
 
 // Enhanced MarkdownRenderer component that handles all markdown syntax
 function MarkdownRenderer({ content, className = "" }) {
@@ -125,7 +125,7 @@ function MessageFormatter({ content, className = "" }) {
           formattedLines.push(
             <div key={`${pIndex}-${index}`} className={`group flex gap-2 items-center mt-3 mb-2 p-2 rounded-lg `}>
               <div className="flex-shrink-0  ">
-                {/* <Star className="w-4 h-4 text-purple-600 dark:text-purple-400" /> */}
+                <Circle className="w-2 h-2 text-purple-600 dark:text-white dark:fill-white" />
               </div>
               <MarkdownRenderer 
                 content={headerText}

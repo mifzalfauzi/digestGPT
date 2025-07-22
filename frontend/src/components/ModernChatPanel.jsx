@@ -74,25 +74,25 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
 
   const scrollToBottom = (force = false, behavior = "smooth") => {
     if (!messagesContainerRef.current || !messagesEndRef.current) return
-    
+
     const container = messagesContainerRef.current
     const currentScrollHeight = container.scrollHeight
-    
+
     // Only scroll if user is near bottom or force is true
     if (!isUserNearBottom && !force) return
-    
+
     // For typewriter effect: only scroll when height increases by a significant amount
     if (typewriterMessageId && !force) {
       const heightDiff = currentScrollHeight - lastScrollHeightRef.current
-      
+
       // Only scroll if height increased by at least 30px (approximately 2 lines)
       if (heightDiff < 30) return
-      
+
       // Clear any pending scroll
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current)
       }
-      
+
       // Debounced smooth scroll
       scrollTimeoutRef.current = setTimeout(() => {
         container.scrollTo({
@@ -140,14 +140,14 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
   useEffect(() => {
     const container = messagesContainerRef.current
     const sentinel = messagesEndRef.current
-    
+
     if (container) {
       container.addEventListener('scroll', checkScrollPosition)
       checkScrollPosition() // Initial check
       // Initialize scroll height reference
       lastScrollHeightRef.current = container.scrollHeight
     }
-    
+
     // Intersection Observer for smooth auto-scrolling
     let observer
     if (sentinel) {
@@ -164,7 +164,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
       )
       observer.observe(sentinel)
     }
-    
+
     return () => {
       if (container) {
         container.removeEventListener('scroll', checkScrollPosition)
@@ -179,11 +179,11 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
   useEffect(() => {
     const loadChatHistory = async () => {
       if (!documentId || casualMode || isDemoMode || bypassAPI) return
-      
+
       try {
         const token = localStorage.getItem('auth_token')
         if (!token) return
-        
+
         const response = await axios.get(
           `http://localhost:8000/chat/history/${documentId}`,
           {
@@ -192,16 +192,16 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
             }
           }
         )
-        
+
         if (response.data?.chat_history) {
           // Convert backend chat history to component message format
           const historicalMessages = []
-          
+
           // Sort chat history by timestamp (oldest first)
           const sortedHistory = [...response.data.chat_history].sort(
             (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
           )
-          
+
           sortedHistory.forEach((chat, index) => {
             // Add user message
             historicalMessages.push({
@@ -220,14 +220,14 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
               isHistorical: true
             })
           })
-          
+
           setMessages(historicalMessages)
         }
       } catch (error) {
         console.error('Error loading chat history:', error)
       }
     }
-    
+
     loadChatHistory()
   }, [documentId, casualMode, isDemoMode, bypassAPI])
 
@@ -342,7 +342,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
         timestamp: aiResponse.timestamp
       }
       setMessages(prev => [...prev, aiMessage])
-      
+
       // Set this message to use typewriter effect
       setTypewriterMessageId(aiMessage.id)
 
@@ -380,7 +380,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
         timestamp: new Date().toISOString()
       }
       setMessages(prev => [...prev, errorMessage])
-      
+
       // Clear typewriter effect for error messages
       setTypewriterMessageId(null)
     } finally {
@@ -463,10 +463,23 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <h2 className="text-xs sm:text-sm lg:text-base font-bold text-slate-900 dark:text-white">
-                  {casualMode ? 'Elva*' : 'Elva*'}
-                  {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
-                  {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal">(Preview)</span>}
+                  {casualMode || true ? (
+                    <>
+                      Elva<span className="text-red-500">*</span>
+                    </>
+                  ) : (
+                    <>
+                      Elva<span className="text-red-500">*</span>
+                    </>
+                  )}
+                  {isDemoMode && (
+                    <span className="text-xs text-orange-500 font-normal">(Demo)</span>
+                  )}
+                  {bypassAPI && !isDemoMode && (
+                    <span className="text-xs text-green-600 font-normal">(Preview)</span>
+                  )}
                 </h2>
+
                 {/* <Badge className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 px-1 py-0.5">
                   <Brain className="h-1.5 w-1.5 sm:h-2 sm:w-2 mr-0.5" />
                   <span className="hidden sm:inline text-xs">
@@ -493,11 +506,11 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
 
       {/* Document Banner - Shows current document being discussed */}
       {!casualMode && filename && (
-        <div className="flex-shrink-0 px-2 sm:px-3 lg:px-4 py-2 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/30 dark:to-indigo-950/30 border-b border-blue-200/50 dark:border-blue-800/30">
-          <div className="flex items-center gap-2 p-2 sm:p-2.5 rounded-lg bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-blue-200/50 dark:border-blue-700/30">
-            <div className="p-1.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-sm">
+        <div className="flex-shrink-0 px-2 sm:px-3 lg:px-4 py-2 bg-white dark:bg-background border-b ">
+          <div className="flex items-center gap-2 p-2 sm:p-2.5 rounded-lg bg-white/60 dark:bg-background backdrop-blur-sm border ">
+            {/* <div className="p-1.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-sm">
               <Brain className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white" />
-            </div>
+            </div> */}
             <div className="min-w-0 flex-1">
               <p className="text-xs font-medium text-blue-800 dark:text-blue-200">
                 Currently discussing:
@@ -614,7 +627,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                     <div className="flex-shrink-0 mt-1">
                       {message.type === 'ai' ? (
                         <div className="p-1 sm:p-1.5 ">
-                         
+
                         </div>
                       ) : (
                         <div className="p-1 sm:p-1.5 bg-red-100 dark:bg-red-900/40 rounded-xl">
@@ -626,10 +639,10 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
 
                   <div className={`max-w-[85%] sm:max-w-[100%] ${message.type === 'user' ? 'order-first' : ''}`}>
                     <Card className={`shadow-sm border-0 ${message.type === 'user'
-                        ? 'bg-black text-white dark:bg-[#3f3f3f] ml-auto'
-                        : message.type === 'error'
-                          ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
-                          : 'bg-white dark:bg-background'
+                      ? 'bg-black text-white dark:bg-[#3f3f3f] ml-auto'
+                      : message.type === 'error'
+                        ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+                        : 'bg-white dark:bg-background'
                       }`}>
                       <CardContent className="p-2.5 sm:p-3">
                         {message.type === 'ai' ? (
@@ -658,10 +671,10 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                           )
                         ) : (
                           <p className={`text-xs sm:text-sm leading-relaxed ${message.type === 'user'
-                              ? 'text-white'
-                              : message.type === 'error'
-                                ? 'text-red-800 dark:text-red-300'
-                                : 'text-slate-700 dark:text-gray-200'
+                            ? 'text-white'
+                            : message.type === 'error'
+                              ? 'text-red-800 dark:text-red-300'
+                              : 'text-slate-700 dark:text-gray-200'
                             }`}>
                             {message.content}
                           </p>
@@ -676,8 +689,8 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                                 size="sm"
                                 onClick={() => handleFeedback(message.id, 'good')}
                                 className={`h-5 w-5 sm:h-6 sm:w-6 p-0 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors ${messageFeedback[message.id] === 'good'
-                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                                    : 'text-slate-400 hover:text-green-600'
+                                  ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                                  : 'text-slate-400 hover:text-green-600'
                                   }`}
                                 title="Good response"
                               >
@@ -689,8 +702,8 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                                 size="sm"
                                 onClick={() => handleFeedback(message.id, 'bad')}
                                 className={`h-5 w-5 sm:h-6 sm:w-6 p-0 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors ${messageFeedback[message.id] === 'bad'
-                                    ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-                                    : 'text-slate-400 hover:text-red-600'
+                                  ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                                  : 'text-slate-400 hover:text-red-600'
                                   }`}
                                 title="Bad response"
                               >
@@ -705,8 +718,8 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                               size="sm"
                               onClick={() => handleCopyMessage(message.id, message.content)}
                               className={`h-5 sm:h-6 px-1 sm:px-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors ${copiedMessageId === message.id
-                                  ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                                  : 'text-slate-400 hover:text-blue-600'
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                                : 'text-slate-400 hover:text-blue-600'
                                 }`}
                               title="Copy response"
                             >
@@ -838,13 +851,13 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
               <span className="hidden sm:inline text-xs">
                 {casualMode ? (
                   <>Powered by <a
-                  href="https://www.anthropic.com/claude/sonnet"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-blue-400 underline hover:text-blue-600"
-                >
-                  Claude 4 Sonnet
-                </a></>
+                    href="https://www.anthropic.com/claude/sonnet"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-blue-400 underline hover:text-blue-600"
+                  >
+                    Claude 4 Sonnet
+                  </a></>
                 ) : isDemoMode ? (
                   'Demo Mode - No API calls'
                 ) : bypassAPI ? (
