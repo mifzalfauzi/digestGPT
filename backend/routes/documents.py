@@ -40,6 +40,7 @@ class DocumentResponse(BaseModel):
     word_count: int
     summary: str
     analysis_method: str
+    file_url: Optional[str] = None
     uploaded_at: str
 
 class DocumentAnalysisResponse(BaseModel):
@@ -96,7 +97,8 @@ async def upload_and_analyze_document(
             print("Available Buckets:", buckets)
 
             bucket_info = supabase.storage.get_bucket("documents-uploaded-digestifile")
-            print("Bucket info:", bucket_info.name)
+            print("Bucket info:", bucket_info)
+            print("Bucket public:", getattr(bucket_info, 'public', 'unknown'))
         except Exception as e:
             print("Bucket error:", e)
         
@@ -122,8 +124,33 @@ async def upload_and_analyze_document(
                 detail="Failed to upload file to Supabase"
             )
 
-        file_url = supabase.storage.from_("documents-uploaded-digestifile").get_public_url(file_path)
-        print(file_url)
+        try:
+            # Try public URL first
+            file_url_response = supabase.storage.from_("documents-uploaded-digestifile").get_public_url(file_path)
+            file_url = file_url_response['publicUrl'] if isinstance(file_url_response, dict) else str(file_url_response)
+            
+            # Clean up the URL - remove any trailing characters
+            file_url = file_url.rstrip('?')
+            print(f"Public URL: {file_url}")
+            
+            # Test if the public URL is accessible
+            import requests
+            test_response = requests.head(file_url, timeout=5)
+            print(f"Public URL accessibility: {test_response.status_code}")
+            
+            if test_response.status_code != 200:
+                raise Exception(f"Public URL returned {test_response.status_code}")
+                
+        except Exception as e:
+            print(f"Public URL failed: {e}, trying signed URL")
+            try:
+                # Fallback to signed URL (24 hour expiry)
+                signed_url_response = supabase.storage.from_("documents-uploaded-digestifile").create_signed_url(file_path, 86400)
+                file_url = signed_url_response['signedURL'] if isinstance(signed_url_response, dict) else str(signed_url_response)
+                print(f"Signed URL: {file_url}")
+            except Exception as signed_e:
+                print(f"Signed URL also failed: {signed_e}")
+                file_url = None
         
         
         # Extract text based on file type
@@ -186,14 +213,17 @@ async def upload_and_analyze_document(
             risk_flags=json.dumps(analysis.get("risk_flags", [])),
             key_concepts=json.dumps(analysis.get("key_concepts", [])),
             word_count=word_count,
-            analysis_method=analysis.get("analysis_method", "single")
+            analysis_method=analysis.get("analysis_method", "single"),
+            file_url=file_url  # Store the file URL for later retrieval
         )
         
-        print(f"Creating document with user_id: {current_user.id}, collection_id: {parsed_collection_id}")
+        print(f"Creating document with user_id: {current_user.id}, collection_id: {parsed_collection_id}, file_url: {file_url}")
         
         db.add(new_document)
         db.commit()
         db.refresh(new_document)
+        
+        print(f"Document saved with ID: {new_document.id}, file_url: {new_document.file_url}")
         
         # Update usage tracking
         increment_document_usage(current_user.id, db)
@@ -288,7 +318,8 @@ async def analyze_text_direct(
             risk_flags=json.dumps(analysis.get("risk_flags", [])),
             key_concepts=json.dumps(analysis.get("key_concepts", [])),
             word_count=word_count,
-            analysis_method=analysis.get("analysis_method", "single")
+            analysis_method=analysis.get("analysis_method", "single"),
+            file_url=None  # Text documents don't have file URLs
         )
         
         db.add(new_document)
@@ -349,11 +380,13 @@ async def get_user_documents(
     document_responses = [
         DocumentResponse(
             id=doc.id,
+            collection_id=doc.collection_id,
             filename=doc.filename,
             filesize=doc.filesize,
             word_count=doc.word_count,
             summary=doc.summary,
             analysis_method=doc.analysis_method,
+            file_url=getattr(doc, 'file_url', None),
             uploaded_at=doc.uploaded_at.isoformat()
         )
         for doc in documents
@@ -377,7 +410,6 @@ async def get_document(
         .filter(Document.id == document_id, Document.user_id == current_user.id)
         .first()
     )
-    print("Document:", document)
     
     if not document:
         raise HTTPException(
@@ -408,6 +440,7 @@ async def get_document(
         "analysis_method": document.analysis_method,
         "uploaded_at": document.uploaded_at.isoformat(),
         "document_text": document.document_text,
+        "file_url": getattr(document, 'file_url', None),  # Add file URL for PDF viewing
         "key_points": key_points,  # Add parsed data at root level
         "risk_flags": risk_flags,
         "key_concepts": key_concepts,

@@ -46,6 +46,7 @@ class Document(Base):
     key_concepts = Column(Text)
     word_count = Column(Integer)
     analysis_method = Column(String)
+    file_url = Column(String, nullable=True)  # Add file URL for PDF viewing
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
 
 # 3. Chat history

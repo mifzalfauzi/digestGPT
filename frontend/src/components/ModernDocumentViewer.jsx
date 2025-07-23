@@ -13,13 +13,19 @@ function ModernDocumentViewer({ results, file, inputMode }) {
   const [highlights, setHighlights] = useState([])
 
   const getFileUrl = () => {
+    // For newly uploaded files with file object
     if (file && inputMode === 'file' && file.type === 'application/pdf') {
       return URL.createObjectURL(file)
+    }
+    // For historical documents with file_url from backend
+    if (results?.file_url && results.filename?.toLowerCase().endsWith('.pdf')) {
+      return results.file_url
     }
     return null
   }
 
-  const isPDF = file && file.type === 'application/pdf'
+  const isPDF = (file && file.type === 'application/pdf') || 
+    (results?.filename?.toLowerCase().endsWith('.pdf') && results?.file_url)
 
   // Debug function to check data structure
   useEffect(() => {

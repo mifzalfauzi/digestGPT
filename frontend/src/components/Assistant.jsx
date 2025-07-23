@@ -500,6 +500,7 @@ function Assistant() {
             filename: fullDocumentData.filename || historicalDocument.filename,
             document_id: documentId,
             document_text: fullDocumentData.document_text,
+            file_url: fullDocumentData.file_url, // Add file URL for PDF viewing
             analysis: {
               summary: fullDocumentData.summary,
               key_points: keyPoints,

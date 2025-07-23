@@ -84,44 +84,24 @@ This business plan effectively balances growth ambitions with comprehensive risk
       return "data:application/pdf;base64,JVBERi0xLjMKMSAwIG9iaiAiYnlwYXNzIgo="
     }
     
+    // For newly uploaded files with file object
     if (file && file.type === 'application/pdf') {
       return URL.createObjectURL(file)
     }
     
-    // For historical documents, fetch from Supabase
-    if (results?.filename && results?.document_id && (results.filename.endsWith('.pdf'))) {
-      // Get user ID from auth context or localStorage
-      const authData = JSON.parse(localStorage.getItem('auth') || '{}')
-      const userId = authData.user?.id || localStorage.getItem('user_id') || 'unknown'
-
-      console.table("Auth data:", authData)
-      console.table("User ID:", userId)
-      
-      // Extract file extension
-      const fileExtension = results.filename.split('.').pop()
-      const documentId = results.document_id.slice(0, 8) // First 8 chars of UUID
-      const safeFilename = `${results.filename.replace(/\.[^/.]+$/, "")}_${documentId}.${fileExtension}`
-      
-      // Construct Supabase URL
-      const supabaseUrl = "https://vlijwmcpzkrzbjmntbsx.supabase.co"
-      const bucketName = "documents-uploaded-digestifile"
-      const filePath = `${userId}/${safeFilename}`
-      
-      console.log('PDF URL for historical document:', {
-        userId,
-        safeFilename,
-        filePath,
-        fullUrl: `${supabaseUrl}/storage/v1/object/public/${bucketName}/${filePath}`
-      })
-      
-      return `${supabaseUrl}/storage/v1/object/public/${bucketName}/${filePath}`
+    // For historical documents with file_url from backend
+    if (results?.file_url && results.filename?.toLowerCase().endsWith('.pdf')) {
+      // Clean up the URL - remove trailing question mark if present
+      const cleanUrl = results.file_url.replace(/\?$/, '')
+      console.log('Historical PDF URL:', cleanUrl)
+      return cleanUrl
     }
     
     return null
   }
 
   const isPDF = (file && file.type === 'application/pdf' && !isDemoMode && !bypassAPI) || 
-                (results?.filename?.endsWith('.pdf') && !isDemoMode && !bypassAPI)
+                (results?.filename?.toLowerCase().endsWith('.pdf') && results?.file_url && !isDemoMode && !bypassAPI)
   const isDOCX = (file && file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' && !isDemoMode && !bypassAPI) ||
                  (results?.filename?.endsWith('.docx') && !isDemoMode && !bypassAPI)
   const hasDocumentViewer = isPDF || isDOCX
@@ -318,11 +298,45 @@ This business plan effectively balances growth ambitions with comprehensive risk
                             </div>
                           </div>
                         )}
-                        <iframe
-                          src={getFileUrl()}
-                          className="w-full h-full"
-                          title="PDF Document"
-                        />
+                        {getFileUrl() ? (
+                          <>
+                            {/* Try object/embed for better PDF support */}
+                            <object
+                              data={getFileUrl()}
+                              type="application/pdf"
+                              className="w-full h-full"
+                            >
+                              <iframe
+                                src={getFileUrl()}
+                                className="w-full h-full"
+                                title="PDF Document"
+                                onLoad={() => console.log('PDF iframe loaded successfully')}
+                                onError={(e) => console.log('PDF iframe error:', e)}
+                              />
+                            </object>
+                            {/* Fallback - direct link */}
+                            {/* <div className="absolute bottom-4 right-4">
+                              <a
+                                href={getFileUrl()}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                              >
+                                Open PDF ↗
+                              </a>
+                            </div> */}
+                          </>
+                        ) : (
+                          <div className="flex items-center justify-center h-full">
+                            <div className="text-center space-y-3">
+                              <div className="w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full"></div>
+                              <div>
+                                <p className="text-sm font-medium text-slate-700 dark:text-gray-300">PDF URL Not Available</p>
+                                <p className="text-xs text-slate-500 dark:text-gray-400">Unable to generate PDF viewing URL</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
