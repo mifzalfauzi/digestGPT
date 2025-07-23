@@ -685,8 +685,8 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                           </p>
                         )}
 
-                        {/* Action buttons for AI responses */}
-                        {message.type === 'ai' && (
+                        {/* Action buttons for AI responses - only show after typewriter effect finishes */}
+                        {message.type === 'ai' && message.id !== typewriterMessageId && (
                           <div className="flex items-center gap-1 sm:gap-1.5 mt-2 pt-2 border-t border-slate-100 dark:border-gray-700">
                             <div className="flex items-center gap-1">
                               <Button
