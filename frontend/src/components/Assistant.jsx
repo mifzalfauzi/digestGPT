@@ -56,62 +56,68 @@ function Assistant() {
   // History drawer state
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false)
 
+  // Change state to historicalCollections
+  const [historicalCollections, setHistoricalCollections] = useState([])
+
   // Load historical documents when component mounts
   useEffect(() => {
     if (isAuthenticated && user) {
-      loadHistoricalDocuments()
-      loadHistoricalCollections()
+      const loadAllHistoricalData = async () => {
+        setIsLoadingHistory(true);
+        try {
+          // Load both documents and collections in parallel
+          const [docsResponse, collectionsResponse] = await Promise.all([
+            axios.get('http://localhost:8000/documents/', {
+              headers: {
+                'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}`
+              },
+              params: {
+                skip: 0,
+                limit: 50
+              }
+            }),
+            axios.get('http://localhost:8000/collections/', {
+              headers: { 'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}` },
+              params: { skip: 0, limit: 50 }
+            })
+          ]);
+
+          // Process documents
+          if (docsResponse.data?.documents) {
+            setHistoricalDocuments(docsResponse.data.documents);
+          }
+
+          // Process collections with their documents
+          if (collectionsResponse.data) {
+            const fullCollections = await Promise.all(collectionsResponse.data.map(async (col) => {
+              try {
+                const detailRes = await axios.get(`http://localhost:8000/collections/${col.id}`, {
+                  headers: { 'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}` }
+                });
+                return { ...col, documents: detailRes.data.documents || [] };
+              } catch (error) {
+                console.error(`Error loading collection ${col.id}:`, error);
+                return { ...col, documents: [] };
+              }
+            }));
+            setHistoricalCollections(fullCollections);
+            console.log('Loaded historical collections with docs:', fullCollections);
+          }
+        } catch (error) {
+          console.error('Error loading historical data:', error);
+          if (error.response?.status === 401) {
+            logout();
+          }
+        } finally {
+          setIsLoadingHistory(false);
+        }
+      };
+
+      loadAllHistoricalData();
     }
   }, [isAuthenticated, user])
 
-  // Function to load historical documents from backend
-  const loadHistoricalDocuments = async () => {
-    if (!user?.token && !localStorage.getItem('auth_token')) return
 
-    setIsLoadingHistory(true)
-    try {
-      const response = await axios.get('http://localhost:8000/documents/', {
-        headers: {
-          'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}`
-        },
-        params: {
-          skip: 0,
-          limit: 50 // Load recent 50 documents
-        }
-      })
-
-      if (response.data?.documents) {
-        setHistoricalDocuments(response.data.documents)
-      }
-    } catch (error) {
-      console.error('Error loading historical documents:', error)
-      if (error.response?.status === 401) {
-        logout()
-      }
-    } finally {
-      setIsLoadingHistory(false)
-    }
-  }
-
-  // Function to load historical collections from backend
-  const loadHistoricalCollections = async () => {
-    if (!user?.token && !localStorage.getItem('auth_token')) return
-
-    try {
-      const response = await axios.get('http://localhost:8000/collections/', {
-        headers: { 'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}` },
-        params: { skip: 0, limit: 50 }
-      })
-
-      if (response.data) {
-        setCollections(response.data)
-        console.log('Loaded historical collections:', response.data)
-      }
-    } catch (error) {
-      console.error('Error loading historical collections:', error)
-      if (error.response?.status === 401) { logout() }
-    }
-  }
 
   // Function to load a historical document's full data
   const loadHistoricalDocument = async (documentId) => {
@@ -136,13 +142,58 @@ function Assistant() {
 
   // Function to refresh historical documents and collections (can be called after new document upload)
   const refreshHistoricalDocuments = async () => {
-    await loadHistoricalDocuments()
-    await loadHistoricalCollections()
-  }
+    setIsLoadingHistory(true);
+    try {
+      // Load both documents and collections in parallel
+      const [docsResponse, collectionsResponse] = await Promise.all([
+        axios.get('http://localhost:8000/documents/', {
+          headers: {
+            'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}`
+          },
+          params: {
+            skip: 0,
+            limit: 50
+          }
+        }),
+        axios.get('http://localhost:8000/collections/', {
+          headers: { 'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}` },
+          params: { skip: 0, limit: 50 }
+        })
+      ]);
+
+      // Process documents
+      if (docsResponse.data?.documents) {
+        setHistoricalDocuments(docsResponse.data.documents);
+      }
+
+      // Process collections with their documents
+      if (collectionsResponse.data) {
+        const fullCollections = await Promise.all(collectionsResponse.data.map(async (col) => {
+          try {
+            const detailRes = await axios.get(`http://localhost:8000/collections/${col.id}`, {
+              headers: { 'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}` }
+            });
+            return { ...col, documents: detailRes.data.documents || [] };
+          } catch (error) {
+            console.error(`Error loading collection ${col.id}:`, error);
+            return { ...col, documents: [] };
+          }
+        }));
+        setHistoricalCollections(fullCollections);
+      }
+    } catch (error) {
+      console.error('Error refreshing historical data:', error);
+      if (error.response?.status === 401) {
+        logout();
+      }
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
 
   // Function to handle collection selection from history
   const selectCollectionFromHistory = async (collectionId) => {
-    const collection = collections.find(c => c.id === collectionId)
+    const collection = historicalCollections.find(c => c.id === collectionId)
     if (!collection) return
 
     // Load all documents in the collection
@@ -444,6 +495,7 @@ function Assistant() {
           inputMode: 'historical',
           uploadDate: fullDocumentData.uploaded_at || historicalDocument.uploaded_at,
           documentId: documentId,
+          collectionId: fullDocumentData.collection_id || null, // Add this line
           results: {
             filename: fullDocumentData.filename || historicalDocument.filename,
             document_id: documentId,
@@ -461,6 +513,23 @@ function Assistant() {
             key_concepts: keyConcepts,
             word_count: fullDocumentData.word_count,
             analysis_method: fullDocumentData.analysis_method
+          }
+        }
+
+        // If document belongs to a collection, ensure collection is in current session
+        if (fullDocumentData.collection_id) {
+          const existingCollection = collections.find(c => c.id === fullDocumentData.collection_id);
+          if (!existingCollection) {
+            // Find the collection in historical collections and add it to current session
+            const historicalCollection = historicalCollections.find(c => c.id === fullDocumentData.collection_id);
+            if (historicalCollection) {
+              setCollections(prev => [...prev, {
+                id: historicalCollection.id,
+                name: historicalCollection.name,
+                createdAt: historicalCollection.created_at,
+                documents: [] // Will be populated as documents are loaded
+              }]);
+            }
           }
         }
 
@@ -1387,6 +1456,7 @@ This business plan effectively balances ambitious growth objectives with compreh
               onSelectDocument={selectDocument}
               onRemoveDocument={removeDocument}
               collections={collections}
+              historicalCollections={historicalCollections}
               expandedCollections={expandedCollections}
               onToggleCollectionExpansion={toggleCollectionExpansion}
               onRemoveCollection={removeCollection}
@@ -1547,6 +1617,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                   onSelectDocument={selectDocument}
                   onRemoveDocument={removeDocument}
                   collections={collections}
+                  historicalCollections={historicalCollections}
                   expandedCollections={expandedCollections}
                   onToggleCollectionExpansion={toggleCollectionExpansion}
                   onRemoveCollection={removeCollection}
@@ -1577,6 +1648,7 @@ This business plan effectively balances ambitious growth objectives with compreh
               onSelectDocument={selectDocument}
               onRemoveDocument={removeDocument}
               collections={collections}
+              historicalCollections={historicalCollections}
               expandedCollections={expandedCollections}
               onToggleCollectionExpansion={toggleCollectionExpansion}
               onRemoveCollection={removeCollection}
@@ -1647,6 +1719,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                   onSelectDocument={selectDocument}
                   onRemoveDocument={removeDocument}
                   collections={collections}
+                  historicalCollections={historicalCollections}
                   expandedCollections={expandedCollections}
                   onToggleCollectionExpansion={toggleCollectionExpansion}
                   onRemoveCollection={removeCollection}
@@ -1678,6 +1751,7 @@ This business plan effectively balances ambitious growth objectives with compreh
               onSelectDocument={selectDocument}
               onRemoveDocument={removeDocument}
               collections={collections}
+              historicalCollections={historicalCollections}
               expandedCollections={expandedCollections}
               onToggleCollectionExpansion={toggleCollectionExpansion}
               onRemoveCollection={removeCollection}
@@ -1984,6 +2058,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                   onSelectDocument={selectDocument}
                   onRemoveDocument={removeDocument}
                   collections={collections}
+                  historicalCollections={historicalCollections}
                   expandedCollections={expandedCollections}
                   onToggleCollectionExpansion={toggleCollectionExpansion}
                   onRemoveCollection={removeCollection}
@@ -2052,7 +2127,7 @@ This business plan effectively balances ambitious growth objectives with compreh
         isOpen={isHistoryDrawerOpen}
         onClose={() => setIsHistoryDrawerOpen(false)}
         historicalDocuments={historicalDocuments}
-        collections={collections}
+        collections={historicalCollections}
         currentDocumentId={selectedDocumentId}
         currentCollectionId={currentCollectionId}
         isLoadingHistory={isLoadingHistory}
@@ -2061,7 +2136,6 @@ This business plan effectively balances ambitious growth objectives with compreh
           setIsHistoryDrawerOpen(false)
         }}
         onSelectCollection={selectCollectionFromHistory}
-        onFetchCollectionDocuments={loadHistoricalCollectionDocuments}
       />
 
       {/* Error Alert for Usage Limits */}

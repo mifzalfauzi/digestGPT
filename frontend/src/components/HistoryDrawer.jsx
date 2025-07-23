@@ -14,33 +14,28 @@ function HistoryDrawer({
   isLoadingHistory = false,
   onSelectHistoricalDocument = () => {},
   onSelectCollection = () => {},
-  onFetchCollectionDocuments = () => []
 }) {
   const [activeTab, setActiveTab] = useState('documents') // 'documents', 'collections'
   const [expandedCollections, setExpandedCollections] = useState(new Set())
-  const [loadedCollectionDocs, setLoadedCollectionDocs] = useState({});
 
   // Show all documents and collections in history (don't filter out active ones)
   const filteredDocuments = historicalDocuments
   const filteredCollections = collections
 
   // Toggle collection expansion
-  const toggleCollectionExpansion = async (collectionId) => {
+  const toggleCollectionExpansion = (collectionId) => {
     const isCurrentlyExpanded = expandedCollections.has(collectionId);
     const newExpanded = isCurrentlyExpanded ? new Set() : new Set([collectionId]);
     setExpandedCollections(newExpanded);
-    if (!isCurrentlyExpanded && !loadedCollectionDocs[collectionId]) {
-      const docs = await onFetchCollectionDocuments(collectionId);
-      setLoadedCollectionDocs(prev => ({ ...prev, [collectionId]: docs }));
-    }
   };
 
   // Get documents for a collection
   const getCollectionDocuments = (collectionId) => {
-    const docs = historicalDocuments.filter(doc => doc.collection_id === collectionId)
-    console.log(`Collection ${collectionId} has ${docs.length} documents:`, docs)
-    return docs
-  }
+    const collection = collections.find(c => c.id === collectionId);
+    const docs = collection?.documents || [];
+    console.log(`Collection ${collectionId} has ${docs.length} documents:`, docs);
+    return docs;
+  };
 
   // Format date helper
   const formatDate = (dateString) => {
@@ -86,12 +81,15 @@ function HistoryDrawer({
       }`}>
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Document History</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {filteredDocuments.length} documents, {filteredCollections.length} collections
-            </p>
-          </div>
+        <div>
+  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Document History</h2>
+  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+    {filteredDocuments.length === 0 && filteredCollections.length === 0
+      ? 'Loading 0 documents, 0 collections'
+      : `Loaded ${filteredDocuments.length} documents, ${filteredCollections.length} collections`}
+  </p>
+</div>
+
           <Button
             variant="ghost"
             size="sm"
@@ -128,7 +126,8 @@ function HistoryDrawer({
             <div className="flex items-center justify-center py-12">
               <div className="text-center space-y-4">
                 <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">Loading history...</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Loading documents and collections.</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">This may take a while if there are multiple collections.</p>
               </div>
             </div>
           ) : (
@@ -140,7 +139,7 @@ function HistoryDrawer({
                     Collections
                   </h3>
                   {filteredCollections.map(collection => {
-                    const collectionDocuments = loadedCollectionDocs[collection.id] || getCollectionDocuments(collection.id);
+                    const collectionDocuments = collection.documents || [];
                     const isExpanded = expandedCollections.has(collection.id)
                     
                     return (

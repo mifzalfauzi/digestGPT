@@ -25,6 +25,7 @@ function ModernSidebar({
   onRemoveDocument = () => { },
   // Collection props
   collections = [],
+  historicalCollections = [], // Add this prop
   expandedCollections = new Set(),
   onToggleCollectionExpansion = () => { },
   onRemoveCollection = () => { },
@@ -350,7 +351,7 @@ function ModernSidebar({
         );
       } else {
         // Document in collection
-        const activeCollection = collections.find(c => c.id === selectedDoc.collectionId);
+        const activeCollection = collections.find(c => c.id === selectedDoc.collectionId) || historicalCollections.find(c => c.id === selectedDoc.collectionId);
         if (!activeCollection) return null;
 
         const collectionDocuments = documents.filter(doc => doc.collectionId === activeCollection.id);
@@ -369,7 +370,7 @@ function ModernSidebar({
                 {/* Collection Header */}
                 <div
                   onClick={() => onToggleCollectionExpansion(activeCollection.id)}
-                  className={`${collapsed ? 'p-2' : 'p-2.5 sm:p-3'} rounded-lg cursor-pointer transition-all duration-200 group bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-700`}
+                  className={`${collapsed ? 'p-2' : 'p-2.5 sm:p-3'} rounded-lg cursor-pointer transition-all duration-200 group bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-700 `}
                 >
                   <div className={`flex items-start ${collapsed ? 'justify-center' : 'gap-2'}`}>
                     <div className={`${collapsed ? 'p-1' : 'p-1.5'} rounded-lg flex-shrink-0 bg-purple-200 dark:bg-purple-800`} title={collapsed ? activeCollection.name : ''}>
