@@ -93,10 +93,10 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-2 gap-24 items-center">
             {/* Left Side - Content */}
             <div className="text-center">
-              <Badge className="bg-blue-100 text-blue-800 dark:bg-black dark:text-white mb-6 text-xs">
+              {/* <Badge className="bg-blue-100 text-blue-800 dark:bg-black dark:text-white mb-6 text-xs">
                 <Zap className="mr-1.5 h-3 w-3" />
                 Powered by Claude 4 Sonnet
-              </Badge>
+              </Badge> */}
 
               <h1 className="text-2xl sm:text-5xl lg:text-5xl font-bold tracking-tight leading-tight mb-6">
                 {" "}

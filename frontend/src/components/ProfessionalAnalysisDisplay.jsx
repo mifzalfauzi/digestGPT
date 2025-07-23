@@ -21,7 +21,10 @@ import {
   FileText,
   Clock,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Copy,
+  ThumbsUp,
+  ThumbsDown
 } from 'lucide-react'
 import HighlightableText from './HighlightableText'
 import MarkdownRenderer from './MarkdownRenderer'
@@ -34,6 +37,8 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   const [highlights, setHighlights] = useState([])
   const [currentInsightIndex, setCurrentInsightIndex] = useState(0)
   const [currentRiskIndex, setCurrentRiskIndex] = useState(0)
+  const [copiedItem, setCopiedItem] = useState(null)
+  const [feedbackGiven, setFeedbackGiven] = useState({})
 
   useEffect(() => {
     console.log('ProfessionalAnalysisDisplay - Full results:', results)
@@ -247,6 +252,27 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   const currentInsight = insights[currentInsightIndex]
   const currentRisk = risks[currentRiskIndex]
 
+  // Copy to clipboard function
+  const handleCopy = async (text, itemId) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedItem(itemId)
+      setTimeout(() => setCopiedItem(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy text: ', err)
+    }
+  }
+
+  // Handle feedback
+  const handleFeedback = (itemId, type) => {
+    setFeedbackGiven(prev => ({
+      ...prev,
+      [itemId]: type
+    }))
+    // Here you could also send feedback to your analytics/backend
+    console.log(`Feedback given for ${itemId}: ${type}`)
+  }
+
   return (
     <div className="space-y-6 p-4 sm:p-6 h-full overflow-y-auto">
       {/* Executive Summary - Only show if showSummary is true */}
@@ -366,15 +392,56 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                     
                     <div className="flex-1 space-y-3">
                       <div className="flex items-start justify-between gap-3">
-                        <div className="text-slate-800 dark:text-slate-100 leading-relaxed font-medium text-sm">
+                        <div className="text-slate-800 dark:text-slate-100 leading-relaxed font-medium text-sm flex-1">
                           <MarkdownRenderer content={currentInsight.text} />
                         </div>
-                        <Badge 
-                          variant="outline" 
-                          className={`text-xs ${getCategoryBadgeClasses(currentInsight.category)} capitalize`}
-                        >
-                          {currentInsight.category}
-                        </Badge>
+                        <div className="flex flex-col gap-2 items-end">
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs ${getCategoryBadgeClasses(currentInsight.category)} capitalize`}
+                          >
+                            {currentInsight.category}
+                          </Badge>
+                          
+                          {/* Copy and Feedback buttons */}
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleCopy(currentInsight.text, currentInsight.id)}
+                              className="h-7 w-7 p-0 hover:bg-emerald-100 dark:hover:bg-emerald-900/20"
+                              title="Copy insight"
+                            >
+                              <Copy className={`h-3 w-3 ${copiedItem === currentInsight.id ? 'text-emerald-600' : 'text-gray-500'}`} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleFeedback(currentInsight.id, 'positive')}
+                              className={`h-7 w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${
+                                feedbackGiven[currentInsight.id] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
+                              }`}
+                              title="Helpful insight"
+                            >
+                              <ThumbsUp className={`h-3 w-3 ${
+                                feedbackGiven[currentInsight.id] === 'positive' ? 'text-green-600' : 'text-gray-500'
+                              }`} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleFeedback(currentInsight.id, 'negative')}
+                              className={`h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${
+                                feedbackGiven[currentInsight.id] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
+                              }`}
+                              title="Not helpful"
+                            >
+                              <ThumbsDown className={`h-3 w-3 ${
+                                feedbackGiven[currentInsight.id] === 'negative' ? 'text-red-600' : 'text-gray-500'
+                              }`} />
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                       
                       {highlights.find(h => h.id === currentInsight.id) && (
@@ -511,22 +578,63 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                   
                   <div className="flex-1 space-y-3">
                     <div className="flex items-start justify-between gap-3">
-                      <AlertDescription className="text-red-800 dark:text-red-200 leading-relaxed font-medium text-sm">
+                      <AlertDescription className="text-red-800 dark:text-red-200 leading-relaxed font-medium text-sm flex-1">
                         <MarkdownRenderer content={currentRisk.text} />
                       </AlertDescription>
-                      <div className="flex gap-2">
-                        <Badge 
-                          variant="outline" 
-                          className={`text-xs ${getSeverityBadgeClasses(currentRisk.severity)} capitalize`}
-                        >
-                          {currentRisk.severity}
-                        </Badge>
-                        <Badge 
-                          variant="outline" 
-                          className={`text-xs ${getCategoryBadgeClasses(currentRisk.category)} capitalize`}
-                        >
-                          {currentRisk.category}
-                        </Badge>
+                      <div className="flex flex-col gap-2 items-end">
+                        <div className="flex flex-col gap-1 items-end">
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs ${getCategoryBadgeClasses(currentRisk.category)} capitalize`}
+                          >
+                            {currentRisk.category}
+                          </Badge>
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs ${getSeverityBadgeClasses(currentRisk.severity)} capitalize`}
+                          >
+                            {currentRisk.severity}
+                          </Badge>
+                        </div>
+                        
+                        {/* Copy and Feedback buttons */}
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCopy(currentRisk.text, currentRisk.id)}
+                            className="h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
+                            title="Copy risk"
+                          >
+                            <Copy className={`h-3 w-3 ${copiedItem === currentRisk.id ? 'text-red-600' : 'text-gray-500'}`} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleFeedback(currentRisk.id, 'positive')}
+                            className={`h-7 w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${
+                              feedbackGiven[currentRisk.id] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
+                            }`}
+                            title="Accurate risk assessment"
+                          >
+                            <ThumbsUp className={`h-3 w-3 ${
+                              feedbackGiven[currentRisk.id] === 'positive' ? 'text-green-600' : 'text-gray-500'
+                            }`} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleFeedback(currentRisk.id, 'negative')}
+                            className={`h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${
+                              feedbackGiven[currentRisk.id] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
+                            }`}
+                            title="Inaccurate assessment"
+                          >
+                            <ThumbsDown className={`h-3 w-3 ${
+                              feedbackGiven[currentRisk.id] === 'negative' ? 'text-red-600' : 'text-gray-500'
+                            }`} />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                     
