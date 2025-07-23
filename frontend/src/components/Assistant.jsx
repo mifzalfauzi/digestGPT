@@ -1983,10 +1983,10 @@ This business plan effectively balances ambitious growth objectives with compreh
                         <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed">
                           Analysis is in progress...
                         </p>
-                        <div className="flex items-center justify-center gap-3 text-blue-600 dark:text-blue-400">
+                        {/* <div className="flex items-center justify-center gap-3 text-blue-600 dark:text-blue-400">
                           <Zap className="h-6 w-6" />
                           <span className="text-lg font-semibold">Advanced AI Processing</span>
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   </div>

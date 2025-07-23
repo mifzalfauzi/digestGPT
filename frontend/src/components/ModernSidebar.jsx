@@ -211,7 +211,7 @@ function ModernSidebar({
             title={collapsed ? 'History' : ''}
           >
             <History className="h-3.5 w-3.5 flex-shrink-0" />
-            {!collapsed && <span>History</span>}
+            {!collapsed && <span>Past Documents</span>}
           </Button>
         </div>
 
