@@ -763,18 +763,18 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
               {isLoading && (
                 <div className="flex gap-2 sm:gap-3 justify-start">
                   <div className="flex-shrink-0 mt-1">
-                    <div className="p-1 sm:p-1.5 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/40 dark:to-purple-900/40 rounded-xl">
+                    {/* <div className="p-1 sm:p-1.5 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/40 dark:to-purple-900/40 rounded-xl">
                       <Bot className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-blue-600 dark:text-blue-400" />
-                    </div>
+                    </div> */}
                   </div>
                   <div className="max-w-[75%]">
-                    <Card className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 shadow-sm">
+                    <Card className="bg-white dark:bg-background shadow-sm">
                       <CardContent className="p-2.5 sm:p-3">
                         <div className="flex items-center gap-2">
                           <div className="flex space-x-1">
-                            <div className="w-1.5 h-1.5 bg-blue-600 dark:bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                            <div className="w-1.5 h-1.5 bg-blue-600 dark:bg-blue-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                            <div className="w-1.5 h-1.5 bg-blue-600 dark:bg-blue-400 rounded-full animate-bounce"></div>
+                            <div className="w-1.5 h-1.5 bg-blue-600 dark:bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                            <div className="w-1.5 h-1.5 bg-blue-600 dark:bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                            <div className="w-1.5 h-1.5 bg-blue-600 dark:bg-white rounded-full animate-bounce"></div>
                           </div>
                           {/* <span className="text-xs sm:text-sm text-slate-600 dark:text-gray-300">Thinking...</span>
                           <Zap className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-blue-500 animate-pulse" /> */}

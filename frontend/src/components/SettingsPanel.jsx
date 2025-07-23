@@ -59,7 +59,8 @@ function SettingsPanel({ isOpen, onClose }) {
         },
       });
       console.log(response.data)
-      setUsage(response.data);
+      console.log(token)
+      // setUsage(response.data);
     };
   
     fetchUsage(); // initial fetch

@@ -19,7 +19,9 @@ import {
   Star,
   ArrowRight,
   FileText,
-  Clock
+  Clock,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import HighlightableText from './HighlightableText'
 import MarkdownRenderer from './MarkdownRenderer'
@@ -30,6 +32,8 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   const [summary, setSummary] = useState('')
   const [keyConcepts, setKeyConcepts] = useState([])
   const [highlights, setHighlights] = useState([])
+  const [currentInsightIndex, setCurrentInsightIndex] = useState(0)
+  const [currentRiskIndex, setCurrentRiskIndex] = useState(0)
 
   useEffect(() => {
     console.log('ProfessionalAnalysisDisplay - Full results:', results)
@@ -104,6 +108,10 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       }))
     ]
     setHighlights(newHighlights)
+
+    // Reset pagination indices when new data arrives
+    setCurrentInsightIndex(0)
+    setCurrentRiskIndex(0)
   }, [results])
 
   const getInsightCategory = (text) => {
@@ -235,6 +243,10 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     }
   }
 
+  // Get current items for display
+  const currentInsight = insights[currentInsightIndex]
+  const currentRisk = risks[currentRiskIndex]
+
   return (
     <div className="space-y-6 p-4 sm:p-6 h-full overflow-y-auto">
       {/* Executive Summary - Only show if showSummary is true */}
@@ -320,7 +332,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                   Strategic Insights
                 </CardTitle>
                 <p className="text-sm text-slate-600 dark:text-gray-400 mt-1">
-                  
+                  Key findings from your document
                 </p>
               </div>
             </div>
@@ -330,75 +342,112 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {insights.length > 0 ? (
-            insights.map((insight, index) => {
-              const isActive = activeHighlight === insight.id
-              const hasHighlight = highlights.find(h => h.id === insight.id)
-              const categoryColor = getCategoryColor(insight.category)
-              
-              return (
-                <Card 
-                  key={insight.id}
-                  className={`transition-all duration-300 ${
-                    hasHighlight ? 'cursor-pointer hover:shadow-lg' : ''
-                  } ${
-                    isActive
-                      ? 'ring-2 ring-emerald-400 dark:ring-emerald-500 shadow-lg bg-emerald-50/50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700'
-                      : 'border-slate-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-600'
-                  }`}
-                  onClick={() => {
-                    hasHighlight && onHighlightClick(insight.id);
-                  }}
-                >
-                  <CardContent className="p-5">
-                    <div className="flex items-start gap-4">
-                      <div className={`p-2.5 ${getCategoryIconClasses(insight.category)} rounded-lg flex-shrink-0`}>
-                        {getCategoryIcon(insight.category)}
+          {insights.length > 0 && currentInsight ? (
+            <>
+              {/* Current Insight Display */}
+              <Card 
+                className={`transition-all duration-300 ${
+                  highlights.find(h => h.id === currentInsight.id) ? 'cursor-pointer hover:shadow-lg' : ''
+                } ${
+                  activeHighlight === currentInsight.id
+                    ? 'ring-2 ring-emerald-400 dark:ring-emerald-500 shadow-lg bg-emerald-50/50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700'
+                    : 'border-slate-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-600'
+                }`}
+                onClick={() => {
+                  const hasHighlight = highlights.find(h => h.id === currentInsight.id);
+                  hasHighlight && onHighlightClick(currentInsight.id);
+                }}
+              >
+                <CardContent className="p-5">
+                  <div className="flex items-start gap-4">
+                    <div className={`p-2.5 ${getCategoryIconClasses(currentInsight.category)} rounded-lg flex-shrink-0`}>
+                      {getCategoryIcon(currentInsight.category)}
+                    </div>
+                    
+                    <div className="flex-1 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="text-slate-800 dark:text-slate-100 leading-relaxed font-medium text-sm">
+                          <MarkdownRenderer content={currentInsight.text} />
+                        </div>
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${getCategoryBadgeClasses(currentInsight.category)} capitalize`}
+                        >
+                          {currentInsight.category}
+                        </Badge>
                       </div>
                       
-                      <div className="flex-1 space-y-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="text-slate-800 dark:text-slate-100 leading-relaxed font-medium text-sm">
-                            <MarkdownRenderer content={insight.text} />
-                          </div>
-                          <Badge 
-                            variant="outline" 
-                            className={`text-xs ${getCategoryBadgeClasses(insight.category)} capitalize`}
+                      {highlights.find(h => h.id === currentInsight.id) && (
+                        <div className="flex items-center gap-3 pt-2 border-t border-slate-200 dark:border-gray-600">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 border-emerald-300 dark:border-emerald-700"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onHighlightClick(currentInsight.id)
+                            }}
                           >
-                            {insight.category}
-                          </Badge>
+                            <Search className="h-3 w-3 mr-1" />
+                            {activeHighlight === currentInsight.id ? 'Hide highlight' : 'Show in document'}
+                            <ArrowRight className="h-3 w-3 ml-1" />
+                          </Button>
+                          
+                          {currentInsight.quote && (
+                            <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-gray-400">
+                              <div className="w-1 h-1 bg-slate-400 rounded-full"></div>
+                              <span className="italic">"{currentInsight.quote.substring(0, 40)}..."</span>
+                            </div>
+                          )}
                         </div>
-                        
-                        {hasHighlight && (
-                          <div className="flex items-center gap-3 pt-2 border-t border-slate-200 dark:border-gray-600">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-xs bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 border-emerald-300 dark:border-emerald-700"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                onHighlightClick(insight.id)
-                              }}
-                            >
-                              <Search className="h-3 w-3 mr-1" />
-                              {isActive ? 'Hide highlight' : 'Show in document'}
-                              <ArrowRight className="h-3 w-3 ml-1" />
-                            </Button>
-                            
-                            {insight.quote && (
-                              <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-gray-400">
-                                <div className="w-1 h-1 bg-slate-400 rounded-full"></div>
-                                <span className="italic">"{insight.quote.substring(0, 40)}..."</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
-              )
-            })
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Insights Pagination */}
+              <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-gray-700">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentInsightIndex(prev => Math.max(0, prev - 1))}
+                  disabled={currentInsightIndex === 0}
+                  className="text-xs"
+                >
+                  <ChevronLeft className="h-3 w-3 mr-1" />
+                  Previous
+                </Button>
+                <div className="text-center">
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">
+                    Insight {currentInsightIndex + 1} of {insights.length}
+                  </p>
+                  <div className="flex gap-1 mt-1 justify-center">
+                    {insights.map((_, index) => (
+                      <div
+                        key={index}
+                        className={`w-2 h-2 rounded-full transition-colors cursor-pointer ${
+                          index === currentInsightIndex
+                            ? 'bg-emerald-500'
+                            : 'bg-slate-300 dark:bg-gray-600 hover:bg-emerald-300'
+                        }`}
+                        onClick={() => setCurrentInsightIndex(index)}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentInsightIndex(prev => Math.min(insights.length - 1, prev + 1))}
+                  disabled={currentInsightIndex === insights.length - 1}
+                  className="text-xs"
+                >
+                  Next
+                  <ChevronRight className="h-3 w-3 ml-1" />
+                </Button>
+              </div>
+            </>
           ) : (
             <div className="text-center py-12">
               <div className="p-4 bg-slate-100 dark:bg-gray-700 rounded-full w-fit mx-auto mb-4">
@@ -439,82 +488,118 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {risks.length > 0 ? (
-            risks.map((risk, index) => {
-              const isActive = activeHighlight === risk.id
-              const hasHighlight = highlights.find(h => h.id === risk.id)
-              const severityColor = getSeverityColor(risk.severity)
-              const categoryColor = getCategoryColor(risk.category)
-              
-              return (
-                <Alert 
-                  key={risk.id}
-                  className={`transition-all duration-300 ${
-                    hasHighlight ? 'cursor-pointer hover:shadow-lg' : ''
-                  } ${
-                    isActive
-                      ? 'ring-2 ring-red-400 dark:ring-red-500 shadow-lg bg-red-50/50 dark:bg-red-950/30 border-red-300 dark:border-red-600'
-                      : 'border-red-200 dark:border-red-800 hover:border-red-300 dark:hover:border-red-600'
-                  } bg-gradient-to-r from-red-50/80 to-orange-50/80 dark:from-red-950/20 dark:to-orange-950/20`}
-                  onClick={() => {
-                    hasHighlight && onHighlightClick(risk.id);
-                  }}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className={`p-2.5 ${getSeverityIconClasses(risk.severity)} rounded-lg flex-shrink-0`}>
-                      <AlertTriangle className={`h-5 w-5 text-${severityColor}-600 dark:text-${severityColor}-400`} />
+          {risks.length > 0 && currentRisk ? (
+            <>
+              {/* Current Risk Display */}
+              <Alert 
+                className={`transition-all duration-300 ${
+                  highlights.find(h => h.id === currentRisk.id) ? 'cursor-pointer hover:shadow-lg' : ''
+                } ${
+                  activeHighlight === currentRisk.id
+                    ? 'ring-2 ring-red-400 dark:ring-red-500 shadow-lg bg-red-50/50 dark:bg-red-950/30 border-red-300 dark:border-red-600'
+                    : 'border-red-200 dark:border-red-800 hover:border-red-300 dark:hover:border-red-600'
+                } bg-gradient-to-r from-red-50/80 to-orange-50/80 dark:from-red-950/20 dark:to-orange-950/20`}
+                onClick={() => {
+                  const hasHighlight = highlights.find(h => h.id === currentRisk.id);
+                  hasHighlight && onHighlightClick(currentRisk.id);
+                }}
+              >
+                <div className="flex items-start gap-4">
+                  <div className={`p-2.5 ${getSeverityIconClasses(currentRisk.severity)} rounded-lg flex-shrink-0`}>
+                    <AlertTriangle className={`h-5 w-5 text-${getSeverityColor(currentRisk.severity)}-600 dark:text-${getSeverityColor(currentRisk.severity)}-400`} />
+                  </div>
+                  
+                  <div className="flex-1 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <AlertDescription className="text-red-800 dark:text-red-200 leading-relaxed font-medium text-sm">
+                        <MarkdownRenderer content={currentRisk.text} />
+                      </AlertDescription>
+                      <div className="flex gap-2">
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${getSeverityBadgeClasses(currentRisk.severity)} capitalize`}
+                        >
+                          {currentRisk.severity}
+                        </Badge>
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${getCategoryBadgeClasses(currentRisk.category)} capitalize`}
+                        >
+                          {currentRisk.category}
+                        </Badge>
+                      </div>
                     </div>
                     
-                    <div className="flex-1 space-y-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <AlertDescription className="text-red-800 dark:text-red-200 leading-relaxed font-medium text-sm">
-                          <MarkdownRenderer content={risk.text} />
-                        </AlertDescription>
-                        <div className="flex gap-2">
-                          <Badge 
-                            variant="outline" 
-                            className={`text-xs ${getSeverityBadgeClasses(risk.severity)} capitalize`}
-                          >
-                            {risk.severity}
-                          </Badge>
-                          <Badge 
-                            variant="outline" 
-                            className={`text-xs ${getCategoryBadgeClasses(risk.category)} capitalize`}
-                          >
-                            {risk.category}
-                          </Badge>
-                        </div>
+                    {highlights.find(h => h.id === currentRisk.id) && (
+                      <div className="flex items-center gap-3 pt-2 border-t border-red-200 dark:border-red-700">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 border-red-300 dark:border-red-700"
+                          onClick={(e) => {
+                            e.stopPropagation() // Prevent alert click
+                            onHighlightClick(currentRisk.id)
+                          }}
+                        >
+                          <Search className="h-3 w-3 mr-1" />
+                          {activeHighlight === currentRisk.id ? 'Hide highlight' : 'Show in document'}
+                          <ArrowRight className="h-3 w-3 ml-1" />
+                        </Button>
+                        
+                        {currentRisk.quote && (
+                          <div className="flex items-center gap-2 text-xs text-red-700 dark:text-red-300">
+                            <div className="w-1 h-1 bg-red-400 rounded-full"></div>
+                            <span className="italic">"{currentRisk.quote.substring(0, 40)}..."</span>
+                          </div>
+                        )}
                       </div>
-                      
-                      {hasHighlight && (
-                        <div className="flex items-center gap-3 pt-2 border-t border-red-200 dark:border-red-700">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 border-red-300 dark:border-red-700"
-                            onClick={(e) => {
-                              e.stopPropagation() // Prevent alert click
-                              onHighlightClick(risk.id)
-                            }}
-                          >
-                            <Search className="h-3 w-3 mr-1" />
-                            {isActive ? 'Hide highlight' : 'Show in document'}
-                            <ArrowRight className="h-3 w-3 ml-1" />
-                          </Button>
-                          
-                          {risk.quote && (
-                            <div className="flex items-center gap-2 text-xs text-red-700 dark:text-red-300">
-                              <div className="w-1 h-1 bg-red-400 rounded-full"></div>
-                              <span className="italic">"{risk.quote.substring(0, 40)}..."</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </div>
-                </Alert>
-              )
-            })
+                </div>
+              </Alert>
+
+              {/* Risks Pagination */}
+              <div className="flex items-center justify-between pt-2 border-t border-red-200 dark:border-red-700">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentRiskIndex(prev => Math.max(0, prev - 1))}
+                  disabled={currentRiskIndex === 0}
+                  className="text-xs"
+                >
+                  <ChevronLeft className="h-3 w-3 mr-1" />
+                  Previous
+                </Button>
+                <div className="text-center">
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">
+                    Risk {currentRiskIndex + 1} of {risks.length}
+                  </p>
+                  <div className="flex gap-1 mt-1 justify-center">
+                    {risks.map((_, index) => (
+                      <div
+                        key={index}
+                        className={`w-2 h-2 rounded-full transition-colors cursor-pointer ${
+                          index === currentRiskIndex
+                            ? 'bg-red-500'
+                            : 'bg-slate-300 dark:bg-gray-600 hover:bg-red-300'
+                        }`}
+                        onClick={() => setCurrentRiskIndex(index)}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentRiskIndex(prev => Math.min(risks.length - 1, prev + 1))}
+                  disabled={currentRiskIndex === risks.length - 1}
+                  className="text-xs"
+                >
+                  Next
+                  <ChevronRight className="h-3 w-3 ml-1" />
+                </Button>
+              </div>
+            </>
           ) : (
             <div className="text-center py-12">
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border border-green-200 dark:border-green-800 rounded-2xl p-8">
@@ -536,56 +621,8 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
           )}
         </CardContent>
       </Card>
-
-      {/* Document Text Section */}
-      {/* {results?.document_text && (
-        <Card className="border-0 shadow-xl">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
-                  <FileText className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
-                    Interactive Document
-                  </CardTitle>
-                  <p className="text-sm text-slate-600 dark:text-gray-400 mt-1">
-                    Click insights or risks above to highlight them in the text
-                  </p>
-                </div>
-              </div>
-              {highlights.length > 0 && (
-                <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/20">
-                  {highlights.length} highlights available
-                </Badge>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="bg-slate-50 dark:bg-gray-800 rounded-2xl p-6 max-h-[70vh] overflow-auto border border-slate-200 dark:border-gray-700">
-              <HighlightableText 
-                text={results.document_text}
-                highlights={highlights}
-                activeHighlight={activeHighlight}
-                onHighlightClick={onHighlightClick}
-              />
-            </div>
-            
-            {highlights.length > 0 && (
-              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
-                <div className="flex items-center gap-2 text-sm text-blue-800 dark:text-blue-200">
-                  <Eye className="h-4 w-4" />
-                  <span className="font-medium">Interactive highlights are active.</span>
-                  <span>Click on any insight or risk above to see it highlighted in the document text.</span>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )} */}
     </div>
   )
 }
 
-export default ProfessionalAnalysisDisplay 
+export default ProfessionalAnalysisDisplay
