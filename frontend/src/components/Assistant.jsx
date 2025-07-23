@@ -16,28 +16,28 @@ import { Alert, AlertDescription } from "./ui/alert"
 
 function Assistant() {
   // Auth context
-  const { 
-    user, 
-    logout, 
-    canUploadDocument, 
-    canSendChat, 
-    canUseTokens, 
+  const {
+    user,
+    logout,
+    canUploadDocument,
+    canSendChat,
+    canUseTokens,
     refreshUserData,
-    isAuthenticated 
+    isAuthenticated
   } = useAuth()
 
   // Multi-document state
   const [documents, setDocuments] = useState([])
   const [selectedDocumentId, setSelectedDocumentId] = useState(null)
   const [uploadingDocuments, setUploadingDocuments] = useState([])
-  
+
   // Document history state
   const [historicalDocuments, setHistoricalDocuments] = useState([])
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
-  
+
   // File staging for upload (before analysis)
   const [stagedFiles, setStagedFiles] = useState([])
-  
+
   // Legacy state for backward compatibility and single document operations
   const [file, setFile] = useState(null)
   const [textInput, setTextInput] = useState("")
@@ -49,10 +49,10 @@ function Assistant() {
   const [isDemoMode, setIsDemoMode] = useState(false)
   const [bypassAPI, setBypassAPI] = useState(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
-  
+
   // Usage dashboard state
   const [showUsageDashboard, setShowUsageDashboard] = useState(false)
-  
+
   // History drawer state
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false)
 
@@ -67,7 +67,7 @@ function Assistant() {
   // Function to load historical documents from backend
   const loadHistoricalDocuments = async () => {
     if (!user?.token && !localStorage.getItem('auth_token')) return
-    
+
     setIsLoadingHistory(true)
     try {
       const response = await axios.get('http://localhost:8000/documents/', {
@@ -79,7 +79,7 @@ function Assistant() {
           limit: 50 // Load recent 50 documents
         }
       })
-      
+
       if (response.data?.documents) {
         setHistoricalDocuments(response.data.documents)
       }
@@ -96,13 +96,13 @@ function Assistant() {
   // Function to load historical collections from backend
   const loadHistoricalCollections = async () => {
     if (!user?.token && !localStorage.getItem('auth_token')) return
-    
+
     try {
       const response = await axios.get('http://localhost:8000/collections/', {
         headers: { 'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}` },
         params: { skip: 0, limit: 50 }
       })
-      
+
       if (response.data) {
         setCollections(response.data)
         console.log('Loaded historical collections:', response.data)
@@ -116,14 +116,14 @@ function Assistant() {
   // Function to load a historical document's full data
   const loadHistoricalDocument = async (documentId) => {
     if (!user?.token && !localStorage.getItem('auth_token')) return null
-    
+
     try {
       const response = await axios.get(`http://localhost:8000/documents/${documentId}`, {
         headers: {
           'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}`
         }
       })
-      
+
       return response.data
     } catch (error) {
       console.error('Error loading historical document:', error)
@@ -147,7 +147,7 @@ function Assistant() {
 
     // Load all documents in the collection
     const collectionDocuments = documents.filter(doc => doc.collectionId === collectionId)
-    
+
     // If collection documents are already loaded, just select the first one
     if (collectionDocuments.length > 0) {
       setSelectedDocumentId(collectionDocuments[0].id)
@@ -167,14 +167,14 @@ function Assistant() {
     }
   }
 
-  
+
   // Computed values for selected document
   const selectedDocument = documents.find(doc => doc.id === selectedDocumentId) || null
   const currentDocument = selectedDocument?.filename || (isDemoMode ? "Demo Business Plan.pdf" : bypassAPI ? "Preview Document.pdf" : null)
-  
+
   // Get the current collection ID if the selected document is part of a collection
   const currentCollectionId = selectedDocument?.collectionId || null
-  
+
   // Helper function to ensure document has text data
   const ensureDocumentText = async (documentId) => {
     try {
@@ -184,9 +184,9 @@ function Assistant() {
           'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}`
         }
       })
-      
+
       console.log('Backend response for document fetch:', response.data)
-      
+
       updateDocument(selectedDocumentId, {
         results: {
           ...selectedDocument.results,
@@ -194,7 +194,7 @@ function Assistant() {
           document_text: response.data.document_text || response.data.text || response.data.analysis?.document_text
         }
       })
-      
+
       console.log('Updated document with text data')
     } catch (error) {
       console.error('Error fetching document data:', error)
@@ -203,13 +203,13 @@ function Assistant() {
 
   // Auto-fetch document text if missing
   useEffect(() => {
-    if (selectedDocument && selectedDocument.status === 'completed' && 
-        selectedDocument.results && !selectedDocument.results.document_text) {
+    if (selectedDocument && selectedDocument.status === 'completed' &&
+      selectedDocument.results && !selectedDocument.results.document_text) {
       console.log('Document missing text, fetching from backend...')
-      
+
       // Try to get the document ID from various sources
       const docId = selectedDocument.documentId || selectedDocument.id || selectedDocument.results?.document_id
-      
+
       if (docId) {
         console.log('Using document ID for fetch:', docId)
         ensureDocumentText(docId)
@@ -234,11 +234,11 @@ function Assistant() {
   // Ensure document text is always available by checking multiple sources
   const enhancedResults = results ? {
     ...results,
-    document_text: results.document_text || 
-                   results.text || 
-                   (typeof results.analysis === 'object' ? results.analysis?.document_text : null) ||
-                   selectedDocument?.textContent ||
-                   null
+    document_text: results.document_text ||
+      results.text ||
+      (typeof results.analysis === 'object' ? results.analysis?.document_text : null) ||
+      selectedDocument?.textContent ||
+      null
   } : null
 
   // Check if selected document is ready for chat (completed or error status means it's "done")
@@ -247,7 +247,7 @@ function Assistant() {
   const hasAnalyzingDocuments = documents.some(doc => doc.status === 'analyzing')
   const analyzingCount = documents.filter(doc => doc.status === 'analyzing').length
   const completedCount = documents.filter(doc => doc.status === 'completed').length
-  
+
   // Check if selected document has error status
   const selectedDocumentHasError = selectedDocument?.status === 'error'
 
@@ -262,7 +262,7 @@ function Assistant() {
   // Sidebar collapse state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   // Resizable panel state
-  const [rightPanelWidth, setRightPanelWidth] = useState(45) // percentage
+  const [rightPanelWidth, setRightPanelWidth] = useState(35) // percentage
   const [isResizing, setIsResizing] = useState(false)
 
   // Collection state
@@ -272,15 +272,15 @@ function Assistant() {
 
   // Document management functions
   const generateDocumentId = () => `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-  
+
   const addDocument = (documentData) => {
     // Check for existing document with same filename to prevent duplicates
-    const existingDocument = documents.find(doc => 
-      doc.filename === documentData.filename && 
+    const existingDocument = documents.find(doc =>
+      doc.filename === documentData.filename &&
       doc.file?.size === documentData.file?.size &&
       doc.file?.name === documentData.file?.name
     )
-    
+
     if (existingDocument) {
       console.log('Document already exists, returning existing ID:', existingDocument.id)
       // Auto-select the existing document and switch to workspace view
@@ -290,7 +290,7 @@ function Assistant() {
       setActivePanel("chat")
       return existingDocument.id
     }
-    
+
     const newDocument = {
       id: documentData.id || generateDocumentId(),
       uploadDate: new Date().toISOString(),
@@ -301,21 +301,21 @@ function Assistant() {
     setDocuments(prev => [...prev, newDocument])
     return newDocument.id
   }
-  
+
   const updateDocument = (documentId, updates) => {
-    setDocuments(prev => prev.map(doc => 
+    setDocuments(prev => prev.map(doc =>
       doc.id === documentId ? { ...doc, ...updates } : doc
     ))
   }
-  
+
   // Enhanced selectDocument function to handle both current session and historical documents
   const selectDocument = async (documentId, historicalDocument = null) => {
     setSelectedDocumentId(documentId)
     setError("")
-    
+
     // Check if it's a current session document
     const currentDoc = documents.find(d => d.id === documentId)
-    
+
     if (currentDoc) {
       // Handle current session document
       if (currentDoc.status === 'error') {
@@ -329,10 +329,10 @@ function Assistant() {
       // Handle historical document - need to load its full data and add to current session
       try {
         setLoading(true)
-        
+
         // Load the full document data from backend
         const fullDocumentData = await loadHistoricalDocument(documentId)
-      
+
         console.log("Full document data:", fullDocumentData)
         console.log("Raw key_points type:", typeof fullDocumentData.key_points)
         console.log("Raw key_points value:", fullDocumentData.key_points)
@@ -340,12 +340,12 @@ function Assistant() {
         console.log("Raw risk_flags:", fullDocumentData.risk_flags)
         console.log("Raw key_concepts type:", typeof fullDocumentData.key_concepts)
         console.log("Raw key_concepts:", fullDocumentData.key_concepts)
-        
+
         // Parse JSON fields safely - FIXED LOGIC
         let keyPoints = []
         let riskFlags = []
         let keyConcepts = []
-        
+
         try {
           // key_points is a JSON STRING - needs parsing
           if (fullDocumentData.key_points) {
@@ -361,7 +361,7 @@ function Assistant() {
           console.error('Error parsing key_points:', e)
           console.error('key_points value that failed:', fullDocumentData.key_points)
         }
-        
+
         try {
           // risk_flags is already an ARRAY - no parsing needed
           if (fullDocumentData.risk_flags) {
@@ -376,7 +376,7 @@ function Assistant() {
         } catch (e) {
           console.error('Error processing risk_flags:', e)
         }
-        
+
         try {
           // key_concepts is already an ARRAY - no parsing needed  
           if (fullDocumentData.key_concepts) {
@@ -391,11 +391,11 @@ function Assistant() {
         } catch (e) {
           console.error('Error processing key_concepts:', e)
         }
-      
+
         // Also check if the data is nested in analysis object
         if (fullDocumentData.analysis) {
           console.log("Found analysis object:", fullDocumentData.analysis)
-          
+
           // Use analysis data if main fields are empty
           if (keyPoints.length === 0 && fullDocumentData.analysis.key_points) {
             if (typeof fullDocumentData.analysis.key_points === 'string') {
@@ -405,7 +405,7 @@ function Assistant() {
             }
             console.log("Used analysis.key_points:", keyPoints)
           }
-          
+
           if (riskFlags.length === 0 && fullDocumentData.analysis.risk_flags) {
             if (Array.isArray(fullDocumentData.analysis.risk_flags)) {
               riskFlags = fullDocumentData.analysis.risk_flags
@@ -414,7 +414,7 @@ function Assistant() {
             }
             console.log("Used analysis.risk_flags:", riskFlags)
           }
-          
+
           if (keyConcepts.length === 0 && fullDocumentData.analysis.key_concepts) {
             if (Array.isArray(fullDocumentData.analysis.key_concepts)) {
               keyConcepts = fullDocumentData.analysis.key_concepts
@@ -424,7 +424,7 @@ function Assistant() {
             console.log("Used analysis.key_concepts:", keyConcepts)
           }
         }
-        
+
         // Final verification
         console.log("=== FINAL PARSED DATA ===")
         console.log("keyPoints:", keyPoints)
@@ -434,7 +434,7 @@ function Assistant() {
         console.log("keyConcepts:", keyConcepts)
         console.log("keyConcepts length:", keyConcepts.length)
         console.log("========================")
-        
+
         // Create a document object for the current session
         const sessionDocument = {
           id: documentId,
@@ -463,13 +463,13 @@ function Assistant() {
             analysis_method: fullDocumentData.analysis_method
           }
         }
-        
+
         // Add to current session documents if not already there
         const existingDoc = documents.find(doc => doc.id === documentId)
         if (!existingDoc) {
           setDocuments(prev => [sessionDocument, ...prev])
         }
-        
+
       } catch (error) {
         console.error('Error loading historical document:', error)
         setError('Failed to load document. Please try again.')
@@ -478,7 +478,7 @@ function Assistant() {
         setLoading(false)
       }
     }
-    
+
     // Switch to workspace view if needed
     if (currentView === "upload" || currentView === "casual-chat") {
       setCurrentView("workspace")
@@ -488,7 +488,7 @@ function Assistant() {
       setActivePanel("document")
     }
   }
-  
+
   const removeDocument = (documentId) => {
     setDocuments(prev => prev.filter(doc => doc.id !== documentId))
     if (selectedDocumentId === documentId) {
@@ -518,7 +518,7 @@ function Assistant() {
     // Generate a proper UUID v4 for collection ID
     return crypto.randomUUID()
   }
-  
+
   const addCollection = (collectionData) => {
     const newCollection = {
       id: generateCollectionId(),
@@ -529,13 +529,13 @@ function Assistant() {
     setCollections(prev => [...prev, newCollection])
     return newCollection.id
   }
-  
+
   const updateCollection = (collectionId, updates) => {
-    setCollections(prev => prev.map(collection => 
+    setCollections(prev => prev.map(collection =>
       collection.id === collectionId ? { ...collection, ...updates } : collection
     ))
   }
-  
+
   const removeCollection = (collectionId) => {
     setCollections(prev => prev.filter(collection => collection.id !== collectionId))
     // Also remove all documents in this collection
@@ -546,7 +546,7 @@ function Assistant() {
       })
     }
   }
-  
+
   const toggleCollectionExpansion = (collectionId) => {
     setExpandedCollections(prev => {
       const newSet = new Set(prev)
@@ -558,7 +558,7 @@ function Assistant() {
       return newSet
     })
   }
-  
+
   const addDocumentToCollection = (collectionId, documentId) => {
     setCollections(prev => prev.map(collection => {
       if (collection.id === collectionId) {
@@ -575,7 +575,7 @@ function Assistant() {
   const handleMultipleFileChange = (files) => {
     const fileArray = Array.from(files)
     const validFiles = []
-    
+
     for (const selectedFile of fileArray) {
       if (!selectedFile.name.toLowerCase().endsWith(".pdf") && !selectedFile.name.toLowerCase().endsWith(".docx")) {
         setError(`Invalid file type: ${selectedFile.name}. Please select PDF or DOCX files.`)
@@ -585,17 +585,17 @@ function Assistant() {
         setError(`File too large: ${selectedFile.name}. Maximum size is 10MB.`)
         continue
       }
-      
+
       // Check for duplicates
-      const isDuplicate = stagedFiles.some(staged => 
+      const isDuplicate = stagedFiles.some(staged =>
         staged.name === selectedFile.name && staged.size === selectedFile.size
       )
-      
+
       if (!isDuplicate) {
         validFiles.push(selectedFile)
       }
     }
-    
+
     if (validFiles.length > 0) {
       setStagedFiles(prev => [...prev, ...validFiles])
       setError("")
@@ -623,7 +623,7 @@ function Assistant() {
 
   const handleCollectionUpload = async (e) => {
     e.preventDefault()
-    
+
     if (!collectionName?.trim() || stagedFiles.length === 0) {
       setError('Please provide a collection name and select at least one file.')
       return
@@ -647,7 +647,7 @@ function Assistant() {
     try {
       // Store staged files before clearing them
       const filesToProcess = [...stagedFiles]
-      
+
       // Create collection in backend first
       const collectionResponse = await axios.post("http://localhost:8000/collections/", {
         name: collectionName.trim(),
@@ -658,10 +658,10 @@ function Assistant() {
           "Authorization": `Bearer ${user?.token || localStorage.getItem('auth_token')}`
         }
       })
-      
+
       const collectionId = collectionResponse.data.id
       console.log(`Created collection in backend: ${collectionId}`)
-      
+
       // Add collection to local state
       const newCollection = {
         id: collectionId,
@@ -669,18 +669,18 @@ function Assistant() {
         createdAt: collectionResponse.data.created_at,
         documents: []
       }
-      
+
       setCollections(prev => [...prev, newCollection])
 
       // Clear staged files and collection name immediately
       clearStagedFiles()
       setCollectionName('')
-      
+
       // Reset file inputs to allow new file selection
       if (uploadInterfaceRef.current && uploadInterfaceRef.current.resetFileInputs) {
         uploadInterfaceRef.current.resetFileInputs()
       }
-      
+
       // Switch to workspace view immediately
       setCurrentView('workspace')
       setSidebarOpen(false)
@@ -689,7 +689,7 @@ function Assistant() {
       // Process each file in the collection
       const uploadPromises = filesToProcess.map(async (file, index) => {
         const documentId = generateDocumentId()
-        
+
         // Add document to collection
         setCollections(prev => prev.map(collection => {
           if (collection.id === collectionId) {
@@ -700,24 +700,24 @@ function Assistant() {
           }
           return collection
         }))
-        
+
         // If this is the first document, select it immediately
         if (index === 0) {
           setSelectedDocumentId(documentId)
           // Ensure we stay on chat panel for collections
           setActivePanel("chat")
         }
-        
+
         // Process the document with collectionId
         await handleDocumentSubmit(documentId, file, null, collectionId)
-        
+
         return documentId
       })
 
       const documentIds = await Promise.all(uploadPromises)
 
       // First document is already selected above
-      
+
     } catch (error) {
       console.error('Collection upload error:', error)
       setError('Failed to upload collection. Please try again.')
@@ -731,13 +731,13 @@ function Assistant() {
     const fileName = file?.name || "Text Document"
     const fileSize = file?.size || 0
     const isLargeFile = fileSize > 1024 * 1024 // > 1MB
-    
+
     // Check if user can upload documents
     if (!canUploadDocument()) {
       setError("You've reached your document upload limit. Please upgrade your plan to upload more documents.")
       return
     }
-    
+
     // For single file uploads, we know the document should exist, so we'll update it directly
     // For collection uploads, we need to add the document first
     if (collectionId) {
@@ -755,19 +755,19 @@ function Assistant() {
       addDocument(documentData)
     } else {
       // Single file upload - update the existing document
-      updateDocument(documentId, { 
+      updateDocument(documentId, {
         analysisStartTime: new Date().toISOString(),
         isLargeFile: isLargeFile
       })
     }
-    
+
     try {
       let response
 
       if (file) {
         const formData = new FormData()
         formData.append("file", file)
-        
+
         // Add collection_id if this is part of a collection upload
         if (collectionId) {
           formData.append("collection_id", collectionId)
@@ -784,13 +784,13 @@ function Assistant() {
         const textPayload = {
           text: textContent
         }
-        
+
         // Add collection_id if this is part of a collection upload
         if (collectionId) {
           textPayload.collection_id = collectionId
           console.log(`Adding collection_id to text analysis: ${collectionId}`)
         }
-        
+
         response = await axios.post("http://localhost:8000/documents/analyze-text", textPayload, {
           headers: {
             "Content-Type": "application/json",
@@ -809,13 +809,13 @@ function Assistant() {
         documentId: response.data.document_id || documentId,
         analysisEndTime: new Date().toISOString()
       })
-      
+
       // Refresh user data to update usage statistics
       await refreshUserData()
-      
+
       // Refresh historical documents to include the newly analyzed document
       await refreshHistoricalDocuments()
-      
+
       // Update collection status if this document belongs to a collection
       const document = documents.find(doc => doc.id === documentId)
       if (document?.collectionId) {
@@ -823,7 +823,7 @@ function Assistant() {
         if (collection) {
           const collectionDocuments = documents.filter(doc => doc.collectionId === document.collectionId)
           const completedCount = collectionDocuments.filter(doc => doc.status === 'completed').length
-          
+
           if (completedCount === collectionDocuments.length) {
             updateCollection(document.collectionId, { status: 'completed' })
           } else {
@@ -831,18 +831,18 @@ function Assistant() {
           }
         }
       }
-      
+
       // Switch to workspace view if not already there
       if (currentView === 'upload') {
         setCurrentView("workspace")
         setSidebarOpen(false)
         setActivePanel("chat")
       }
-      
+
     } catch (err) {
       console.error("Error:", err)
       let errorMessage = "An error occurred while processing your request"
-      
+
       // Handle authentication errors
       if (err.response?.status === 401) {
         errorMessage = "Session expired. Please login again."
@@ -855,12 +855,12 @@ function Assistant() {
       } else if (err.response?.data?.detail) {
         errorMessage = err.response.data.detail
       }
-      
+
       updateDocument(documentId, {
         status: 'error',
         error: errorMessage
       })
-      
+
       // Update collection status if this document belongs to a collection
       const document = documents.find(doc => doc.id === documentId)
       if (document?.collectionId) {
@@ -868,7 +868,7 @@ function Assistant() {
         if (collection) {
           const collectionDocuments = documents.filter(doc => doc.collectionId === document.collectionId)
           const errorCount = collectionDocuments.filter(doc => doc.status === 'error').length
-          
+
           if (errorCount === collectionDocuments.length) {
             updateCollection(document.collectionId, { status: 'error' })
           } else {
@@ -876,7 +876,7 @@ function Assistant() {
           }
         }
       }
-      
+
       setError(errorMessage)
     }
   }
@@ -901,14 +901,14 @@ function Assistant() {
     e.preventDefault()
     setLoading(true)
     setError("")
-    
+
     // Check authentication
     if (!isAuthenticated) {
       setError("Please sign in to upload documents")
       setLoading(false)
       return
     }
-    
+
     try {
       if (inputMode === "file") {
         // Handle multiple staged files
@@ -921,7 +921,7 @@ function Assistant() {
           }
 
           const documentIds = []
-          
+
           for (const selectedFile of stagedFiles) {
             const documentId = addDocument({
               filename: selectedFile.name,
@@ -930,11 +930,11 @@ function Assistant() {
               status: 'analyzing'
             })
             documentIds.push(documentId)
-            
+
             // Start analysis for this document
             handleDocumentSubmit(documentId, selectedFile)
           }
-          
+
           // Auto-select first document and switch to workspace
           if (documentIds.length > 0) {
             setSelectedDocumentId(documentIds[0])
@@ -942,16 +942,16 @@ function Assistant() {
             setSidebarOpen(false)
             setActivePanel("chat")
           }
-          
+
           // Clear staged files after starting analysis
           setStagedFiles([])
           setFile(null)
-          
+
           // Reset file inputs to allow new file selection
           if (uploadInterfaceRef.current && uploadInterfaceRef.current.resetFileInputs) {
             uploadInterfaceRef.current.resetFileInputs()
           }
-          
+
         } else if (file) {
           // Check if user can upload documents
           if (!canUploadDocument()) {
@@ -962,7 +962,7 @@ function Assistant() {
 
           // Handle single file (legacy support)
           const documentId = generateDocumentId()
-          
+
           // Add document first (or get existing document ID if duplicate)
           const actualDocumentId = addDocument({
             id: documentId,
@@ -971,7 +971,7 @@ function Assistant() {
             inputMode: 'file',
             status: 'analyzing'
           })
-          
+
           // If addDocument returned a different ID (existing document found), 
           // don't start analysis again since it's already done
           if (actualDocumentId === documentId) {
@@ -980,26 +980,26 @@ function Assistant() {
             setCurrentView("workspace")
             setSidebarOpen(false)
             setActivePanel("chat")
-            
+
             // Start analysis
             handleDocumentSubmit(documentId, file)
           }
           // If actualDocumentId !== documentId, it means an existing document was found
           // and addDocument already handled the selection and view switching
-          
+
           setFile(null)
-          
+
           // Reset file inputs to allow new file selection
           if (uploadInterfaceRef.current && uploadInterfaceRef.current.resetFileInputs) {
             uploadInterfaceRef.current.resetFileInputs()
           }
-          
+
         } else {
           setError("Please select one or more files")
           setLoading(false)
           return
         }
-        
+
       } else if (inputMode === "collection") {
         // Collection upload is handled by handleCollectionUpload function
         // This should not be reached as the form uses handleCollectionUpload for collections
@@ -1028,17 +1028,17 @@ function Assistant() {
           status: 'analyzing',
           textContent: textInput
         })
-        
+
         setSelectedDocumentId(documentId)
         setCurrentView("workspace")
         setSidebarOpen(false)
         setActivePanel("chat")
-        
+
         // Start analysis
         handleDocumentSubmit(documentId, null, textInput)
         setTextInput("")
       }
-      
+
     } catch (err) {
       console.error("Error:", err)
       // Handle authentication errors
@@ -1078,7 +1078,7 @@ function Assistant() {
   const handleNewDocument = () => {
     resetToHome()
   }
-  
+
   const clearAllDocuments = () => {
     setDocuments([])
     setSelectedDocumentId(null)
@@ -1117,7 +1117,7 @@ function Assistant() {
       inputMode: 'demo',
       status: 'completed'
     })
-    
+
     setSelectedDocumentId(demoDocumentId)
 
     const demoResults = {
@@ -1183,7 +1183,7 @@ function Assistant() {
         ],
       },
     }
-    
+
     // Update the document with demo results
     updateDocument(demoDocumentId, {
       results: demoResults,
@@ -1203,7 +1203,7 @@ function Assistant() {
       inputMode: 'preview',
       status: 'completed'
     })
-    
+
     setSelectedDocumentId(realDocumentId)
 
     const realResults = {
@@ -1307,7 +1307,7 @@ This business plan effectively balances ambitious growth objectives with compreh
       },
       analyzed_at: new Date().toISOString(),
     }
-    
+
     // Update the document with real results
     updateDocument(realDocumentId, {
       results: realResults,
@@ -1327,7 +1327,8 @@ This business plan effectively balances ambitious growth objectives with compreh
       const containerWidth = containerRect.width
       const mouseX = e.clientX - containerRect.left
 
-      const percentage = Math.min(Math.max(((containerWidth - mouseX) / containerWidth) * 100, 30), 60)
+      const percentage = Math.max(30, Math.min(((containerWidth - mouseX) / containerWidth) * 100, 60));
+
       setRightPanelWidth(percentage)
     }
 
@@ -1345,6 +1346,23 @@ This business plan effectively balances ambitious growth objectives with compreh
     document.body.style.userSelect = "none"
   }
 
+  const loadHistoricalCollectionDocuments = async (collectionId) => {
+    try {
+      const response = await axios.get(`http://localhost:8000/collections/${collectionId}`, {
+        headers: {
+          'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}`
+        }
+      });
+      return response.data.documents || [];
+    } catch (error) {
+      console.error('Error loading collection documents:', error);
+      if (error.response?.status === 401) {
+        logout();
+      }
+      return [];
+    }
+  };
+
   return (
     <div className="h-screen dark:bg-[#121212] overflow-hidden">
       {currentView === "upload" ? (
@@ -1352,9 +1370,8 @@ This business plan effectively balances ambitious growth objectives with compreh
         <div className="h-full flex">
           {/* Sidebar - Wider for better proportions */}
           <div
-            className={`hidden lg:block fixed left-0 top-0 h-full z-30 transition-all duration-300 ${
-              sidebarCollapsed ? "w-20" : "w-80"
-            }`}
+            className={`hidden lg:block fixed left-0 top-0 h-full z-30 transition-all duration-300 ${sidebarCollapsed ? "w-20" : "w-80"
+              }`}
           >
             <ModernSidebar
               onNewDocument={handleNewDocument}
@@ -1379,9 +1396,8 @@ This business plan effectively balances ambitious growth objectives with compreh
 
           {/* Main Upload Content - Full Width */}
           <div
-            className={`flex-1 transition-all duration-300 ${
-              sidebarCollapsed ? "lg:ml-20" : "lg:ml-80"
-            } relative h-full`}
+            className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? "lg:ml-20" : "lg:ml-80"
+              } relative h-full`}
           >
             {/* Simple Background - Matching ChatInterface */}
             <div className="absolute inset-0 bg-white dark:bg-[#1F1F1F]"></div>
@@ -1427,7 +1443,7 @@ This business plan effectively balances ambitious growth objectives with compreh
             {/* Centered Content Layout */}
             <div className="relative z-10 w-full h-full flex items-center justify-center p-6 lg:p-8">
               <div className="w-full max-w-4xl">
-                
+
                 {/* Simple Header */}
                 <div className="text-center">
                   {/* <div className="inline-flex items-center gap-3">
@@ -1544,29 +1560,28 @@ This business plan effectively balances ambitious growth objectives with compreh
         <>
           {/* Wider Sidebar */}
           <div
-            className={`hidden lg:block fixed left-0 top-0 h-full z-30 transition-all duration-300 ${
-              sidebarCollapsed ? "w-20" : "w-80"
-            }`}
+            className={`hidden lg:block fixed left-0 top-0 h-full z-30 transition-all duration-300 ${sidebarCollapsed ? "w-20" : "w-80"
+              }`}
           >
-                      <ModernSidebar
-            onNewDocument={handleNewDocument}
-            onHome={resetToHome}
-            currentDocument="Normal Chat"
-            isDemoMode={false}
-            bypassAPI={false}
-            collapsed={sidebarCollapsed}
-            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-            onCasualChat={handleCasualChat}
-            documents={documents}
-            selectedDocumentId={selectedDocumentId}
-            onSelectDocument={selectDocument}
-            onRemoveDocument={removeDocument}
-            collections={collections}
-            expandedCollections={expandedCollections}
-            onToggleCollectionExpansion={toggleCollectionExpansion}
-            onRemoveCollection={removeCollection}
-            onOpenHistory={() => setIsHistoryDrawerOpen(true)}
-          />
+            <ModernSidebar
+              onNewDocument={handleNewDocument}
+              onHome={resetToHome}
+              currentDocument="Normal Chat"
+              isDemoMode={false}
+              bypassAPI={false}
+              collapsed={sidebarCollapsed}
+              onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+              onCasualChat={handleCasualChat}
+              documents={documents}
+              selectedDocumentId={selectedDocumentId}
+              onSelectDocument={selectDocument}
+              onRemoveDocument={removeDocument}
+              collections={collections}
+              expandedCollections={expandedCollections}
+              onToggleCollectionExpansion={toggleCollectionExpansion}
+              onRemoveCollection={removeCollection}
+              onOpenHistory={() => setIsHistoryDrawerOpen(true)}
+            />
           </div>
 
           {/* Professional Full-Width Mobile Header */}
@@ -1646,9 +1661,8 @@ This business plan effectively balances ambitious growth objectives with compreh
         <>
           {/* Wider Sidebar */}
           <div
-            className={`hidden lg:block fixed left-0 top-0 h-full z-30 transition-all duration-300 ${
-              sidebarCollapsed ? "w-20" : "w-80"
-            }`}
+            className={`hidden lg:block fixed left-0 top-0 h-full z-30 transition-all duration-300 ${sidebarCollapsed ? "w-20" : "w-80"
+              }`}
           >
             <ModernSidebar
               onNewDocument={handleNewDocument}
@@ -1672,7 +1686,7 @@ This business plan effectively balances ambitious growth objectives with compreh
           </div>
 
           {/* Enhanced Mobile Header */}
-          <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 shadow-lg">
+          <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white dark:bg-background backdrop-blur-xl  shadow-lg">
             <div className="flex items-center justify-between p-2 sm:p-3">
               <Button
                 variant="ghost"
@@ -1684,13 +1698,17 @@ This business plan effectively balances ambitious growth objectives with compreh
               </Button>
 
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg sm:rounded-xl flex items-center justify-center">
+                {/* <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg sm:rounded-xl flex items-center justify-center">
                   <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                </div>
+                </div> */}
                 <div className="text-center">
                   <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 dark:from-white dark:to-blue-200 bg-clip-text text-transparent">
-                    DigesText
+                    drop
+                    <span className="text-blue-400 dark:text-blue-300">2</span>
+                    chat
+                    <span className="text-red-500">*</span>
                   </h1>
+
                   <div className="flex items-center gap-2 text-xs">
                     {isDemoMode && (
                       <span className="text-orange-600 dark:text-orange-400 font-medium">(Demo Mode)</span>
@@ -1708,11 +1726,10 @@ This business plan effectively balances ambitious growth objectives with compreh
                   variant={activePanel === "chat" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setActivePanel("chat")}
-                  className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-semibold h-auto min-w-0 rounded-md sm:rounded-lg transition-all duration-200 ${
-                    activePanel === "chat"
+                  className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-semibold h-auto min-w-0 rounded-md sm:rounded-lg transition-all duration-200 ${activePanel === "chat"
                       ? "bg-white dark:bg-gray-700 shadow-sm text-blue-700 dark:text-blue-300"
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                  }`}
+                    }`}
                 >
                   <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
                   <span className="hidden sm:inline">Chat</span>
@@ -1721,11 +1738,10 @@ This business plan effectively balances ambitious growth objectives with compreh
                   variant={activePanel === "document" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setActivePanel("document")}
-                  className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-semibold h-auto min-w-0 rounded-md sm:rounded-lg transition-all duration-200 ${
-                    activePanel === "document"
+                  className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-semibold h-auto min-w-0 rounded-md sm:rounded-lg transition-all duration-200 ${activePanel === "document"
                       ? "bg-white dark:bg-gray-700 shadow-sm text-blue-700 dark:text-blue-300"
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                  }`}
+                    }`}
                 >
                   <FileText className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
                   <span className="hidden sm:inline">Document</span>
@@ -1736,9 +1752,8 @@ This business plan effectively balances ambitious growth objectives with compreh
 
           {/* Full-Width Main Content Area */}
           <div
-            className={`transition-all duration-300 ${
-              sidebarCollapsed ? "lg:ml-20" : "lg:ml-80"
-            } pt-12 sm:pt-14 lg:pt-0 h-full workspace-container ${isInitialLoad ? 'animate-fade-in-scale' : ''}`}
+            className={`transition-all duration-300 ${sidebarCollapsed ? "lg:ml-20" : "lg:ml-80"
+              } pt-12 sm:pt-14 lg:pt-0 h-full workspace-container ${isInitialLoad ? 'animate-fade-in-scale' : ''}`}
           >
             {/* Mobile/Tablet: Full-width panels with switching */}
             <div className="lg:hidden h-full">
@@ -1760,7 +1775,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                         <p className="text-lg text-gray-600 dark:text-gray-400">
                           Analysis is in progress...
                         </p>
-                
+
                       </div>
                     </div>
                   </div>
@@ -1776,7 +1791,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                       <p className="text-base text-gray-700 dark:text-gray-300">
                         Unable to process this file. It may be corrupted, too large, password protected, or in an unsupported format.
                       </p>
-                     
+
                     </div>
                   </div>
                 ) : documentId ? (
@@ -1804,7 +1819,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                         <p className="text-lg text-gray-600 dark:text-gray-400">
                           Analysis in progress...
                         </p>
-                     
+
                       </div>
                     </div>
                   </div>
@@ -1826,14 +1841,14 @@ This business plan effectively balances ambitious growth objectives with compreh
 
             {/* Desktop: Full-width resizable panels */}
             <div className="hidden lg:flex h-full">
-                              {/* Chat Panel - Desktop */}
-                <div
-                  className="h-full bg-white dark:bg-gray-950"
-                  style={{
-                    width: `${100 - rightPanelWidth}%`,
-                    minWidth: "25%",
-                  }}
-                >
+              {/* Chat Panel - Desktop */}
+              <div
+                className="h-full bg-white dark:bg-gray-950"
+                style={{
+                  width: `${100 - rightPanelWidth}%`,
+                  minWidth: "25%",
+                }}
+              >
                 {selectedDocument?.status === 'analyzing' ? (
                   <div className="h-full flex items-center justify-center bg-white dark:bg-background p-12">
                     <div className="text-center space-y-8 max-w-lg">
@@ -1850,7 +1865,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                         <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed">
                           Analysis is in progress...
                         </p>
-                    
+
                       </div>
                     </div>
                   </div>
@@ -1866,7 +1881,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                       <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
                         Unable to process this file. It may be corrupted, too large, password protected, or in an unsupported format.
                       </p>
-                      
+
                     </div>
                   </div>
                 ) : documentId ? (
@@ -1980,52 +1995,52 @@ This business plan effectively balances ambitious growth objectives with compreh
         </>
       )}
       {errorModalOpen && errorDocument && (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-    <Card className="w-full max-w-md p-6 space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
-          <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
+                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Document Error
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Unable to process this file
+                </p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {errorDocument.filename}
+                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  This file may be corrupted, unreadable, or in an unsupported format.
+                </p>
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setErrorModalOpen(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => handleRemoveErrorDocument(errorDocument.id)}
+                className="flex-1 bg-red-600 hover:bg-red-700"
+              >
+                Remove File
+              </Button>
+            </div>
+          </Card>
         </div>
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Document Error
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Unable to process this file
-          </p>
-        </div>
-      </div>
-      <div className="space-y-3">
-        <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-          <p className="text-sm font-medium text-gray-900 dark:text-white">
-            {errorDocument.filename}
-          </p>
-          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-            This file may be corrupted, unreadable, or in an unsupported format.
-          </p>
-        </div>
-        <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
-          
-        </div>
-      </div>
-      <div className="flex gap-3 pt-2">
-        <Button 
-          variant="outline" 
-          onClick={() => setErrorModalOpen(false)}
-          className="flex-1"
-        >
-          Cancel
-        </Button>
-        <Button 
-          onClick={() => handleRemoveErrorDocument(errorDocument.id)}
-          className="flex-1 bg-red-600 hover:bg-red-700"
-        >
-          Remove File
-        </Button>
-      </div>
-    </Card>
-  </div>
-)}
+      )}
 
       {/* Usage Dashboard Modal */}
       {showUsageDashboard && (
@@ -2046,6 +2061,7 @@ This business plan effectively balances ambitious growth objectives with compreh
           setIsHistoryDrawerOpen(false)
         }}
         onSelectCollection={selectCollectionFromHistory}
+        onFetchCollectionDocuments={loadHistoricalCollectionDocuments}
       />
 
       {/* Error Alert for Usage Limits */}
@@ -2055,9 +2071,9 @@ This business plan effectively balances ambitious growth objectives with compreh
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription className="flex items-center justify-between">
               <span>{error}</span>
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setError('')}
                 className="ml-2 h-auto p-1 hover:bg-destructive-foreground/10"
               >
@@ -2072,4 +2088,3 @@ This business plan effectively balances ambitious growth objectives with compreh
 }
 
 export default Assistant
- 

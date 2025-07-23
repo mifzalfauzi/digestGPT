@@ -300,251 +300,170 @@ function ModernSidebar({
           </div>
         )}
 
-        {/* Current Document Section */}
-        {currentDocument && (
-          <div className="space-y-2">
+        {selectedDocumentId && (
+  <div className="space-y-2">
+    {(() => {
+      const selectedDoc = documents.find(doc => doc.id === selectedDocumentId);
+      if (!selectedDoc) return null;
+
+      if (!selectedDoc.collectionId) {
+        // Individual document
+        return (
+          <>
             {!collapsed && (
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">
-                {isDemoMode ? 'New Document' : bypassAPI ? 'Preview Document' : 'Active Document'}
+                Active Document
               </p>
             )}
-
-            <Card className={`${collapsed ? 'p-2' : 'p-2.5 sm:p-3'} border-gray-600 ${isDemoMode
-              ? 'bg-gradient-to-r from-orange-900/40 to-yellow-900/40'
-              : bypassAPI
-                ? 'bg-gradient-to-r from-green-900/40 to-emerald-900/40'
-                : 'bg-gradient-to-r from-emerald-900/40 to-teal-900/40'
-              }`}>
-              <div className={`flex items-start ${collapsed ? 'justify-center' : 'gap-2'}`}>
-                <div className={`${collapsed ? 'p-1' : 'p-1.5'} rounded-lg flex-shrink-0 ${isDemoMode
-                  ? 'bg-orange-800/60'
-                  : bypassAPI
-                    ? 'bg-green-800/60'
-                    : 'bg-emerald-800/60'
-                  }`} title={collapsed ? currentDocument : ''}>
-                  <FileText className={`${collapsed ? 'h-3 w-3' : 'h-3.5 w-3.5'} ${isDemoMode
-                    ? 'text-orange-300'
-                    : bypassAPI
-                      ? 'text-green-300'
-                      : 'text-emerald-300'
-                    }`} />
-                </div>
-                {!collapsed && (
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                      {currentDocument}
-                    </p>
-                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                      <div className="flex items-center gap-1">
-                        <Activity className={`h-2.5 w-2.5 flex-shrink-0 ${isDemoMode
-                          ? 'text-orange-400 animate-pulse'
-                          : bypassAPI
-                            ? 'text-green-400 animate-pulse'
-                            : 'text-emerald-400 animate-pulse'
-                          }`} />
-                        <span className={`text-xs font-medium ${isDemoMode
-                          ? 'text-orange-300'
-                          : bypassAPI
-                            ? 'text-green-300'
-                            : 'text-emerald-300'
-                          }`}>
-                          {isDemoMode ? 'Demo' : bypassAPI ? 'Preview' : 'Active'}
+            <div className="space-y-1">
+              <div
+                className={`${collapsed ? 'p-2' : 'p-2.5 sm:p-3'} rounded-lg cursor-pointer transition-all duration-200 group bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700`}
+              >
+                <div className={`flex items-start ${collapsed ? 'justify-center' : 'gap-2'}`}>
+                  <div className={`${collapsed ? 'p-1' : 'p-1.5'} rounded-lg flex-shrink-0 bg-blue-200 dark:bg-blue-800`} title={collapsed ? selectedDoc.filename : ''}>
+                    <FileText className={`${collapsed ? 'h-3 w-3' : 'h-3.5 w-3.5'} text-blue-700 dark:text-blue-300`} />
+                  </div>
+                  {!collapsed && (
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate text-blue-900 dark:text-blue-100">
+                        {selectedDoc.filename}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <div className={`w-2 h-2 rounded-full ${selectedDoc.status === 'completed' ? 'bg-green-500' :
+                          selectedDoc.status === 'analyzing' ? 'bg-yellow-500 animate-pulse' :
+                          selectedDoc.status === 'uploading' ? 'bg-blue-500 animate-pulse' :
+                          selectedDoc.status === 'error' ? 'bg-red-500' : 'bg-gray-400'
+                        }`} />
+                        <span className="text-xs text-blue-700 dark:text-blue-300">
+                          {selectedDoc.status === 'completed' ? 'Ready' :
+                           selectedDoc.status === 'analyzing' ? 'Analyzing...' :
+                           selectedDoc.status === 'uploading' ? 'Uploading...' :
+                           selectedDoc.status === 'error' ? 'Error' : 'Pending'}
                         </span>
                       </div>
-                      <Badge variant="outline" className={`text-xs px-1.5 py-0.5 ${isDemoMode
-                        ? 'border-orange-600 text-orange-300'
-                        : bypassAPI
-                          ? 'border-green-600 text-green-300'
-                          : 'border-emerald-600 text-emerald-300'
-                        }`}>
-                        <MessageCircle className="h-2 w-2 mr-1" />
-                        {isDemoMode ? 'Preview' : bypassAPI ? 'No API' : 'Chat Ready'}
-                      </Badge>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </Card>
-          </div>
-        )}
-
-        {/* Collections List */}
-        {collections.length > 0 && (
-          <div className="space-y-2">
-            {!collapsed && (
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">
-                Collections ({collections.length})
-              </p>
-            )}
-
-            <div className="space-y-1 max-h-64 overflow-y-auto">
-              {collections.map((collection) => {
-                const isExpanded = expandedCollections.has(collection.id)
-                const collectionDocuments = documents.filter(doc => doc.collectionId === collection.id)
-                const completedCount = collectionDocuments.filter(doc => doc.status === 'completed').length
-
-                return (
-                  <div key={collection.id} className="space-y-1">
-                    {/* Collection Header */}
-                    <div
-                      onClick={() => onToggleCollectionExpansion(collection.id)}
-                      className={`${collapsed ? 'p-2' : 'p-2.5 sm:p-3'} rounded-lg cursor-pointer transition-all duration-200 group bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-700`}
-                    >
-                      <div className={`flex items-start ${collapsed ? 'justify-center' : 'gap-2'}`}>
-                        <div className={`${collapsed ? 'p-1' : 'p-1.5'} rounded-lg flex-shrink-0 bg-purple-200 dark:bg-purple-800`} title={collapsed ? collection.name : ''}>
-                          <FileText className={`${collapsed ? 'h-3 w-3' : 'h-3.5 w-3.5'} text-purple-700 dark:text-purple-300`} />
-                        </div>
-                        {!collapsed && (
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm font-medium text-purple-900 dark:text-purple-100 truncate">
-                                {collection.name}
-                              </p>
-                              <div className="flex items-center gap-1">
-                                <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 text-xs px-1.5 py-0.5">
-                                  {collectionDocuments.length} docs
-                                </Badge>
-                                <ChevronDown
-                                  className={`h-3 w-3 text-purple-600 dark:text-purple-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''
-                                    }`}
-                                />
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1.5 mt-1">
-                              <div className={`w-2 h-2 rounded-full ${completedCount === collectionDocuments.length ? 'bg-green-500' :
-                                completedCount > 0 ? 'bg-yellow-500' : 'bg-blue-500 animate-pulse'
-                                }`} />
-                              <span className="text-xs text-purple-700 dark:text-purple-300">
-                                {completedCount === collectionDocuments.length ? 'All Ready' :
-                                  completedCount > 0 ? `${completedCount}/${collectionDocuments.length} Ready` :
-                                    'Analyzing...'}
-                              </span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Collection Documents (when expanded) */}
-                    {isExpanded && !collapsed && (
-                      <div className="ml-4 space-y-1">
-                        {collectionDocuments.map((doc) => (
-                          <div
-                            key={doc.id}
-                            onClick={() => onSelectDocument(doc.id)}
-                            className={`p-2 rounded-lg cursor-pointer transition-all duration-200 group ${selectedDocumentId === doc.id
-                              ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700'
-                              : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
-                              }`}
-                          >
-                            <div className="flex items-start gap-2">
-                              <div className={`p-1 rounded-lg flex-shrink-0 ${selectedDocumentId === doc.id
-                                ? 'bg-blue-200 dark:bg-blue-800'
-                                : 'bg-gray-200 dark:bg-gray-700 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40'
-                                }`}>
-                                <FileText className={`h-3 w-3 ${selectedDocumentId === doc.id
-                                  ? 'text-blue-700 dark:text-blue-300'
-                                  : 'text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
-                                  }`} />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className={`text-sm font-medium truncate ${selectedDocumentId === doc.id
-                                  ? 'text-blue-900 dark:text-blue-100'
-                                  : 'text-gray-900 dark:text-white'
-                                  }`}>
-                                  {doc.filename}
-                                </p>
-                                <div className="flex items-center gap-1.5 mt-1">
-                                  <div className={`w-2 h-2 rounded-full ${doc.status === 'completed' ? 'bg-green-500' :
-                                    doc.status === 'analyzing' ? 'bg-yellow-500 animate-pulse' :
-                                      doc.status === 'uploading' ? 'bg-blue-500 animate-pulse' :
-                                        doc.status === 'error' ? 'bg-red-500' : 'bg-gray-400'
-                                    }`} />
-                                  <span className={`text-xs ${selectedDocumentId === doc.id
-                                    ? 'text-blue-700 dark:text-blue-300'
-                                    : 'text-gray-500 dark:text-gray-400'
-                                    }`}>
-                                    {doc.status === 'completed' ? 'Ready' :
-                                      doc.status === 'analyzing' ? 'Analyzing...' :
-                                        doc.status === 'uploading' ? 'Uploading...' :
-                                          doc.status === 'error' ? 'Error' : 'Pending'}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
             </div>
-          </div>
-        )}
+          </>
+        );
+      } else {
+        // Document in collection
+        const activeCollection = collections.find(c => c.id === selectedDoc.collectionId);
+        if (!activeCollection) return null;
 
-        {/* Individual Documents List (not in collections) */}
-        {documents.filter(doc => !doc.collectionId).length > 0 && (
-          <div className="space-y-2">
+        const collectionDocuments = documents.filter(doc => doc.collectionId === activeCollection.id);
+        const completedCount = collectionDocuments.filter(doc => doc.status === 'completed').length
+        const isExpanded = true; // Force expand for active
+
+        return (
+          <>
             {!collapsed && (
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">
-                Individual Documents ({documents.filter(doc => !doc.collectionId).length})
+                Active Collection
               </p>
             )}
-
             <div className="space-y-1 max-h-64 overflow-y-auto">
-              {documents.filter(doc => !doc.collectionId).map((doc) => (
+              <div className="space-y-1">
+                {/* Collection Header */}
                 <div
-                  key={doc.id}
-                  onClick={() => onSelectDocument(doc.id)}
-                  className={`${collapsed ? 'p-2' : 'p-2.5 sm:p-3'} rounded-lg cursor-pointer transition-all duration-200 group ${selectedDocumentId === doc.id
-                    ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
-                    }`}
+                  onClick={() => onToggleCollectionExpansion(activeCollection.id)}
+                  className={`${collapsed ? 'p-2' : 'p-2.5 sm:p-3'} rounded-lg cursor-pointer transition-all duration-200 group bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-700`}
                 >
                   <div className={`flex items-start ${collapsed ? 'justify-center' : 'gap-2'}`}>
-                    <div className={`${collapsed ? 'p-1' : 'p-1.5'} rounded-lg flex-shrink-0 ${selectedDocumentId === doc.id
-                      ? 'bg-blue-200 dark:bg-blue-800'
-                      : 'bg-gray-200 dark:bg-gray-700 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40'
-                      }`} title={collapsed ? doc.filename : ''}>
-                      <FileText className={`${collapsed ? 'h-3 w-3' : 'h-3.5 w-3.5'} ${selectedDocumentId === doc.id
-                        ? 'text-blue-700 dark:text-blue-300'
-                        : 'text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
-                        }`} />
+                    <div className={`${collapsed ? 'p-1' : 'p-1.5'} rounded-lg flex-shrink-0 bg-purple-200 dark:bg-purple-800`} title={collapsed ? activeCollection.name : ''}>
+                      <FileText className={`${collapsed ? 'h-3 w-3' : 'h-3.5 w-3.5'} text-purple-700 dark:text-purple-300`} />
                     </div>
                     {!collapsed && (
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium truncate ${selectedDocumentId === doc.id
-                          ? 'text-blue-900 dark:text-blue-100'
-                          : 'text-gray-900 dark:text-white'
-                          }`}>
-                          {doc.filename}
-                        </p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-purple-900 dark:text-purple-100 truncate">
+                            {activeCollection.name}
+                          </p>
+                          <div className="flex items-center gap-1">
+                            <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 text-xs px-1.5 py-0.5">
+                              {collectionDocuments.length} docs
+                            </Badge>
+                            <ChevronDown
+                              className={`h-3 w-3 text-purple-600 dark:text-purple-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                            />
+                          </div>
+                        </div>
                         <div className="flex items-center gap-1.5 mt-1">
-                          <div className={`w-2 h-2 rounded-full ${doc.status === 'completed' ? 'bg-green-500' :
-                            doc.status === 'analyzing' ? 'bg-yellow-500 animate-pulse' :
-                              doc.status === 'uploading' ? 'bg-blue-500 animate-pulse' :
-                                doc.status === 'error' ? 'bg-red-500' : 'bg-gray-400'
-                            }`} />
-                          <span className={`text-xs ${selectedDocumentId === doc.id
-                            ? 'text-blue-700 dark:text-blue-300'
-                            : 'text-gray-500 dark:text-gray-400'
-                            }`}>
-                            {doc.status === 'completed' ? 'Ready' :
-                              doc.status === 'analyzing' ? 'Analyzing...' :
-                                doc.status === 'uploading' ? 'Uploading...' :
-                                  doc.status === 'error' ? 'Error' : 'Pending'}
+                          <div className={`w-2 h-2 rounded-full ${completedCount === collectionDocuments.length ? 'bg-green-500' :
+                            completedCount > 0 ? 'bg-yellow-500' : 'bg-blue-500 animate-pulse'
+                          }`} />
+                          <span className="text-xs text-purple-700 dark:text-purple-300">
+                            {completedCount === collectionDocuments.length ? 'All Ready' :
+                             completedCount > 0 ? `${completedCount}/${collectionDocuments.length} Ready` :
+                             'Analyzing...'}
                           </span>
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
 
+                {/* Collection Documents */}
+                {isExpanded && !collapsed && (
+                  <div className="ml-4 space-y-1">
+                    {collectionDocuments.map((doc) => (
+                      <div
+                        key={doc.id}
+                        onClick={() => onSelectDocument(doc.id)}
+                        className={`p-2 rounded-lg cursor-pointer transition-all duration-200 group ${selectedDocumentId === doc.id
+                          ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700'
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <div className={`p-1 rounded-lg flex-shrink-0 ${selectedDocumentId === doc.id
+                            ? 'bg-blue-200 dark:bg-blue-800'
+                            : 'bg-gray-200 dark:bg-gray-700 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40'
+                          }`}>
+                            <FileText className={`h-3 w-3 ${selectedDocumentId === doc.id
+                              ? 'text-blue-700 dark:text-blue-300'
+                              : 'text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
+                            }`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-medium truncate ${selectedDocumentId === doc.id
+                              ? 'text-blue-900 dark:text-blue-100'
+                              : 'text-gray-900 dark:text-white'
+                            }`}>
+                              {doc.filename}
+                            </p>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <div className={`w-2 h-2 rounded-full ${doc.status === 'completed' ? 'bg-green-500' :
+                                doc.status === 'analyzing' ? 'bg-yellow-500 animate-pulse' :
+                                doc.status === 'uploading' ? 'bg-blue-500 animate-pulse' :
+                                doc.status === 'error' ? 'bg-red-500' : 'bg-gray-400'
+                              }`} />
+                              <span className={`text-xs ${selectedDocumentId === doc.id
+                                ? 'text-blue-700 dark:text-blue-300'
+                                : 'text-gray-500 dark:text-gray-400'
+                              }`}>
+                                {doc.status === 'completed' ? 'Ready' :
+                                 doc.status === 'analyzing' ? 'Analyzing...' :
+                                 doc.status === 'uploading' ? 'Uploading...' :
+                                 doc.status === 'error' ? 'Error' : 'Pending'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        );
+      }
+    })()}
+  </div>
+)}
 
 
       </div>

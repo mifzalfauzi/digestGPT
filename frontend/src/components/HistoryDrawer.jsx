@@ -13,38 +13,33 @@ function HistoryDrawer({
   currentCollectionId = null,
   isLoadingHistory = false,
   onSelectHistoricalDocument = () => {},
-  onSelectCollection = () => {}
+  onSelectCollection = () => {},
+  onFetchCollectionDocuments = () => []
 }) {
-  const [activeTab, setActiveTab] = useState('all') // 'all', 'documents', 'collections', 'chats'
+  const [activeTab, setActiveTab] = useState('documents') // 'documents', 'collections'
   const [expandedCollections, setExpandedCollections] = useState(new Set())
+  const [loadedCollectionDocs, setLoadedCollectionDocs] = useState({});
 
-  // Filter out current active document/collection from history
-  const filteredDocuments = historicalDocuments.filter(doc => {
-    // Exclude current active document
-    if (doc.id === currentDocumentId) return false
-    // Exclude documents that are part of current active collection
-    if (currentCollectionId && doc.collection_id === currentCollectionId) return false
-    return true
-  })
-
-  const filteredCollections = collections.filter(col => col.id !== currentCollectionId)
+  // Show all documents and collections in history (don't filter out active ones)
+  const filteredDocuments = historicalDocuments
+  const filteredCollections = collections
 
   // Toggle collection expansion
-  const toggleCollectionExpansion = (collectionId) => {
-    setExpandedCollections(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(collectionId)) {
-        newSet.delete(collectionId)
-      } else {
-        newSet.add(collectionId)
-      }
-      return newSet
-    })
-  }
+  const toggleCollectionExpansion = async (collectionId) => {
+    const isCurrentlyExpanded = expandedCollections.has(collectionId);
+    const newExpanded = isCurrentlyExpanded ? new Set() : new Set([collectionId]);
+    setExpandedCollections(newExpanded);
+    if (!isCurrentlyExpanded && !loadedCollectionDocs[collectionId]) {
+      const docs = await onFetchCollectionDocuments(collectionId);
+      setLoadedCollectionDocs(prev => ({ ...prev, [collectionId]: docs }));
+    }
+  };
 
   // Get documents for a collection
   const getCollectionDocuments = (collectionId) => {
-    return historicalDocuments.filter(doc => doc.collection_id === collectionId)
+    const docs = historicalDocuments.filter(doc => doc.collection_id === collectionId)
+    console.log(`Collection ${collectionId} has ${docs.length} documents:`, docs)
+    return docs
   }
 
   // Format date helper
@@ -110,14 +105,6 @@ function HistoryDrawer({
         {/* Tabs */}
         <div className="flex gap-1 p-2 border-b border-gray-200 dark:border-gray-800">
           <Button
-            variant={activeTab === 'all' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setActiveTab('all')}
-            className="flex-1 h-8 text-xs"
-          >
-            All
-          </Button>
-          <Button
             variant={activeTab === 'documents' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setActiveTab('documents')}
@@ -136,7 +123,7 @@ function HistoryDrawer({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 h-full">
           {isLoadingHistory ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center space-y-4">
@@ -147,47 +134,43 @@ function HistoryDrawer({
           ) : (
             <>
               {/* Collections Section */}
-              {(activeTab === 'all' || activeTab === 'collections') && filteredCollections.length > 0 && (
+              {activeTab === 'collections' && filteredCollections.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Collections
                   </h3>
                   {filteredCollections.map(collection => {
-                    const collectionDocuments = getCollectionDocuments(collection.id)
+                    const collectionDocuments = loadedCollectionDocs[collection.id] || getCollectionDocuments(collection.id);
                     const isExpanded = expandedCollections.has(collection.id)
                     
                     return (
                       <div key={collection.id} className="space-y-2">
-                        <Card className="p-3 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200">
+                        <Card
+                          onClick={() => toggleCollectionExpansion(collection.id)}
+                          className={`cursor-pointer p-3 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 ${collection.id === currentCollectionId ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                        >
                           <div className="flex items-start gap-3">
                             <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
                               <FolderOpen className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div 
-                                className="cursor-pointer"
-                                onClick={() => onSelectCollection(collection.id)}
-                              >
-                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                  {collection.name}
-                                </p>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    {collectionDocuments.length} documents
-                                  </span>
-                                  <span className="text-xs text-gray-400 dark:text-gray-500">•</span>
-                                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    {formatDate(collection.created_at)}
-                                  </span>
-                                </div>
+                              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                {collection.name}
+                                {collection.id === currentCollectionId && <Badge variant="secondary" className="ml-2 text-xs">Active</Badge>}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  {collection.document_count} document{collection.document_count !== 1 ? 's' : ''}
+                                </span>
+                                <span className="text-xs text-gray-400 dark:text-gray-500">•</span>
                               </div>
                             </div>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={(e) => {
-                                e.stopPropagation()
-                                toggleCollectionExpansion(collection.id)
+                                e.stopPropagation();
+                                toggleCollectionExpansion(collection.id);
                               }}
                               className="h-6 w-6 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
                             >
@@ -207,7 +190,7 @@ function HistoryDrawer({
                               <Card
                                 key={doc.id}
                                 onClick={() => onSelectHistoricalDocument(doc.id, doc)}
-                                className="p-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 border-l-2 border-purple-200 dark:border-purple-700"
+                                className={`p-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 border-l-2 border-purple-200 dark:border-purple-700 ${doc.id === currentDocumentId ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''}`}
                               >
                                 <div className="flex items-start gap-2">
                                   <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30">
@@ -236,62 +219,46 @@ function HistoryDrawer({
               )}
 
               {/* Documents Section */}
-              {(activeTab === 'all' || activeTab === 'documents') && filteredDocuments.length > 0 && (
+              {activeTab === 'documents' && filteredDocuments.length > 0 && (
                 <div className="space-y-4">
-                  <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Individual Documents
-                  </h3>
-                  
-                  {/* Group by date */}
-                  {dateGroups.map(dateGroup => (
-                    <div key={dateGroup} className="space-y-2">
-                      <div className="flex items-center gap-2 px-1">
-                        <Clock className="h-3 w-3 text-gray-400" />
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                          {dateGroup}
-                        </span>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        {groupedDocuments[dateGroup].map(doc => (
-                          <Card
-                            key={doc.id}
-                            onClick={() => onSelectHistoricalDocument(doc.id, doc)}
-                            className="p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200"
-                          >
-                            <div className="flex items-start gap-3">
-                              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                                <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                  {doc.filename}
-                                </p>
-                                {doc.summary && (
-                                  <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-1">
-                                    {doc.summary}
-                                  </p>
-                                )}
-                                <div className="flex items-center gap-2 mt-2">
-                                  {doc.word_count && (
-                                    <Badge variant="outline" className="text-xs px-1.5 py-0.5">
-                                      {doc.word_count} words
-                                    </Badge>
-                                  )}
-                                  {doc.analysis_method && (
-                                    <Badge variant="outline" className="text-xs px-1.5 py-0.5">
-                                      {doc.analysis_method}
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                              <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                  <div className="space-y-2">
+                    {filteredDocuments.map(doc => (
+                      <Card
+                        key={doc.id}
+                        onClick={() => onSelectHistoricalDocument(doc.id, doc)}
+                        className={`p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 ${doc.id === currentDocumentId ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                            <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                              {doc.filename}
+                            </p>
+                            {doc.summary && (
+                              <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-1">
+                                {doc.summary}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-2 mt-2">
+                              {doc.word_count && (
+                                <Badge variant="outline" className="text-xs px-1.5 py-0.5">
+                                  {doc.word_count} words
+                                </Badge>
+                              )}
+                              {doc.analysis_method && (
+                                <Badge variant="outline" className="text-xs px-1.5 py-0.5">
+                                  {doc.analysis_method}
+                                </Badge>
+                              )}
                             </div>
-                          </Card>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
                 </div>
               )}
 
