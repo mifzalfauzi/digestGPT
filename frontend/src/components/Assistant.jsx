@@ -58,6 +58,8 @@ function Assistant() {
 
   // Change state to historicalCollections
   const [historicalCollections, setHistoricalCollections] = useState([])
+  const [selectedHistoricalCollection, setSelectedHistoricalCollection] = useState(null)
+  const [selectedHistoricalDocuments, setSelectedHistoricalDocuments] = useState([])
 
   // Load historical documents when component mounts
   useEffect(() => {
@@ -755,6 +757,10 @@ function Assistant() {
       setCurrentView('workspace')
       setSidebarOpen(false)
       setActivePanel("chat")
+      
+      // Clear historical collection state when new uploads happen
+      setSelectedHistoricalCollection(null)
+      setSelectedHistoricalDocuments([])
 
       // Process each file in the collection
       const uploadPromises = filesToProcess.map(async (file, index) => {
@@ -837,6 +843,11 @@ function Assistant() {
       if (file) {
         const formData = new FormData()
         formData.append("file", file)
+        
+        // Add unique identifier to prevent backend from returning existing documents
+        // This ensures each upload creates a new analysis even if filename is duplicate
+        formData.append("upload_timestamp", Date.now().toString())
+        formData.append("client_document_id", documentId)
 
         // Add collection_id if this is part of a collection upload
         if (collectionId) {
@@ -852,7 +863,10 @@ function Assistant() {
         })
       } else if (textContent) {
         const textPayload = {
-          text: textContent
+          text: textContent,
+          // Add unique identifier to prevent backend from returning existing documents
+          upload_timestamp: Date.now().toString(),
+          client_document_id: documentId
         }
 
         // Add collection_id if this is part of a collection upload
@@ -885,6 +899,10 @@ function Assistant() {
 
       // Refresh historical documents to include the newly analyzed document
       await refreshHistoricalDocuments()
+      
+      // Clear historical collection state when new uploads happen
+      setSelectedHistoricalCollection(null)
+      setSelectedHistoricalDocuments([])
 
       // Update collection status if this document belongs to a collection
       const document = documents.find(doc => doc.id === documentId)
@@ -1462,6 +1480,22 @@ This business plan effectively balances ambitious growth objectives with compreh
               onToggleCollectionExpansion={toggleCollectionExpansion}
               onRemoveCollection={removeCollection}
               onOpenHistory={() => setIsHistoryDrawerOpen(true)}
+              selectedHistoricalCollection={selectedHistoricalCollection}
+              historicalDocuments={selectedHistoricalDocuments}
+              onSelectHistoricalDocument={async (docId, doc, collection = null) => {
+                if (collection) {
+                  setSelectedHistoricalCollection(collection)
+                  setSelectedHistoricalDocuments(collection.documents || [])
+                } else {
+                  setSelectedHistoricalCollection(null)
+                  setSelectedHistoricalDocuments([])
+                }
+                await selectDocument(docId, doc)
+              }}
+              onClearHistoricalCollection={() => {
+                setSelectedHistoricalCollection(null)
+                setSelectedHistoricalDocuments([])
+              }}
             />
           </div>
 
@@ -1622,6 +1656,8 @@ This business plan effectively balances ambitious growth objectives with compreh
                   expandedCollections={expandedCollections}
                   onToggleCollectionExpansion={toggleCollectionExpansion}
                   onRemoveCollection={removeCollection}
+                  selectedHistoricalCollection={selectedHistoricalCollection}
+                  historicalDocuments={selectedHistoricalDocuments}
                 />
               </div>
             </>
@@ -1654,6 +1690,22 @@ This business plan effectively balances ambitious growth objectives with compreh
               onToggleCollectionExpansion={toggleCollectionExpansion}
               onRemoveCollection={removeCollection}
               onOpenHistory={() => setIsHistoryDrawerOpen(true)}
+              selectedHistoricalCollection={selectedHistoricalCollection}
+              historicalDocuments={selectedHistoricalDocuments}
+              onSelectHistoricalDocument={async (docId, doc, collection = null) => {
+                if (collection) {
+                  setSelectedHistoricalCollection(collection)
+                  setSelectedHistoricalDocuments(collection.documents || [])
+                } else {
+                  setSelectedHistoricalCollection(null)
+                  setSelectedHistoricalDocuments([])
+                }
+                await selectDocument(docId, doc)
+              }}
+              onClearHistoricalCollection={() => {
+                setSelectedHistoricalCollection(null)
+                setSelectedHistoricalDocuments([])
+              }}
             />
           </div>
 
@@ -1725,6 +1777,8 @@ This business plan effectively balances ambitious growth objectives with compreh
                   onToggleCollectionExpansion={toggleCollectionExpansion}
                   onRemoveCollection={removeCollection}
                   onOpenHistory={() => setIsHistoryDrawerOpen(true)}
+                  selectedHistoricalCollection={selectedHistoricalCollection}
+                  historicalDocuments={selectedHistoricalDocuments}
                 />
               </div>
             </>
@@ -1757,6 +1811,22 @@ This business plan effectively balances ambitious growth objectives with compreh
               onToggleCollectionExpansion={toggleCollectionExpansion}
               onRemoveCollection={removeCollection}
               onOpenHistory={() => setIsHistoryDrawerOpen(true)}
+              selectedHistoricalCollection={selectedHistoricalCollection}
+              historicalDocuments={selectedHistoricalDocuments}
+              onSelectHistoricalDocument={async (docId, doc, collection = null) => {
+                if (collection) {
+                  setSelectedHistoricalCollection(collection)
+                  setSelectedHistoricalDocuments(collection.documents || [])
+                } else {
+                  setSelectedHistoricalCollection(null)
+                  setSelectedHistoricalDocuments([])
+                }
+                await selectDocument(docId, doc)
+              }}
+              onClearHistoricalCollection={() => {
+                setSelectedHistoricalCollection(null)
+                setSelectedHistoricalDocuments([])
+              }}
             />
           </div>
 
@@ -2064,6 +2134,8 @@ This business plan effectively balances ambitious growth objectives with compreh
                   onToggleCollectionExpansion={toggleCollectionExpansion}
                   onRemoveCollection={removeCollection}
                   onOpenHistory={() => setIsHistoryDrawerOpen(true)}
+                  selectedHistoricalCollection={selectedHistoricalCollection}
+                  historicalDocuments={selectedHistoricalDocuments}
                 />
               </div>
             </>
@@ -2132,7 +2204,16 @@ This business plan effectively balances ambitious growth objectives with compreh
         currentDocumentId={selectedDocumentId}
         currentCollectionId={currentCollectionId}
         isLoadingHistory={isLoadingHistory}
-        onSelectHistoricalDocument={async (docId, doc) => {
+        onSelectHistoricalDocument={async (docId, doc, collection = null) => {
+          if (collection) {
+            // Document is from a collection - set collection state
+            setSelectedHistoricalCollection(collection)
+            setSelectedHistoricalDocuments(collection.documents || [])
+          } else {
+            // Individual document - clear collection state
+            setSelectedHistoricalCollection(null)
+            setSelectedHistoricalDocuments([])
+          }
           await selectDocument(docId, doc)
           setIsHistoryDrawerOpen(false)
         }}

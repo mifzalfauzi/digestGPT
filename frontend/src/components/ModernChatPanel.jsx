@@ -29,6 +29,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [chatError, setChatError] = useState('')
   const [typewriterMessageId, setTypewriterMessageId] = useState(null)
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const messagesEndRef = useRef(null)
   const textareaRef = useRef(null)
   const messagesContainerRef = useRef(null)
@@ -178,11 +179,22 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
   // Load chat history when documentId changes
   useEffect(() => {
     const loadChatHistory = async () => {
-      if (!documentId || casualMode || isDemoMode || bypassAPI) return
+      if (!documentId || casualMode || isDemoMode || bypassAPI) {
+        setMessages([])
+        setIsLoadingHistory(false)
+        return
+      }
+
+      // Show loading state immediately
+      setIsLoadingHistory(true)
+      setMessages([])
 
       try {
         const token = localStorage.getItem('auth_token')
-        if (!token) return
+        if (!token) {
+          setIsLoadingHistory(false)
+          return
+        }
 
         const response = await axios.get(
           `http://localhost:8000/chat/history/${documentId}`,
@@ -193,7 +205,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
           }
         )
 
-        if (response.data?.chat_history) {
+        if (response.data?.chat_history && response.data.chat_history.length > 0) {
           // Convert backend chat history to component message format
           const historicalMessages = []
 
@@ -222,9 +234,15 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
           })
 
           setMessages(historicalMessages)
+        } else {
+          // No chat history found - show empty state
+          setMessages([])
         }
       } catch (error) {
         console.error('Error loading chat history:', error)
+        setMessages([])
+      } finally {
+        setIsLoadingHistory(false)
       }
     }
 
@@ -575,6 +593,46 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                 </div>
               </div>
             </div>
+          ) : isLoadingHistory ? (
+            <div className="text-center py-6 sm:py-8 space-y-3 sm:space-y-4">
+              <div className="flex justify-center">
+                <div className="relative">
+                  <div className="p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl">
+                    <MessageCircle className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400 animate-pulse" />
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-ping" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                  Loading chat history...
+                </h3>
+                <p className="text-slate-600 dark:text-gray-300 max-w-md mx-auto text-xs sm:text-sm px-4">
+                  Checking for previous conversations with this document.
+                </p>
+              </div>
+
+              {/* Loading skeleton */}
+              <div className="space-y-3 max-w-lg mx-auto">
+                {/* Skeleton user message */}
+                <div className="flex justify-end">
+                  <div className="bg-gray-200 dark:bg-gray-700 rounded-lg p-3 animate-pulse max-w-[70%]">
+                    <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded mb-2" />
+                    <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-3/4" />
+                  </div>
+                </div>
+                
+                {/* Skeleton AI response */}
+                <div className="flex justify-start">
+                  <div className="bg-gray-200 dark:bg-gray-700 rounded-lg p-3 animate-pulse max-w-[85%]">
+                    <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded mb-2" />
+                    <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded mb-2" />
+                    <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-2/3" />
+                  </div>
+                </div>
+              </div>
+            </div>
           ) : messages.length === 0 ? (
             <div className="text-center py-6 sm:py-8 space-y-3 sm:space-y-4">
               <div className="flex justify-center">
@@ -662,7 +720,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                           message.id === typewriterMessageId ? (
                             <TypewriterText
                               content={message.content}
-                              speed={25}
+                              speed={20}
                               className="text-slate-700 dark:text-gray-200 text-xs sm:text-sm"
                               useFormatter={true}
                               onProgress={handleTypewriterProgress}
@@ -835,13 +893,13 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                   handleSendMessage(e)
                 }
               }}
-              placeholder={isDisabled ? "Documents are being analyzed..." : (casualMode ? "Ask anything" : "Enter question here to inquire on the document.")}
+              placeholder={isDisabled ? "Documents are being analyzed..." : isLoadingHistory ? "Loading chat history..." : (casualMode ? "Ask anything" : "Enter question here to inquire on the document.")}
               className="min-h-[40px] sm:min-h-[44px] lg:min-h-[48px] max-h-[80px] sm:max-h-[100px] resize-none bg-white dark:bg-[#2f2f2f] dark:border-gray-400 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-gray-400 rounded-xl pr-10 sm:pr-12 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"
-              disabled={isLoading || isDisabled}
+              disabled={isLoading || isDisabled || isLoadingHistory}
             />
             <Button
               type="submit"
-              disabled={!inputMessage || !inputMessage.trim() || isLoading || isDisabled}
+              disabled={!inputMessage || !inputMessage.trim() || isLoading || isDisabled || isLoadingHistory}
               className="absolute right-1 sm:right-1.5 bottom-1 sm:bottom-1.5 h-6 w-6 sm:h-7 sm:w-7 p-0 bg-[#121212] hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
             >
               <Send className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white" />

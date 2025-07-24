@@ -315,7 +315,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                               />
                             </object>
                             {/* Fallback - direct link */}
-                            {/* <div className="absolute bottom-4 right-4">
+                            <div className="absolute bottom-4 right-4">
                               <a
                                 href={getFileUrl()}
                                 target="_blank"
@@ -324,7 +324,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                               >
                                 Open PDF ↗
                               </a>
-                            </div> */}
+                            </div>
                           </>
                         ) : (
                           <div className="flex items-center justify-center h-full">

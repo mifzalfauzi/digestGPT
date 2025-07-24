@@ -30,7 +30,12 @@ function ModernSidebar({
   onToggleCollectionExpansion = () => { },
   onRemoveCollection = () => { },
   // History drawer
-  onOpenHistory = () => { }
+  onOpenHistory = () => { },
+  // Historical document selection
+  selectedHistoricalCollection = null,
+  historicalDocuments = [],
+  onSelectHistoricalDocument = () => { },
+  onClearHistoricalCollection = () => { }
 }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isUsageDashboardOpen, setIsUsageDashboardOpen] = useState(false)
@@ -166,6 +171,7 @@ function ModernSidebar({
 
           <Button
             onClick={() => {
+              onClearHistoricalCollection()
               onNewDocument()
               onClose?.()
             }}
@@ -301,9 +307,109 @@ function ModernSidebar({
           </div>
         )}
 
-        {selectedDocumentId && (
+        {(selectedDocumentId || selectedHistoricalCollection) && (
   <div className="space-y-2">
     {(() => {
+      // Handle historical collection display
+      if (selectedHistoricalCollection && historicalDocuments.length > 0) {
+        const collectionDocuments = historicalDocuments;
+        const completedCount = collectionDocuments.length; // Historical docs are always completed
+        const isExpanded = true; // Always expand historical collections
+
+        return (
+          <>
+            {!collapsed && (
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">
+                Historical Collection
+              </p>
+            )}
+            <div className="space-y-1 max-h-72 overflow-y-auto">
+              <div className="space-y-1">
+                {/* Collection Header */}
+                <div
+                  className={`${collapsed ? 'p-2' : 'p-2.5 sm:p-3'} rounded-lg transition-all duration-200 group bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-700 `}
+                >
+                  <div className={`flex items-start ${collapsed ? 'justify-center' : 'gap-2'}`}>
+                    <div className={`${collapsed ? 'p-1' : 'p-1.5'} rounded-lg flex-shrink-0 bg-purple-200 dark:bg-purple-800`} title={collapsed ? selectedHistoricalCollection.name : ''}>
+                      <FileText className={`${collapsed ? 'h-3 w-3' : 'h-3.5 w-3.5'} text-purple-700 dark:text-purple-300`} />
+                    </div>
+                    {!collapsed && (
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-purple-900 dark:text-purple-100 truncate">
+                            {selectedHistoricalCollection.name}
+                          </p>
+                          <div className="flex items-center gap-1">
+                            <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 text-xs px-1.5 py-0.5">
+                              {collectionDocuments.length} docs
+                            </Badge>
+                            <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200 text-xs px-1.5 py-0.5">
+                              History
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          <span className="text-xs text-purple-700 dark:text-purple-300">
+                            All Ready
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Collection Documents */}
+                {isExpanded && !collapsed && (
+                  <div className="ml-4 space-y-1">
+                    {collectionDocuments.map((doc) => (
+                      <div
+                        key={doc.id}
+                        onClick={() => onSelectHistoricalDocument(doc.id, doc, selectedHistoricalCollection)}
+                        className={`p-2 rounded-lg cursor-pointer transition-all duration-200 group ${selectedDocumentId === doc.id
+                          ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700'
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <div className={`p-1 rounded-lg flex-shrink-0 ${selectedDocumentId === doc.id
+                            ? 'bg-blue-200 dark:bg-blue-800'
+                            : 'bg-gray-200 dark:bg-gray-700 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40'
+                          }`}>
+                            <FileText className={`h-3 w-3 ${selectedDocumentId === doc.id
+                              ? 'text-blue-700 dark:text-blue-300'
+                              : 'text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
+                            }`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-medium truncate ${selectedDocumentId === doc.id
+                              ? 'text-blue-900 dark:text-blue-100'
+                              : 'text-gray-900 dark:text-white'
+                            }`}>
+                              {doc.filename}
+                            </p>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <div className="w-2 h-2 rounded-full bg-green-500" />
+                              <span className={`text-xs ${selectedDocumentId === doc.id
+                                ? 'text-blue-700 dark:text-blue-300'
+                                : 'text-gray-500 dark:text-gray-400'
+                              }`}>
+                                Ready
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        );
+      }
+
+      // Handle current document display
       const selectedDoc = documents.find(doc => doc.id === selectedDocumentId);
       if (!selectedDoc) return null;
 

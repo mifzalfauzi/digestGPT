@@ -37,6 +37,16 @@ function HistoryDrawer({
     return docs;
   };
 
+  // Find which collection a document belongs to
+  const findCollectionForDocument = (docId) => {
+    for (const collection of collections) {
+      if (collection.documents && collection.documents.some(doc => doc.id === docId)) {
+        return collection;
+      }
+    }
+    return null;
+  };
+
   // Format date helper
   const formatDate = (dateString) => {
     if (!dateString) return 'No date'
@@ -154,10 +164,12 @@ function HistoryDrawer({
                                 <FolderOpen className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                  {collection.name}
-                                  {collection.id === currentCollectionId && <Badge variant="secondary" className="ml-2 text-xs">Active</Badge>}
-                                </p>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                    {collection.name}
+                                  </p>
+                                  {collection.id === currentCollectionId && <Badge variant="secondary" className="text-xs">Active</Badge>}
+                                </div>
                                 <div className="flex items-center gap-2 mt-1">
                                   <span className="text-xs text-gray-500 dark:text-gray-400">
                                     {collection.document_count} document{collection.document_count !== 1 ? 's' : ''}
@@ -189,7 +201,7 @@ function HistoryDrawer({
                               {collectionDocuments.map(doc => (
                                 <Card
                                   key={doc.id}
-                                  onClick={() => onSelectHistoricalDocument(doc.id, doc)}
+                                  onClick={() => onSelectHistoricalDocument(doc.id, doc, collection)}
                                   className={`p-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 border-l-2 border-purple-200 dark:border-purple-700 ${doc.id === currentDocumentId ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''}`}
                                 >
                                   <div className="flex items-start gap-2">
@@ -225,7 +237,10 @@ function HistoryDrawer({
                       {filteredDocuments.map(doc => (
                         <Card
                           key={doc.id}
-                          onClick={() => onSelectHistoricalDocument(doc.id, doc)}
+                          onClick={() => {
+                            const belongsToCollection = findCollectionForDocument(doc.id);
+                            onSelectHistoricalDocument(doc.id, doc, belongsToCollection);
+                          }}
                           className={`p-3 cursor-pointer hover:bg-[#121212] dark:hover:bg-[#1f1f1f] dark:bg-[#121212] transition-colors duration-200 ${doc.id === currentDocumentId ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''}`}
                         >
                           <div className="flex items-start gap-3">
