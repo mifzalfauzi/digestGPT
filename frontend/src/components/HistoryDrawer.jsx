@@ -79,14 +79,14 @@ function HistoryDrawer({
     <>
       {/* Backdrop */}
       <div 
-        className={`fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 z-40 ${
+        className={`fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 z-[60] ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
       />
 
       {/* Drawer */}
-      <div className={`fixed top-0 left-0 h-full w-96 bg-white dark:bg-[#121212] shadow-2xl transform transition-transform duration-300 z-50 flex flex-col ${
+      <div className={`fixed top-0 left-0 h-full w-full sm:w-96 bg-white dark:bg-[#121212] shadow-2xl transform transition-transform duration-300 z-[70] flex flex-col ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         {/* Header */}
@@ -130,8 +130,8 @@ function HistoryDrawer({
           </Button>
         </div>
 
-        {/* Content - Fixed scrolling area */}
-        <div className="flex-1 overflow-y-auto history-drawer-scroll">
+        {/* Content - Fixed scrolling area with better scrollbar */}
+        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
           <div className="p-4 space-y-4">
             {isLoadingHistory ? (
               <div className="flex items-center justify-center py-12">
@@ -296,35 +296,6 @@ function HistoryDrawer({
           </div>
         </div>
       </div>
-
-      {/* Custom scrollbar styles */}
-      <style jsx>{`
-        .history-drawer-scroll::-webkit-scrollbar {
-          width: 8px;
-        }
-
-        .history-drawer-scroll::-webkit-scrollbar-track {
-          background: var(--background);
-        }
-
-        .history-drawer-scroll::-webkit-scrollbar-thumb {
-          background-color: hsl(0, 0%, 70%);
-          border-radius: 6px;
-          border: 3px solid var(--background);
-        }
-
-        .dark .history-drawer-scroll::-webkit-scrollbar-thumb {
-          background-color: hsl(0, 0%, 25%);
-        }
-
-        .history-drawer-scroll::-webkit-scrollbar-thumb:hover {
-          background-color: hsl(0, 0%, 60%);
-        }
-
-        .dark .history-drawer-scroll::-webkit-scrollbar-thumb:hover {
-          background-color: hsl(0, 0%, 35%);
-        }
-      `}</style>
     </>
   )
 }

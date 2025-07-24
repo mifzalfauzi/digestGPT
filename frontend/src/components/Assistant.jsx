@@ -556,9 +556,7 @@ function Assistant() {
       setCurrentView("workspace")
       setSidebarOpen(false)
       setActivePanel("chat")
-    } else {
-      setActivePanel("document")
-    }
+    } // No else branch to preserve current activePanel
   }
 
   const removeDocument = (documentId) => {
@@ -1159,11 +1157,21 @@ function Assistant() {
     setStagedFiles([])
     // Clear collection state
     setCollectionName("")
+    setDocuments([])
+    setCollections([])
+    setExpandedCollections(new Set())
+    // Clear historical collection state
+    setSelectedHistoricalCollection(null)
+    setSelectedHistoricalDocuments([])
     const fileInput = document.getElementById("file-input")
     if (fileInput) fileInput.value = ""
   }
 
   const handleNewDocument = () => {
+    // Clear historical collection state first
+    setSelectedHistoricalCollection(null)
+    setSelectedHistoricalDocuments([])
+    // Then reset to home
     resetToHome()
   }
 
@@ -1509,13 +1517,13 @@ This business plan effectively balances ambitious growth objectives with compreh
 
             {/* Mobile Menu Button */}
             <div className="lg:hidden fixed top-4 left-4 z-40">
-              <Button
+            <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="bg-background/50 backdrop-blur-xl shadow-xl border border-border hover:bg-background transition-all duration-200 p-2"
+                className="hover:bg-gray-100 dark:hover:bg-gray-800 p-1.5 rounded-lg"
               >
-                <Menu className="h-4 w-4" />
+                {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
               </Button>
             </div>
 
@@ -1656,8 +1664,23 @@ This business plan effectively balances ambitious growth objectives with compreh
                   expandedCollections={expandedCollections}
                   onToggleCollectionExpansion={toggleCollectionExpansion}
                   onRemoveCollection={removeCollection}
+                  onOpenHistory={() => setIsHistoryDrawerOpen(true)}
                   selectedHistoricalCollection={selectedHistoricalCollection}
                   historicalDocuments={selectedHistoricalDocuments}
+                  onSelectHistoricalDocument={async (docId, doc, collection = null) => {
+                    if (collection) {
+                      setSelectedHistoricalCollection(collection)
+                      setSelectedHistoricalDocuments(collection.documents || [])
+                    } else {
+                      setSelectedHistoricalCollection(null)
+                      setSelectedHistoricalDocuments([])
+                    }
+                    await selectDocument(docId, doc)
+                  }}
+                  onClearHistoricalCollection={() => {
+                    setSelectedHistoricalCollection(null)
+                    setSelectedHistoricalDocuments([])
+                  }}
                 />
               </div>
             </>
@@ -1721,9 +1744,9 @@ This business plan effectively balances ambitious growth objectives with compreh
                 {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
               </Button>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg sm:rounded-xl flex items-center justify-center">
+                {/* <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg sm:rounded-xl flex items-center justify-center">
                   <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                </div>
+                </div> */}
                 <div>
                   <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 dark:from-white dark:to-blue-200 bg-clip-text text-transparent">
                     Normal Chat
@@ -1779,6 +1802,20 @@ This business plan effectively balances ambitious growth objectives with compreh
                   onOpenHistory={() => setIsHistoryDrawerOpen(true)}
                   selectedHistoricalCollection={selectedHistoricalCollection}
                   historicalDocuments={selectedHistoricalDocuments}
+                  onSelectHistoricalDocument={async (docId, doc, collection = null) => {
+                    if (collection) {
+                      setSelectedHistoricalCollection(collection)
+                      setSelectedHistoricalDocuments(collection.documents || [])
+                    } else {
+                      setSelectedHistoricalCollection(null)
+                      setSelectedHistoricalDocuments([])
+                    }
+                    await selectDocument(docId, doc)
+                  }}
+                  onClearHistoricalCollection={() => {
+                    setSelectedHistoricalCollection(null)
+                    setSelectedHistoricalDocuments([])
+                  }}
                 />
               </div>
             </>
