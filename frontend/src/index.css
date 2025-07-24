@@ -46,7 +46,7 @@
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    
+
     --border: 0 0% 12%;
 
     --input: 217.2 32.6% 17.5%;
@@ -85,19 +85,21 @@
   } */
 
   /* Scrollbar styling for dark mode */
-.dark::-webkit-scrollbar {
-  width: 12px;
-}
+  .dark::-webkit-scrollbar {
+    width: 12px;
+  }
 
-.dark::-webkit-scrollbar-track {
-  background: hsl(var(--background)); /* matches dark background */
-}
+  .dark::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+    /* matches dark background */
+  }
 
-.dark::-webkit-scrollbar-thumb {
-  background-color: hsl(0, 0%, 25%); /* a slightly lighter gray for contrast */
-  border-radius: 6px;
-  border: 3px solid hsl(var(--background));
-}
+  .dark::-webkit-scrollbar-thumb {
+    background-color: hsl(0, 0%, 25%);
+    /* a slightly lighter gray for contrast */
+    border-radius: 6px;
+    border: 3px solid hsl(var(--background));
+  }
 
 
   body {
