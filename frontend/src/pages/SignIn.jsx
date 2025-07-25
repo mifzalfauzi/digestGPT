@@ -54,6 +54,8 @@ function SignIn() {
         window.google.accounts.id.initialize({
           client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
           callback: handleGoogleResponse,
+          auto_select: false,
+          cancel_on_tap_outside: false
         })
       }
          }).catch(console.error)
@@ -64,6 +66,10 @@ function SignIn() {
      try {
        setIsGoogleLoading(true)
        setErrors({})
+       
+       // Clean up any Google popups
+       const googlePopups = document.querySelectorAll('[data-google-popup]')
+       googlePopups.forEach(popup => popup.remove())
        
        // Send the Google ID token to our backend
        const backendResponse = await axios.post('http://localhost:8000/auth/google', {
@@ -80,9 +86,18 @@ function SignIn() {
        
      } catch (error) {
        console.error('Google authentication error:', error)
-       setErrors({ 
-         submit: error.response?.data?.detail || 'Google sign-in failed. Please try again.' 
-       })
+       let errorMessage = 'Google sign-in failed. Please try again.'
+       
+       if (error.response?.data?.detail) {
+         if (typeof error.response.data.detail === 'string') {
+           errorMessage = error.response.data.detail
+         } else {
+           // Handle validation error format
+           errorMessage = 'Invalid authentication data. Please try again.'
+         }
+       }
+       
+       setErrors({ submit: errorMessage })
      } finally {
        setIsGoogleLoading(false)
      }
@@ -134,27 +149,35 @@ function SignIn() {
     
     try {
       if (window.google && window.google.accounts) {
-        // Render the Google Sign-In button and trigger it programmatically
-        const buttonDiv = document.createElement('div')
-        buttonDiv.style.position = 'absolute'
-        buttonDiv.style.top = '-9999px'
-        document.body.appendChild(buttonDiv)
+        // Clean up any existing popups first
+        const existingPopups = document.querySelectorAll('[data-google-popup]')
+        existingPopups.forEach(popup => popup.remove())
         
-        window.google.accounts.id.renderButton(buttonDiv, {
+        // Create a hidden div to render Google button
+        const buttonContainer = document.createElement('div')
+        buttonContainer.setAttribute('data-google-popup', 'true')
+        buttonContainer.style.position = 'absolute'
+        buttonContainer.style.top = '-9999px'
+        buttonContainer.style.left = '-9999px'
+        document.body.appendChild(buttonContainer)
+        
+        // Render the Google button
+        window.google.accounts.id.renderButton(buttonContainer, {
           theme: 'outline',
           size: 'large',
+          type: 'standard',
+          width: 300
         })
         
-        // Trigger the hidden button click
+        // Auto-click the button after a short delay
         setTimeout(() => {
-          const googleButton = buttonDiv.querySelector('div[role="button"]')
+          const googleButton = buttonContainer.querySelector('div[role="button"]')
           if (googleButton) {
             googleButton.click()
           } else {
-            throw new Error('Google button not found')
+            // Fallback: try to trigger Google sign-in directly
+            window.google.accounts.id.prompt()
           }
-          // Clean up
-          document.body.removeChild(buttonDiv)
         }, 100)
         
       } else {
@@ -165,7 +188,7 @@ function SignIn() {
       setErrors({ submit: 'Google sign-in failed. Please try again.' })
       setIsGoogleLoading(false)
     }
-     }
+   }
 
    const handleMicrosoftSignIn = async () => {
     setIsMicrosoftLoading(true)
@@ -355,7 +378,9 @@ function SignIn() {
           {errors.submit && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-red-500" />
-              <span className="text-sm text-red-600 dark:text-red-400">{errors.submit}</span>
+              <span className="text-sm text-red-600 dark:text-red-400">
+                {typeof errors.submit === 'string' ? errors.submit : 'Authentication failed. Please try again.'}
+              </span>
             </div>
           )}
 
@@ -378,7 +403,9 @@ function SignIn() {
                 />
               </div>
               {errors.email && (
-                <p className="mt-2 text-sm text-red-600 dark:text-red-400">{errors.email}</p>
+                <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+                  {typeof errors.email === 'string' ? errors.email : 'Email validation failed'}
+                </p>
               )}
             </div>
 
@@ -407,7 +434,9 @@ function SignIn() {
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-2 text-sm text-red-600 dark:text-red-400">{errors.password}</p>
+                <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+                  {typeof errors.password === 'string' ? errors.password : 'Password validation failed'}
+                </p>
               )}
             </div>
 

@@ -103,19 +103,33 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/login`, credentials)
-      const { access_token } = response.data
+      // Handle both token-based (Google) and email/password login
+      let response
       
-      localStorage.setItem('auth_token', access_token)
-      setToken(access_token)
-      
-      // Set axios authorization header immediately before making subsequent requests
-      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
-      
-      // Fetch user data after successful login
-      await fetchUserData()
-      
-      return response.data
+      if (credentials.token) {
+        // Token-based login (already authenticated)
+        const access_token = credentials.token
+        localStorage.setItem('auth_token', access_token)
+        setToken(access_token)
+        axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
+        await fetchUserData()
+        return { access_token }
+      } else {
+        // Email/password login
+        response = await axios.post(`${API_BASE_URL}/auth/login`, credentials)
+        const { access_token } = response.data
+        
+        localStorage.setItem('auth_token', access_token)
+        setToken(access_token)
+        
+        // Set axios authorization header immediately before making subsequent requests
+        axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
+        
+        // Fetch user data after successful login
+        await fetchUserData()
+        
+        return response.data
+      }
     } catch (error) {
       console.error('Login failed:', error)
       throw error

@@ -43,12 +43,22 @@ app.add_middleware(
         "http://localhost:3001",
         "http://localhost:3000", 
         "http://localhost:5173",
-        "https://drop2chat.com",  
+        "https://drop2chat.com",
+        "https://accounts.google.com",  # Add Google for OAuth
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add security headers middleware
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+    # Allow Google OAuth iframe/popup
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
+    response.headers["Cross-Origin-Embedder-Policy"] = "unsafe-none"
+    return response
 
 # Include routers
 app.include_router(auth_router)
