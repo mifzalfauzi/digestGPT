@@ -207,7 +207,7 @@ function SignIn() {
           {/* Header */}
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Welcome back
+              Risks, insights at your fingertips
             </h2>
             <p className="text-gray-600 dark:text-gray-400">
               State-of-the-art AI-powered document analysis.

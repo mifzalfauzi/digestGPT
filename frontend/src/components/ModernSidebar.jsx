@@ -35,7 +35,9 @@ function ModernSidebar({
   selectedHistoricalCollection = null,
   historicalDocuments = [],
   onSelectHistoricalDocument = () => { },
-  onClearHistoricalCollection = () => { }
+  onClearHistoricalCollection = () => { },
+  // Chat loading state
+  isChatLoadingHistory = false
 }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isUsageDashboardOpen, setIsUsageDashboardOpen] = useState(false)
@@ -54,7 +56,16 @@ function ModernSidebar({
     pro: 'bg-[#000000]'
   }
 
+  const [showLoadingOverlay, setShowLoadingOverlay] = useState(false)
 
+  useEffect(() => {
+    if (isChatLoadingHistory) {
+      setShowLoadingOverlay(true)
+    } else {
+      const timeout = setTimeout(() => setShowLoadingOverlay(false), 1100) // 1100ms delay
+      return () => clearTimeout(timeout)
+    }
+  }, [isChatLoadingHistory])
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -330,9 +341,34 @@ function ModernSidebar({
           </div>
         )}
 
+        {/* Chat Loading Indicator - Subtle and brief */}
+        {/* {isChatLoadingHistory && !collapsed && (
+          <div className="px-2 py-1 mb-1">
+            <div className="flex items-center gap-2 px-2 py-1 bg-blue-50/30 dark:bg-blue-900/5 rounded-md">
+              <div className="flex space-x-1">
+                <div className="w-1 h-1 bg-blue-400 dark:bg-blue-500 rounded-full animate-pulse"></div>
+                <div className="w-1 h-1 bg-blue-400 dark:bg-blue-500 rounded-full animate-pulse [animation-delay:0.2s]"></div>
+                <div className="w-1 h-1 bg-blue-400 dark:bg-blue-500 rounded-full animate-pulse [animation-delay:0.4s]"></div>
+              </div>
+              <span className="text-xs text-blue-500/70 dark:text-blue-400/70 font-light">Loading history...</span>
+            </div>
+          </div>
+        )} */}
+
         {/* Active Document/Collection Section - Responsive */}
         {(selectedDocumentId || selectedHistoricalCollection) && (
-          <div className="space-y-2">
+          <div 
+            className={`space-y-2 relative ${isChatLoadingHistory ? 'pointer-events-none' : ''}`}
+            onClickCapture={(e) => {
+              if (isChatLoadingHistory) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                console.log('Collection section interactions blocked during chat history loading');
+                return false;
+              }
+            }}
+          >
             {(() => {
               // Handle historical collection display
               if (selectedHistoricalCollection && historicalDocuments.length > 0) {
@@ -386,13 +422,48 @@ function ModernSidebar({
 
                         {/* Collection Documents - Always Visible on Mobile */}
                         {isExpanded && !collapsed && (
-                          <div className="ml-2 sm:ml-4 space-y-1">
+                          <div 
+                            className={`ml-2 sm:ml-4 space-y-1 relative ${isChatLoadingHistory ? 'pointer-events-none select-none' : ''}`}
+                            onClickCapture={(e) => {
+                              if (isChatLoadingHistory) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                e.stopImmediatePropagation();
+                                console.log('All document interactions blocked during chat history loading');
+                                return false;
+                              }
+                            }}
+                            style={isChatLoadingHistory ? { pointerEvents: 'none !important' } : {}}
+                          >
+                            {/* Loading overlay for documents during chat history loading */}
+                            {showLoadingOverlay  && (
+                              <div className="absolute inset-0 bg-white/70 dark:bg-gray-900/70 z-50 rounded-lg flex items-center justify-center" style={{ pointerEvents: 'auto !important' }}>
+                                <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-800 rounded-full shadow-lg border">
+                                  <div className="flex space-x-1">
+                                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></div>
+                                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse [animation-delay:0.2s]"></div>
+                                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse [animation-delay:0.4s]"></div>
+                                  </div>
+                                  <span className="text-xs text-gray-600 dark:text-gray-300 font-medium">Loading chat history...</span>
+                                </div>
+                              </div>
+                            )}
                             {collectionDocuments.map((doc) => (
                               <div
                                 key={doc.id}
                                 onClick={(e) => {
+                                  // Immediate check and block if loading
+                                  if (isChatLoadingHistory) {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    e.stopImmediatePropagation()
+                                    console.log('Document switching completely blocked during chat history loading')
+                                    return false
+                                  }
+                                  
                                   e.preventDefault()
                                   e.stopPropagation()
+                                  
                                   console.log('Selecting historical document:', doc.id, doc.filename)
                                   onSelectHistoricalDocument(doc.id, doc, selectedHistoricalCollection)
                                   // Close mobile sidebar after selection with proper delay
@@ -400,11 +471,21 @@ function ModernSidebar({
                                     setTimeout(() => onClose(), 200)
                                   }
                                 }}
-                                className={`p-2 sm:p-2.5 rounded-lg cursor-pointer transition-all duration-200 group touch-manipulation select-none ${selectedDocumentId === doc.id
+                                className={`p-2 sm:p-2.5 rounded-lg transition-all duration-200 group touch-manipulation select-none ${
+                                  isChatLoadingHistory 
+                                    ? 'cursor-not-allowed opacity-20 bg-gray-200 dark:bg-gray-700/70 pointer-events-none' 
+                                    : 'cursor-pointer'
+                                } ${selectedDocumentId === doc.id && !isChatLoadingHistory
                                   ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700 shadow-sm'
-                                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent active:bg-blue-50 dark:active:bg-blue-900/20 active:scale-[0.98]'
+                                  : isChatLoadingHistory 
+                                    ? 'border border-gray-400 dark:border-gray-500'
+                                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent active:bg-blue-50 dark:active:bg-blue-900/20 active:scale-[0.98]'
                                   }`}
-                                style={{ minHeight: '44px' }} // Ensure minimum touch target size
+                                style={{ 
+                                  minHeight: '44px',
+                                  pointerEvents: isChatLoadingHistory ? 'none !important' : 'auto',
+                                  userSelect: isChatLoadingHistory ? 'none' : 'auto'
+                                }} // Ensure minimum touch target size and disable pointer events when loading
                               >
                                 <div className="flex items-start gap-2 sm:gap-3">
                                   <div className={`p-1 sm:p-1.5 rounded-lg flex-shrink-0 transition-colors duration-200 ${selectedDocumentId === doc.id
@@ -568,13 +649,48 @@ function ModernSidebar({
 
                         {/* Collection Documents - Always Visible, Mobile Responsive */}
                         {isExpanded && !collapsed && (
-                          <div className="ml-2 sm:ml-4 space-y-1">
+                          <div 
+                            className={`ml-2 sm:ml-4 space-y-1 relative ${isChatLoadingHistory ? 'pointer-events-none select-none' : ''}`}
+                            onClickCapture={(e) => {
+                              if (isChatLoadingHistory) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                e.stopImmediatePropagation();
+                                console.log('All document interactions blocked during chat history loading');
+                                return false;
+                              }
+                            }}
+                            style={isChatLoadingHistory ? { pointerEvents: 'none !important' } : {}}
+                          >
+                            {/* Loading overlay for documents during chat history loading */}
+                            {isChatLoadingHistory && (
+                              <div className="absolute inset-0 bg-white/70 dark:bg-gray-900/70 z-50 rounded-lg flex items-center justify-center" style={{ pointerEvents: 'auto !important' }}>
+                                <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-800 rounded-full shadow-lg border">
+                                  <div className="flex space-x-1">
+                                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></div>
+                                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse [animation-delay:0.2s]"></div>
+                                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse [animation-delay:0.4s]"></div>
+                                  </div>
+                                  <span className="text-xs text-gray-600 dark:text-gray-300 font-medium">Loading chat history...</span>
+                                </div>
+                              </div>
+                            )}
                             {collectionDocuments.map((doc) => (
                               <div
                                 key={doc.id}
                                 onClick={(e) => {
+                                  // Immediate check and block if loading
+                                  if (isChatLoadingHistory) {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    e.stopImmediatePropagation()
+                                    console.log('Document switching completely blocked during chat history loading')
+                                    return false
+                                  }
+                                  
                                   e.preventDefault()
                                   e.stopPropagation()
+                                  
                                   console.log('Selecting current session document:', doc.id, doc.filename)
                                   onSelectDocument(doc.id)
                                   // Close mobile sidebar after selection with proper delay
@@ -582,11 +698,21 @@ function ModernSidebar({
                                     setTimeout(() => onClose(), 200)
                                   }
                                 }}
-                                className={`p-2 sm:p-2.5 rounded-lg cursor-pointer transition-all duration-200 group touch-manipulation select-none ${selectedDocumentId === doc.id
+                                className={`p-2 sm:p-2.5 rounded-lg transition-all duration-200 group touch-manipulation select-none ${
+                                  isChatLoadingHistory 
+                                    ? 'cursor-not-allowed opacity-20 bg-gray-200 dark:bg-gray-700/70 pointer-events-none' 
+                                    : 'cursor-pointer'
+                                } ${selectedDocumentId === doc.id && !isChatLoadingHistory
                                   ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700 shadow-sm'
-                                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent active:bg-blue-50 dark:active:bg-blue-900/20 active:scale-[0.98]'
+                                  : isChatLoadingHistory 
+                                    ? 'border border-gray-400 dark:border-gray-500'
+                                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent active:bg-blue-50 dark:active:bg-blue-900/20 active:scale-[0.98]'
                                   }`}
-                                style={{ minHeight: '44px' }} // Ensure minimum touch target size
+                                style={{ 
+                                  minHeight: '44px',
+                                  pointerEvents: isChatLoadingHistory ? 'none !important' : 'auto',
+                                  userSelect: isChatLoadingHistory ? 'none' : 'auto'
+                                }} // Ensure minimum touch target size and disable pointer events when loading
                               >
                                 <div className="flex items-start gap-2 sm:gap-3">
                                   <div className={`p-1 sm:p-1.5 rounded-lg flex-shrink-0 transition-colors duration-200 ${selectedDocumentId === doc.id

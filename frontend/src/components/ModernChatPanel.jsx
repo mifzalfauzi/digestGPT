@@ -10,7 +10,7 @@ import { MessageCircle, Send, Bot, User, AlertCircle, Trash2, Sparkles, Brain, Z
 import MessageFormatter from './MessageFormatter'
 import TypewriterText from './TypewriterText'
 
-function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode = false, bypassAPI = false, casualMode = false, isDisabled = false, analyzingStatus = null }) {
+function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode = false, bypassAPI = false, casualMode = false, isDisabled = false, analyzingStatus = null, onLoadingHistoryChange }) {
   // Auth context
   const {
     canSendChat,
@@ -125,11 +125,14 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
   useEffect(() => {
     // Auto-scroll when new messages are added
     if (messages.length > 0) {
-      scrollToBottom(true, "smooth")
-      // Update scroll height reference
-      if (messagesContainerRef.current) {
-        lastScrollHeightRef.current = messagesContainerRef.current.scrollHeight
-      }
+      // Use setTimeout to ensure DOM elements are fully rendered before scrolling
+      setTimeout(() => {
+        scrollToBottom(true, "smooth")
+        // Update scroll height reference
+        if (messagesContainerRef.current) {
+          lastScrollHeightRef.current = messagesContainerRef.current.scrollHeight
+        }
+      }, 100) // Small delay to allow DOM rendering
     }
     // Hide initial load animation after first render
     if (isInitialLoad) {
@@ -185,13 +188,14 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
         return
       }
 
-      // Show loading state immediately
+      // Show loading state immediately and don't clear messages yet
       setIsLoadingHistory(true)
-      setMessages([])
+      console.log('Loading chat history')
 
       try {
         const token = localStorage.getItem('auth_token')
         if (!token) {
+          setMessages([])
           setIsLoadingHistory(false)
           return
         }
@@ -233,20 +237,33 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
             })
           })
 
+          // Set messages immediately after processing
           setMessages(historicalMessages)
+          
+          // Add delay to ensure messages are rendered before enabling sidebar
+          setTimeout(() => {
+            setIsLoadingHistory(false)
+            // Ensure scroll to bottom after messages are rendered and history loading is complete
+            setTimeout(() => {
+              scrollToBottom(true, "smooth")
+            }, 50) // Additional small delay for final scroll
+          }, 300) // Small delay to allow DOM rendering and smooth transition
+          
         } else {
           // No chat history found - show empty state
           setMessages([])
+          // No delay needed for empty state
+          setIsLoadingHistory(false)
         }
       } catch (error) {
         console.error('Error loading chat history:', error)
         setMessages([])
-      } finally {
         setIsLoadingHistory(false)
       }
     }
 
     loadChatHistory()
+    
   }, [documentId, casualMode, isDemoMode, bypassAPI])
 
   // Stable callback functions for TypewriterText
@@ -290,6 +307,14 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
       onSetInputMessage(setInputMessageAndFocus)
     }
   }, [onSetInputMessage])
+
+  // Notify parent about loading history state changes
+  useEffect(() => {
+    if (onLoadingHistoryChange) {
+      onLoadingHistoryChange(isLoadingHistory)
+    }
+  }, [isLoadingHistory, onLoadingHistoryChange])
+
 
   const handleSendMessage = async (e) => {
     e.preventDefault()
@@ -636,12 +661,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
           ) : messages.length === 0 ? (
             <div className="text-center py-6 sm:py-8 space-y-3 sm:space-y-4">
               <div className="flex justify-center">
-                {/* <div className="relative">
-                  <div className="p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl">
-                    <Bot className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-purple-500 absolute -top-1 -right-1" />
-                </div> */}
+                
               </div>
 
               <div className="space-y-2">

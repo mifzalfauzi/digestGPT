@@ -56,6 +56,9 @@ function Assistant() {
   // History drawer state
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false)
 
+  // Chat loading history state - shared between chat panel and sidebar
+  const [isChatLoadingHistory, setIsChatLoadingHistory] = useState(false)
+
   // Change state to historicalCollections
   const [historicalCollections, setHistoricalCollections] = useState([])
   const [selectedHistoricalCollection, setSelectedHistoricalCollection] = useState(null)
@@ -1480,6 +1483,8 @@ This business plan effectively balances ambitious growth objectives with compreh
               onCasualChat={handleCasualChat}
               documents={documents}
               selectedDocumentId={selectedDocumentId}
+              isChatLoadingHistory={isChatLoadingHistory}
+              isChatLoadingHistory={isChatLoadingHistory}
               onSelectDocument={selectDocument}
               onRemoveDocument={removeDocument}
               collections={collections}
@@ -1656,6 +1661,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                   onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
                   onCasualChat={handleCasualChat}
                   documents={documents}
+                  isChatLoadingHistory={isChatLoadingHistory}
                   selectedDocumentId={selectedDocumentId}
                   onSelectDocument={selectDocument}
                   onRemoveDocument={removeDocument}
@@ -1705,6 +1711,7 @@ This business plan effectively balances ambitious growth objectives with compreh
               onCasualChat={handleCasualChat}
               documents={documents}
               selectedDocumentId={selectedDocumentId}
+              isChatLoadingHistory={isChatLoadingHistory}
               onSelectDocument={selectDocument}
               onRemoveDocument={removeDocument}
               collections={collections}
@@ -1769,6 +1776,7 @@ This business plan effectively balances ambitious growth objectives with compreh
               isDemoMode={false}
               bypassAPI={false}
               casualMode={true}
+              onLoadingHistoryChange={setIsChatLoadingHistory}
             />
           </div>
 
@@ -1840,6 +1848,7 @@ This business plan effectively balances ambitious growth objectives with compreh
               onCasualChat={handleCasualChat}
               documents={documents}
               selectedDocumentId={selectedDocumentId}
+              isChatLoadingHistory={isChatLoadingHistory}
               onSelectDocument={selectDocument}
               onRemoveDocument={removeDocument}
               collections={collections}
@@ -1984,6 +1993,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                     isDemoMode={isDemoMode}
                     bypassAPI={bypassAPI}
                     casualMode={false}
+                    onLoadingHistoryChange={setIsChatLoadingHistory}
                   />
                 ) : (
                   <div className="h-full flex items-center justify-center bg-white dark:bg-background p-6">
@@ -2074,6 +2084,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                     isDemoMode={isDemoMode}
                     bypassAPI={bypassAPI}
                     casualMode={false}
+                    onLoadingHistoryChange={setIsChatLoadingHistory}
                   />
                 ) : (
                   <div className="h-full flex items-center justify-center bg-white dark:bg-background p-12">
