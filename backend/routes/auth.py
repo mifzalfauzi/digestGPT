@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi.security import HTTPBearer
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
@@ -19,6 +19,35 @@ from dependencies import get_current_active_user, get_user_limits_info
 from datetime import datetime
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+
+# Cookie configuration
+REFRESH_TOKEN_COOKIE_NAME = "refresh_token"
+REFRESH_TOKEN_COOKIE_MAX_AGE = 30 * 24 * 60 * 60  # 30 days in seconds
+
+def set_refresh_token_cookie(response: Response, refresh_token: str):
+    """Set refresh token as secure HttpOnly cookie"""
+    response.set_cookie(
+        key=REFRESH_TOKEN_COOKIE_NAME,
+        value=refresh_token,
+        max_age=REFRESH_TOKEN_COOKIE_MAX_AGE,
+        httponly=True,
+        secure=False,  # Set to True for HTTPS in production
+        samesite="lax",
+        domain=None  # Will use current domain
+    )
+
+def clear_refresh_token_cookie(response: Response):
+    """Clear refresh token cookie"""
+    response.delete_cookie(
+        key=REFRESH_TOKEN_COOKIE_NAME,
+        httponly=True,
+        secure=False,
+        samesite="lax"
+    )
+
+def get_refresh_token_from_cookie(request: Request) -> Optional[str]:
+    """Extract refresh token from cookie"""
+    return request.cookies.get(REFRESH_TOKEN_COOKIE_NAME)
 
 # Google OAuth configuration
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -42,11 +71,11 @@ class UserLogin(BaseModel):
 
 class Token(BaseModel):
     access_token: str
-    refresh_token: str
     token_type: str = "bearer"
+    expires_in: int = 15 * 60  # 15 minutes in seconds
 
 class TokenRefresh(BaseModel):
-    refresh_token: str
+    refresh_token: Optional[str] = None  # Optional since it can come from cookie
 
 class UserProfile(BaseModel):
     id: UUID
@@ -72,7 +101,7 @@ class GoogleAuthResponse(BaseModel):
     authorization_url: str
 
 @router.post("/register", response_model=Token)
-async def register(user: UserRegister, db: Session = Depends(get_db)):
+async def register(user: UserRegister, response: Response, db: Session = Depends(get_db)):
     """Register a new user"""
     normalized_email = user.email.lower() 
     # Check if user already exists
@@ -100,13 +129,15 @@ async def register(user: UserRegister, db: Session = Depends(get_db)):
     access_token = create_access_token(data={"sub": str(new_user.id)})
     refresh_token = create_refresh_token(data={"sub": str(new_user.id)})
     
+    # Set refresh token as HttpOnly cookie
+    set_refresh_token_cookie(response, refresh_token)
+    
     return Token(
-        access_token=access_token,
-        refresh_token=refresh_token
+        access_token=access_token
     )
 
 @router.post("/login", response_model=Token)
-async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
+async def login(user_credentials: UserLogin, response: Response, db: Session = Depends(get_db)):
     """Login user and return JWT tokens"""
     user = db.query(User).filter(User.email == user_credentials.email).first()
 
@@ -136,18 +167,31 @@ async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
 
     access_token = create_access_token(data={"sub": str(user.id)})
     refresh_token = create_refresh_token(data={"sub": str(user.id)})
+    
+    # Set refresh token as HttpOnly cookie
+    set_refresh_token_cookie(response, refresh_token)
 
     return Token(
-        access_token=access_token,
-        refresh_token=refresh_token
+        access_token=access_token
     )
 
 
 @router.post("/refresh", response_model=Token)
-async def refresh_token(token_data: TokenRefresh, db: Session = Depends(get_db)):
-    """Refresh access token using refresh token"""
+async def refresh_token(request: Request, response: Response, token_data: TokenRefresh = None, db: Session = Depends(get_db)):
+    """Refresh access token using refresh token from cookie or body"""
+    # Get refresh token from cookie or request body
+    refresh_token = get_refresh_token_from_cookie(request)
+    if not refresh_token and token_data and token_data.refresh_token:
+        refresh_token = token_data.refresh_token
+    
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No refresh token provided"
+        )
+    
     # Verify refresh token
-    payload = verify_token(token_data.refresh_token, token_type="refresh")
+    payload = verify_token(refresh_token, token_type="refresh")
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -173,9 +217,11 @@ async def refresh_token(token_data: TokenRefresh, db: Session = Depends(get_db))
     access_token = create_access_token(data={"sub": str(user.id)})
     new_refresh_token = create_refresh_token(data={"sub": str(user.id)})
     
+    # Set new refresh token as HttpOnly cookie
+    set_refresh_token_cookie(response, new_refresh_token)
+    
     return Token(
-        access_token=access_token,
-        refresh_token=new_refresh_token
+        access_token=access_token
     )
 
 @router.get("/me", response_model=UserProfileWithUsage)
@@ -209,7 +255,7 @@ async def get_user_profile(current_user: User = Depends(get_current_active_user)
     )
 
 @router.post("/google", response_model=Token)
-async def google_auth(google_request: GoogleTokenRequest, db: Session = Depends(get_db)):
+async def google_auth(google_request: GoogleTokenRequest, response: Response, db: Session = Depends(get_db)):
     """Authenticate user with Google ID token"""
     if not GOOGLE_CLIENT_ID:
         raise HTTPException(
@@ -299,9 +345,11 @@ async def google_auth(google_request: GoogleTokenRequest, db: Session = Depends(
         access_token = create_access_token(data={"sub": str(user.id)})
         refresh_token = create_refresh_token(data={"sub": str(user.id)})
         
+        # Set refresh token as HttpOnly cookie
+        set_refresh_token_cookie(response, refresh_token)
+        
         return Token(
-            access_token=access_token,
-            refresh_token=refresh_token
+            access_token=access_token
         )
         
     except HTTPException:
@@ -311,3 +359,14 @@ async def google_auth(google_request: GoogleTokenRequest, db: Session = Depends(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Google authentication failed: {str(e)}"
         )
+
+@router.post("/logout")
+async def logout(response: Response, current_user: User = Depends(get_current_active_user)):
+    """Logout user and clear refresh token cookie"""
+    clear_refresh_token_cookie(response)
+    return {"message": "Successfully logged out"}
+
+@router.get("/check-auth")
+async def check_auth(current_user: User = Depends(get_current_active_user)):
+    """Check if user is authenticated with current access token"""
+    return {"authenticated": True, "user_id": str(current_user.id)}

@@ -71,15 +71,16 @@ function SignIn() {
        const googlePopups = document.querySelectorAll('[data-google-popup]')
        googlePopups.forEach(popup => popup.remove())
        
-       // Send the Google ID token to our backend
+       // Send the Google ID token to our backend (with credentials for cookies)
        const backendResponse = await axios.post('http://localhost:8000/auth/google', {
          token: response.credential
+       }, {
+         withCredentials: true  // Include cookies
        })
        
-       // Store the tokens and authenticate the user
-       const { access_token, refresh_token } = backendResponse.data
+       // Store the access token (refresh token is in HttpOnly cookie)
+       const { access_token } = backendResponse.data
        localStorage.setItem('auth_token', access_token)
-       localStorage.setItem('refresh_token', refresh_token)
        
        // Update auth context (this should trigger navigation to /assistant)
        await login({ token: access_token })

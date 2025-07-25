@@ -18,6 +18,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('auth_token'))
   const [loading, setLoading] = useState(true)
   const [usage, setUsage] = useState(null)
+  const [refreshingToken, setRefreshingToken] = useState(false)
 
   // Plan limits configuration
   const PLAN_LIMITS = {
@@ -38,12 +39,71 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  // Configure axios defaults
+  // Define refreshAccessToken function before useEffect
+  const refreshAccessToken = async () => {
+    if (refreshingToken) return null // Prevent multiple refresh attempts
+    
+    setRefreshingToken(true)
+    try {
+      const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, {
+        withCredentials: true  // Include refresh token cookie
+      })
+      
+      const { access_token } = response.data
+      localStorage.setItem('auth_token', access_token)
+      setToken(access_token)
+      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
+      
+      return access_token
+    } catch (error) {
+      console.error('Token refresh failed:', error)
+      // If refresh fails, log out the user
+      localStorage.removeItem('auth_token')
+      setToken(null)
+      setUser(null)
+      setUsage(null)
+      delete axios.defaults.headers.common['Authorization']
+      return null
+    } finally {
+      setRefreshingToken(false)
+    }
+  }
+
+  // Configure axios defaults and interceptors
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
     } else {
       delete axios.defaults.headers.common['Authorization']
+    }
+    
+    // Configure axios to include credentials for cookie support
+    axios.defaults.withCredentials = true
+    
+    // Add response interceptor for automatic token refresh
+    const responseInterceptor = axios.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config
+        
+        // If request fails with 401 and we haven't already tried to refresh
+        if (error.response?.status === 401 && !originalRequest._retry && token) {
+          originalRequest._retry = true
+          
+          const newToken = await refreshAccessToken()
+          if (newToken) {
+            originalRequest.headers['Authorization'] = `Bearer ${newToken}`
+            return axios(originalRequest)
+          }
+        }
+        
+        return Promise.reject(error)
+      }
+    )
+    
+    // Cleanup interceptor on unmount or token change
+    return () => {
+      axios.interceptors.response.eject(responseInterceptor)
     }
   }, [token])
 
@@ -115,8 +175,10 @@ export const AuthProvider = ({ children }) => {
         await fetchUserData()
         return { access_token }
       } else {
-        // Email/password login
-        response = await axios.post(`${API_BASE_URL}/auth/login`, credentials)
+        // Email/password login - cookies will be set automatically
+        response = await axios.post(`${API_BASE_URL}/auth/login`, credentials, {
+          withCredentials: true  // Include cookies in request
+        })
         const { access_token } = response.data
         
         localStorage.setItem('auth_token', access_token)
@@ -136,7 +198,17 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      // Call backend logout to clear refresh token cookie
+      await axios.post(`${API_BASE_URL}/auth/logout`, {}, {
+        withCredentials: true
+      })
+    } catch (error) {
+      console.error('Logout request failed:', error)
+    }
+    
+    // Clear local storage and state
     localStorage.removeItem('auth_token')
     setToken(null)
     setUser(null)
@@ -153,6 +225,7 @@ export const AuthProvider = ({ children }) => {
       }
     }
   }
+
 
   // Usage limit checking functions
   const canUploadDocument = () => {
@@ -207,6 +280,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     refreshUserData,
+    refreshAccessToken,
     canUploadDocument,
     canSendChat,
     canUseTokens,
