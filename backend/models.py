@@ -33,6 +33,9 @@ class User(Base):
     google_id = Column(String, unique=True, nullable=True, index=True)  # Google user ID
     profile_picture = Column(String, nullable=True)  # Google profile picture URL
     # email_confirmed_at = Column(DateTime, nullable=True)
+    email_verified = Column(Boolean, nullable=True, default=False)
+    email_verified_at = Column(DateTime(timezone=True), nullable=True)
+
 
 # 2. Document table
 class Document(Base):

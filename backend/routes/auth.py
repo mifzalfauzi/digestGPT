@@ -2,10 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, validator
 from typing import Optional
 from uuid import UUID
 import os
+from sqlalchemy import func
 import httpx
 from google.auth.transport import requests
 from google.oauth2 import id_token
@@ -15,6 +16,7 @@ from models import User, UserPlan
 from auth import hash_password, verify_password, create_access_token, create_refresh_token, verify_token
 from dependencies import get_current_active_user, get_user_limits_info
 # from gotrue.client import GoTrueClient
+from datetime import datetime
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -29,6 +31,10 @@ class UserRegister(BaseModel):
     password: str
     name: str
     plan: UserPlan = UserPlan.FREE
+    
+    @validator('email')
+    def normalize_email(cls, v):
+        return v.lower()
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -68,8 +74,9 @@ class GoogleAuthResponse(BaseModel):
 @router.post("/register", response_model=Token)
 async def register(user: UserRegister, db: Session = Depends(get_db)):
     """Register a new user"""
+    normalized_email = user.email.lower() 
     # Check if user already exists
-    existing_user = db.query(User).filter(User.email == user.email).first()
+    existing_user = db.query(User).filter(func.lower(User.email) == normalized_email).first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -79,7 +86,7 @@ async def register(user: UserRegister, db: Session = Depends(get_db)):
     # Create new user
     hashed_password = hash_password(user.password)
     new_user = User(
-        email=user.email,
+        email=normalized_email,
         password_hash=hashed_password,
         name=user.name,
         plan=user.plan
@@ -257,8 +264,11 @@ async def google_auth(google_request: GoogleTokenRequest, db: Session = Depends(
                 user.profile_picture = profile_picture
                 db.commit()
         else:
-            # Check if user exists by email (for linking accounts)
-            existing_email_user = db.query(User).filter(User.email == email).first()
+            # Normalize the incoming Google email
+            normalized_email = email.lower()
+
+            # Check if user exists by email (case-insensitive match)
+            existing_email_user = db.query(User).filter(func.lower(User.email) == normalized_email).first()
             
             if existing_email_user:
                 # Link the Google account to existing email user
@@ -266,6 +276,7 @@ async def google_auth(google_request: GoogleTokenRequest, db: Session = Depends(
                 existing_email_user.profile_picture = profile_picture
                 db.commit()
                 user = existing_email_user
+
             else:
                 # Create new user with Google OAuth
                 new_user = User(
@@ -274,7 +285,9 @@ async def google_auth(google_request: GoogleTokenRequest, db: Session = Depends(
                     google_id=google_id,
                     profile_picture=profile_picture,
                     plan=UserPlan.FREE,
-                    password_hash=None  # No password for Google OAuth users
+                    password_hash=None,  # No password for Google OAuth users
+                    email_verified=True,
+                    email_verified_at=datetime.now()
                 )
                 
                 db.add(new_user)
