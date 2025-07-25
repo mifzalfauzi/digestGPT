@@ -19,6 +19,8 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [usage, setUsage] = useState(null)
   const [refreshingToken, setRefreshingToken] = useState(false)
+  const [sessionExpired, setSessionExpired] = useState(false)
+  const [redirectCallback, setRedirectCallback] = useState(null)
 
   // Plan limits configuration
   const PLAN_LIMITS = {
@@ -39,6 +41,56 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  // Utility function to check if token is expired
+  const isTokenExpired = (token) => {
+    if (!token) return true
+    
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      const currentTime = Math.floor(Date.now() / 1000)
+      return payload.exp < currentTime
+    } catch {
+      return true
+    }
+  }
+
+  // Show session expired message and redirect
+  const handleSessionExpired = (message = 'Your session has expired. Please sign in again.') => {
+    setSessionExpired(true)
+    localStorage.removeItem('auth_token')
+    setToken(null)
+    setUser(null)
+    setUsage(null)
+    delete axios.defaults.headers.common['Authorization']
+    
+    // Show message for 2 seconds then trigger redirect
+    setTimeout(() => {
+      setSessionExpired(false)
+      // Try to use navigation handler first, fallback to window.location
+      try {
+        sessionStorage.setItem('sessionExpiredMessage', message)
+        localStorage.setItem('authRedirectRequest', JSON.stringify({
+          path: '/signin',
+          options: { state: { message, expired: true } }
+        }))
+        // Trigger storage event manually for same-window navigation
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'authRedirectRequest',
+          newValue: JSON.stringify({
+            path: '/signin',
+            options: { state: { message, expired: true } }
+          })
+        }))
+      } catch {
+        // Fallback to window.location if localStorage fails
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('sessionExpiredMessage', message)
+          window.location.href = '/signin'
+        }
+      }
+    }, 2000)
+  }
+
   // Define refreshAccessToken function before useEffect
   const refreshAccessToken = async () => {
     if (refreshingToken) return null // Prevent multiple refresh attempts
@@ -57,12 +109,8 @@ export const AuthProvider = ({ children }) => {
       return access_token
     } catch (error) {
       console.error('Token refresh failed:', error)
-      // If refresh fails, log out the user
-      localStorage.removeItem('auth_token')
-      setToken(null)
-      setUser(null)
-      setUsage(null)
-      delete axios.defaults.headers.common['Authorization']
+      // If refresh fails, handle session expiry
+      handleSessionExpired('Session expired. Please sign in again.')
       return null
     } finally {
       setRefreshingToken(false)
@@ -110,16 +158,65 @@ export const AuthProvider = ({ children }) => {
   // Check if user is authenticated on app load
   useEffect(() => {
     const initAuth = async () => {
-      if (token) {
+      const storedToken = localStorage.getItem('auth_token')
+      
+      if (storedToken) {
+        // Check if stored token is expired
+        if (isTokenExpired(storedToken)) {
+          console.log('Stored token is expired, attempting refresh...')
+          
+          // Try to refresh the token
+          const refreshedToken = await refreshAccessToken()
+          
+          if (refreshedToken) {
+            // Successfully refreshed, fetch user data
+            try {
+              await fetchUserData()
+            } catch (error) {
+              console.error('Failed to fetch user data after refresh:', error)
+              handleSessionExpired('Unable to restore session. Please sign in again.')
+            }
+          }
+          // If refresh failed, handleSessionExpired was already called
+        } else {
+          // Token is not expired, try to fetch user data
+          try {
+            await fetchUserData()
+          } catch (error) {
+            console.error('Auth initialization failed:', error)
+            
+            // If 401, try to refresh token
+            if (error.response?.status === 401) {
+              const refreshedToken = await refreshAccessToken()
+              if (refreshedToken) {
+                try {
+                  await fetchUserData()
+                } catch (refreshError) {
+                  console.error('Failed to fetch user data after refresh:', refreshError)
+                  handleSessionExpired('Unable to restore session. Please sign in again.')
+                }
+              }
+            } else {
+              handleSessionExpired('Session validation failed. Please sign in again.')
+            }
+          }
+        }
+      } else {
+        // No token stored, check if we have a refresh token cookie
         try {
-          await fetchUserData()
+          const refreshedToken = await refreshAccessToken()
+          if (refreshedToken) {
+            await fetchUserData()
+          }
         } catch (error) {
-          console.error('Auth initialization failed:', error)
-          logout()
+          // No valid refresh token, user needs to sign in
+          console.log('No valid tokens found')
         }
       }
+      
       setLoading(false)
     }
+    
     initAuth()
   }, [])
 
@@ -291,6 +388,29 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
+      {/* Session Expired Overlay */}
+      {sessionExpired && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md mx-4">
+            <div className="text-center">
+              <div className="w-12 h-12 mx-auto mb-4 text-red-500">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Session Expired
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 mb-4">
+                Your session has expired. Redirecting to sign in...
+              </p>
+              <div className="flex justify-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {children}
     </AuthContext.Provider>
   )

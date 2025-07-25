@@ -17,12 +17,31 @@ function SignIn() {
   const location = useLocation()
   const { login, isAuthenticated } = useAuth()
 
-  // Handle success message from signup redirect
+  // Handle success message from signup redirect or session expiry
   useEffect(() => {
+    // Check for session expired message in sessionStorage
+    const sessionExpiredMessage = sessionStorage.getItem('sessionExpiredMessage')
+    if (sessionExpiredMessage) {
+      setErrors({ submit: sessionExpiredMessage })
+      sessionStorage.removeItem('sessionExpiredMessage')
+      // Clear the error after 10 seconds
+      setTimeout(() => setErrors({}), 10000)
+      return
+    }
+    
+    // Handle location state messages
     if (location.state?.message) {
-      setSuccessMessage(location.state.message)
-      // Clear the message after 5 seconds
-      setTimeout(() => setSuccessMessage(''), 5000)
+      if (location.state?.expired) {
+        // Session expired message - show as error
+        setErrors({ submit: location.state.message })
+        // Clear the error after 10 seconds
+        setTimeout(() => setErrors({}), 10000)
+      } else {
+        // Regular success message
+        setSuccessMessage(location.state.message)
+        // Clear the message after 5 seconds
+        setTimeout(() => setSuccessMessage(''), 5000)
+      }
     }
   }, [location.state])
 

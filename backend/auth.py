@@ -67,4 +67,14 @@ def extract_user_id_from_token(token: str) -> Optional[int]:
     payload = verify_token(token)
     if payload:
         return payload.get("sub")
-    return None 
+    return None
+
+def is_token_expired(token: str) -> bool:
+    """Check if a token is expired without validating signature"""
+    try:
+        # Decode without verification to check expiration
+        payload = jwt.decode(token, options={"verify_signature": False})
+        exp = payload.get("exp", 0)
+        return datetime.utcnow() > datetime.fromtimestamp(exp)
+    except:
+        return True  # If we can't decode it, consider it expired 

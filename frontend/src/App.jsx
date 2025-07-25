@@ -2,6 +2,7 @@ import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from './components/ThemeProvider'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import AuthNavigationHandler from './components/AuthNavigationHandler'
 import LandingPage from './components/LandingPage'
 import Assistant from './components/Assistant'
 import SignIn from './pages/SignIn'
@@ -54,6 +55,7 @@ function PublicRoute({ children }) {
 function AppContent() {
   return (
     <Router>
+      <AuthNavigationHandler />
       <Routes>
         {/* Protected Routes */}
         <Route path="/assistant" element={
