@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Eye, EyeOff, Lock, Mail, User, Zap, CheckCircle, FileText, Shield, Users, TrendingUp, AlertCircle, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import axios from 'axios'
 
 function SignUp() {
   const [formData, setFormData] = useState({
@@ -29,18 +30,99 @@ function SignUp() {
     }
   }, [isAuthenticated, navigate])
 
+  // Load Google Identity Services script
+  useEffect(() => {
+    const loadGoogleScript = () => {
+      if (window.google) return Promise.resolve()
+      
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = 'https://accounts.google.com/gsi/client'
+        script.async = true
+        script.defer = true
+        script.onload = resolve
+        script.onerror = reject
+        document.head.appendChild(script)
+      })
+    }
+
+    loadGoogleScript().then(() => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          callback: handleGoogleResponse,
+        })
+      }
+    }).catch(console.error)
+  }, [])
+
+  // Handle Google OAuth response
+  const handleGoogleResponse = async (response) => {
+    try {
+      setIsGoogleLoading(true)
+      setErrors({})
+      
+      // Send the Google ID token to our backend
+      const backendResponse = await axios.post('http://localhost:8000/auth/google', {
+        token: response.credential
+      })
+      
+      // Store the tokens and authenticate the user
+      const { access_token, refresh_token } = backendResponse.data
+      localStorage.setItem('auth_token', access_token)
+      localStorage.setItem('refresh_token', refresh_token)
+      
+      // Show success message briefly then redirect to sign in
+      setSuccess(true)
+      setTimeout(() => {
+        navigate('/assistant')
+      }, 1500)
+      
+    } catch (error) {
+      console.error('Google authentication error:', error)
+      setErrors({ 
+        submit: error.response?.data?.detail || 'Google sign-up failed. Please try again.' 
+      })
+    } finally {
+      setIsGoogleLoading(false)
+    }
+  }
+
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true)
     setErrors({})
 
     try {
-      // Simulate Google OAuth
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      console.log('Google sign in attempt')
-      // Handle Google authentication here
+      if (window.google && window.google.accounts) {
+        // Render the Google Sign-In button and trigger it programmatically
+        const buttonDiv = document.createElement('div')
+        buttonDiv.style.position = 'absolute'
+        buttonDiv.style.top = '-9999px'
+        document.body.appendChild(buttonDiv)
+        
+        window.google.accounts.id.renderButton(buttonDiv, {
+          theme: 'outline',
+          size: 'large',
+        })
+        
+        // Trigger the hidden button click
+        setTimeout(() => {
+          const googleButton = buttonDiv.querySelector('div[role="button"]')
+          if (googleButton) {
+            googleButton.click()
+          } else {
+            throw new Error('Google button not found')
+          }
+          // Clean up
+          document.body.removeChild(buttonDiv)
+        }, 100)
+        
+      } else {
+        throw new Error('Google Identity Services not loaded')
+      }
     } catch (error) {
-      setErrors({ submit: 'Google sign-in failed. Please try again.' })
-    } finally {
+      console.error('Google sign-up error:', error)
+      setErrors({ submit: 'Google sign-up failed. Please try again.' })
       setIsGoogleLoading(false)
     }
   }

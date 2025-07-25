@@ -23,11 +23,15 @@ class User(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
-    password_hash = Column(String, nullable=False)
+    password_hash = Column(String, nullable=True)  # Made nullable for Google OAuth users
     name = Column(String)
     plan = Column(Enum(UserPlan), default=UserPlan.FREE)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Google OAuth fields
+    google_id = Column(String, unique=True, nullable=True, index=True)  # Google user ID
+    profile_picture = Column(String, nullable=True)  # Google profile picture URL
     # email_confirmed_at = Column(DateTime, nullable=True)
 
 # 2. Document table

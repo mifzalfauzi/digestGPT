@@ -62,7 +62,7 @@ function ModernSidebar({
     if (isChatLoadingHistory) {
       setShowLoadingOverlay(true)
     } else {
-      const timeout = setTimeout(() => setShowLoadingOverlay(false), 1100) // 1100ms delay
+      const timeout = setTimeout(() => setShowLoadingOverlay(false), 1400) // 1100ms delay
       return () => clearTimeout(timeout)
     }
   }, [isChatLoadingHistory])
