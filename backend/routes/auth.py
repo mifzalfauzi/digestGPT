@@ -380,6 +380,7 @@ async def google_auth(google_request: GoogleTokenRequest, response: Response, db
 async def logout(response: Response, current_user: User = Depends(get_current_active_user)):
     """Logout user and clear refresh token cookie"""
     clear_refresh_token_cookie(response)
+    clear_access_token_cookie(response)
     return {"message": "Successfully logged out"}
 
 @router.get("/check-auth")
