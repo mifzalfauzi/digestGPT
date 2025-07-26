@@ -7,7 +7,7 @@ import { Badge } from '../ui/badge'
 import { FileText, MessageCircle, Zap, Crown, Star, TrendingUp, AlertTriangle } from 'lucide-react'
 
 const UsageDashboard = ({ onClose }) => {
-  const { user, usage, getUsagePercentages, getRemainingLimits, PLAN_LIMITS } = useAuth()
+  const { user, usage } = useAuth()
 
   if (!user || !usage) {
     return (
@@ -20,9 +20,25 @@ const UsageDashboard = ({ onClose }) => {
     )
   }
 
+  // Utility functions for usage calculations
+  const getUsagePercentages = () => {
+    return {
+      documents: usage?.documents ? Math.round((usage.documents.used / usage.documents.limit) * 100) : 0,
+      chats: usage?.chats ? Math.round((usage.chats.used / usage.chats.limit) * 100) : 0,
+      tokens: usage?.tokens ? Math.round((usage.tokens.used / usage.tokens.limit) * 100) : 0
+    }
+  }
+
+  const getRemainingLimits = () => {
+    return {
+      documents: usage?.documents ? Math.max(0, usage.documents.limit - usage.documents.used) : 0,
+      chats: usage?.chats ? Math.max(0, usage.chats.limit - usage.chats.used) : 0,
+      tokens: usage?.tokens ? Math.max(0, usage.tokens.limit - usage.tokens.used) : 0
+    }
+  }
+
   const percentages = getUsagePercentages()
   const remaining = getRemainingLimits()
-  const currentLimits = PLAN_LIMITS[user.plan.toLowerCase()]
 
   const planColors = {
     free: 'bg-blue-100 text-blue-800 border-blue-200',
@@ -90,10 +106,10 @@ const UsageDashboard = ({ onClose }) => {
               </div>
               <div className="text-right">
                 <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {usage.documents.used} / {currentLimits.doc_limit}
+                  {usage?.documents?.used || 0} / {usage?.documents?.limit || 0}
                 </span>
                 <div className="text-xs text-gray-500">
-                  {remaining.documents} remaining
+                  {remaining.documents || 0} remaining
                 </div>
               </div>
             </div>
@@ -124,10 +140,10 @@ const UsageDashboard = ({ onClose }) => {
               </div>
               <div className="text-right">
                 <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {usage.chats.used} / {currentLimits.chat_limit}
+                  {usage?.chats?.used || 0} / {usage?.chats?.limit || 0}
                 </span>
                 <div className="text-xs text-gray-500">
-                  {remaining.chats} remaining
+                  {remaining.chats || 0} remaining
                 </div>
               </div>
             </div>
@@ -158,10 +174,10 @@ const UsageDashboard = ({ onClose }) => {
               </div>
               <div className="text-right">
                 <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {usage.tokens.used.toLocaleString()} / {currentLimits.token_limit.toLocaleString()}
+                  {(usage?.tokens?.used || 0).toLocaleString()} / {(usage?.tokens?.limit || 0).toLocaleString()}
                 </span>
                 <div className="text-xs text-gray-500">
-                  {remaining.tokens.toLocaleString()} remaining
+                  {(remaining.tokens || 0).toLocaleString()} remaining
                 </div>
               </div>
             </div>

@@ -14,18 +14,11 @@ function ReanalysisButton({ documentId, onReanalysisComplete }) {
     setReanalysisStatus(null)
 
     try {
-      const token = localStorage.getItem('auth_token')
-      if (!token) {
-        throw new Error('Authentication required')
-      }
-
       const response = await axios.post(
         `http://localhost:8000/documents/${documentId}/reanalyze`,
         {},
         {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          withCredentials: true  // 🔐 Send HttpOnly cookies (access_token)
         }
       )
 

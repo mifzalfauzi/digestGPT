@@ -73,16 +73,18 @@ function Assistant() {
           // Load both documents and collections in parallel
           const [docsResponse, collectionsResponse] = await Promise.all([
             axios.get('http://localhost:8000/documents/', {
-              headers: {
-                'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}`
-              },
+              // headers: {
+              //   'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}`
+              // },
+              withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
               params: {
                 skip: 0,
                 limit: 50
               }
             }),
             axios.get('http://localhost:8000/collections/', {
-              headers: { 'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}` },
+              // headers: { 'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}` },
+              withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
               params: { skip: 0, limit: 50 }
             })
           ]);
@@ -97,7 +99,8 @@ function Assistant() {
             const fullCollections = await Promise.all(collectionsResponse.data.map(async (col) => {
               try {
                 const detailRes = await axios.get(`http://localhost:8000/collections/${col.id}`, {
-                  headers: { 'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}` }
+                  // headers: { 'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}` }
+                  withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
                 });
                 return { ...col, documents: detailRes.data.documents || [] };
               } catch (error) {
@@ -126,13 +129,14 @@ function Assistant() {
 
   // Function to load a historical document's full data
   const loadHistoricalDocument = async (documentId) => {
-    if (!user?.token && !localStorage.getItem('auth_token')) return null
+    if (!isAuthenticated) {
+      console.error('User not authenticated')
+      return null
+    }
 
     try {
       const response = await axios.get(`http://localhost:8000/documents/${documentId}`, {
-        headers: {
-          'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}`
-        }
+        withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
       })
 
       return response.data
@@ -152,16 +156,18 @@ function Assistant() {
       // Load both documents and collections in parallel
       const [docsResponse, collectionsResponse] = await Promise.all([
         axios.get('http://localhost:8000/documents/', {
-          headers: {
-            'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}`
-          },
+          // headers: {
+          //   'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}`
+          // },
+          withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
           params: {
             skip: 0,
             limit: 50
           }
         }),
         axios.get('http://localhost:8000/collections/', {
-          headers: { 'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}` },
+          // headers: { 'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}` },
+          withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
           params: { skip: 0, limit: 50 }
         })
       ]);
@@ -176,7 +182,8 @@ function Assistant() {
         const fullCollections = await Promise.all(collectionsResponse.data.map(async (col) => {
           try {
             const detailRes = await axios.get(`http://localhost:8000/collections/${col.id}`, {
-              headers: { 'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}` }
+              // headers: { 'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}` }
+              withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
             });
             return { ...col, documents: detailRes.data.documents || [] };
           } catch (error) {
@@ -234,27 +241,27 @@ function Assistant() {
   // Helper function to ensure document has text data
   const ensureDocumentText = async (documentId) => {
     try {
-      console.log('Fetching document text for ID:', documentId)
+      console.log('Fetching document text for ID:', documentId);
+    
       const response = await axios.get(`http://localhost:8000/documents/${documentId}`, {
-        headers: {
-          'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}`
-        }
-      })
-
-      console.log('Backend response for document fetch:', response.data)
-
+        withCredentials: true  // Include cookies like auth_token
+      });
+    
+      console.log('Backend response for document fetch:', response.data);
+    
       updateDocument(selectedDocumentId, {
         results: {
           ...selectedDocument.results,
           ...response.data,
           document_text: response.data.document_text || response.data.text || response.data.analysis?.document_text
         }
-      })
-
-      console.log('Updated document with text data')
+      });
+    
+      console.log('Updated document with text data');
     } catch (error) {
-      console.error('Error fetching document data:', error)
+      console.error('Error fetching document data:', error);
     }
+    
   }
 
   // Auto-fetch document text if missing
@@ -390,6 +397,14 @@ function Assistant() {
         const fullDocumentData = await loadHistoricalDocument(documentId)
 
         console.log("Full document data:", fullDocumentData)
+        
+        // Check if document data was loaded successfully
+        if (!fullDocumentData) {
+          console.error('Failed to load document data - received null response')
+          setError('Failed to load document. Please try again.')
+          return
+        }
+
         console.log("Raw key_points type:", typeof fullDocumentData.key_points)
         console.log("Raw key_points value:", fullDocumentData.key_points)
         console.log("Raw risk_flags type:", typeof fullDocumentData.risk_flags)
@@ -726,10 +741,11 @@ function Assistant() {
         name: collectionName.trim(),
         description: `Collection created with ${stagedFiles.length} documents`
       }, {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${user?.token || localStorage.getItem('auth_token')}`
-        }
+         headers: {
+          "Content-Type": "application/json"
+       
+        },
+        withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
       })
 
       const collectionId = collectionResponse.data.id
@@ -856,12 +872,20 @@ function Assistant() {
           console.log(`Adding collection_id to upload: ${collectionId}`)
         }
 
+        // response = await axios.post("http://localhost:8000/documents/upload", formData, {
+        //   headers: {
+        //     "Content-Type": "multipart/form-data",
+        //     "Authorization": `Bearer ${user?.token || localStorage.getItem('auth_token')}`
+        //   },
+        // })
+
         response = await axios.post("http://localhost:8000/documents/upload", formData, {
           headers: {
-            "Content-Type": "multipart/form-data",
-            "Authorization": `Bearer ${user?.token || localStorage.getItem('auth_token')}`
+            "Content-Type": "multipart/form-data"
           },
-        })
+          withCredentials: true  // 🔐 Send HttpOnly cookies (access_token)
+        });
+        
       } else if (textContent) {
         const textPayload = {
           text: textContent,
@@ -879,9 +903,9 @@ function Assistant() {
         response = await axios.post("http://localhost:8000/documents/analyze-text", textPayload, {
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${user?.token || localStorage.getItem('auth_token')}`
           },
-        })
+          withCredentials: true  // 🔐 Send HttpOnly cookies (access_token)
+        });
       }
 
       updateDocument(documentId, {
@@ -1448,9 +1472,10 @@ This business plan effectively balances ambitious growth objectives with compreh
   const loadHistoricalCollectionDocuments = async (collectionId) => {
     try {
       const response = await axios.get(`http://localhost:8000/collections/${collectionId}`, {
-        headers: {
-          'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}`
-        }
+        // headers: {
+        //   'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}`
+        // }
+        withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
       });
       return response.data.documents || [];
     } catch (error) {
@@ -1484,7 +1509,7 @@ This business plan effectively balances ambitious growth objectives with compreh
               documents={documents}
               selectedDocumentId={selectedDocumentId}
               isChatLoadingHistory={isChatLoadingHistory}
-              isChatLoadingHistory={isChatLoadingHistory}
+              // isChatLoadingHistory={isChatLoadingHistory}
               onSelectDocument={selectDocument}
               onRemoveDocument={removeDocument}
               collections={collections}

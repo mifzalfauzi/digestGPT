@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
-from fastapi.security import HTTPBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr, validator
@@ -14,41 +14,36 @@ from google.oauth2 import id_token
 from database import get_db
 from models import User, UserPlan
 from auth import hash_password, verify_password, create_access_token, create_refresh_token, verify_token
-from dependencies import get_current_active_user, get_user_limits_info
+from dependencies import get_current_active_user, get_user_limits_info, get_access_token_from_cookie, get_refresh_token_from_cookie
 # from gotrue.client import GoTrueClient
 from datetime import datetime
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 # Cookie configuration
-REFRESH_TOKEN_COOKIE_NAME = "refresh_token"
-REFRESH_TOKEN_COOKIE_MAX_AGE = 30 * 24 * 60 * 60  # 30 days in seconds
-
 ACCESS_TOKEN_COOKIE_NAME = "access_token"
-ACCESS_TOKEN_COOKIE_MAX_AGE = 15 * 60  # 15 minutes in seconds
+REFRESH_TOKEN_COOKIE_NAME = "refresh_token"
 
 def set_access_token_cookie(response: Response, access_token: str):
-    """Set access token as secure HttpOnly cookie"""
+    """Set access token as HttpOnly cookie"""
     response.set_cookie(
         key=ACCESS_TOKEN_COOKIE_NAME,
         value=access_token,
-        max_age=ACCESS_TOKEN_COOKIE_MAX_AGE,
         httponly=True,
-        secure=False,  # Set to True for HTTPS in production
-        samesite="lax",
-        domain=None  # Will use current domain
+        max_age=15 * 60,  # 15 minutes
+        secure=False,  # Set to True in production with HTTPS
+        samesite="lax"
     )
 
 def set_refresh_token_cookie(response: Response, refresh_token: str):
-    """Set refresh token as secure HttpOnly cookie"""
+    """Set refresh token as HttpOnly cookie"""
     response.set_cookie(
         key=REFRESH_TOKEN_COOKIE_NAME,
         value=refresh_token,
-        max_age=REFRESH_TOKEN_COOKIE_MAX_AGE,
         httponly=True,
-        secure=False,  # Set to True for HTTPS in production
-        samesite="lax",
-        domain=None  # Will use current domain
+        max_age=7 * 24 * 60 * 60,  # 7 days
+        secure=False,  # Set to True in production with HTTPS
+        samesite="lax"
     )
 
 def clear_access_token_cookie(response: Response):
@@ -68,14 +63,6 @@ def clear_refresh_token_cookie(response: Response):
         secure=False,
         samesite="lax"
     )
-
-def get_refresh_token_from_cookie(request: Request) -> Optional[str]:
-    """Extract refresh token from cookie"""
-    return request.cookies.get(REFRESH_TOKEN_COOKIE_NAME)
-
-def get_access_token_from_cookie(request: Request) -> Optional[str]:
-    """Extract access token from cookie"""
-    return request.cookies.get(ACCESS_TOKEN_COOKIE_NAME)
 
 # Google OAuth configuration
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")

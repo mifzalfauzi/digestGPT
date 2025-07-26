@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -11,6 +11,19 @@ from auth import verify_token
 
 # Security scheme
 security = HTTPBearer()
+
+# Cookie configuration
+ACCESS_TOKEN_COOKIE_NAME = "access_token"
+REFRESH_TOKEN_COOKIE_NAME = "refresh_token"
+
+# Cookie helper functions
+def get_access_token_from_cookie(request: Request) -> Optional[str]:
+    """Extract access token from cookie"""
+    return request.cookies.get(ACCESS_TOKEN_COOKIE_NAME)
+
+def get_refresh_token_from_cookie(request: Request) -> Optional[str]:
+    """Extract refresh token from cookie"""
+    return request.cookies.get(REFRESH_TOKEN_COOKIE_NAME)
 
 # Plan limits configuration
 PLAN_LIMITS = {
@@ -30,6 +43,49 @@ PLAN_LIMITS = {
         "token_limit": 350000
     }
 }
+
+async def get_current_user_from_cookie(
+    request: Request,
+    db: Session = Depends(get_db)
+) -> User:
+    """Get current authenticated user from HTTP-only cookie"""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+    )
+    
+    try:
+        # Get access token from cookie
+        access_token = get_access_token_from_cookie(request)
+        if not access_token:
+            raise credentials_exception
+        
+        # Verify the token
+        payload = verify_token(access_token)
+        if payload is None:
+            raise credentials_exception
+            
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+            
+        # Get user from database
+        user = db.query(User).filter(User.id == user_id).first()
+        if user is None:
+            raise credentials_exception
+            
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Inactive user"
+            )
+            
+        return user
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise credentials_exception
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -68,10 +124,35 @@ async def get_current_user(
     except Exception as e:
         raise credentials_exception
 
-async def get_current_active_user(
-    current_user: User = Depends(get_current_user)
+async def get_current_user_flexible(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
+    db: Session = Depends(get_db)
 ) -> User:
-    """Get current active user"""
+    """Get current authenticated user from either cookie or Bearer token"""
+    # Try cookie first
+    try:
+        return await get_current_user_from_cookie(request, db)
+    except HTTPException:
+        pass
+    
+    # Fall back to Bearer token
+    if credentials:
+        try:
+            return await get_current_user(credentials, db)
+        except HTTPException:
+            pass
+    
+    # If both fail, raise authentication error
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+    )
+
+async def get_current_active_user(
+    current_user: User = Depends(get_current_user_flexible)
+) -> User:
+    """Get current active user (supports both cookie and Bearer token auth)"""
     if not current_user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

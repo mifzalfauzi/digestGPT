@@ -9,10 +9,21 @@ load_dotenv()
 # Supabase
 url: str = os.getenv("SUPABASE_URL")
 key: str = os.getenv("SUPABASE_KEY")
-supabase: Client = create_client(url, key)
 
 print("Supabase URL:", url)
 print("Supabase Key exists:", bool(key))
+
+# Initialize Supabase client with error handling to avoid proxy issues
+supabase: Client = None
+if url and key:
+    try:
+        supabase = create_client(url, key)
+        print("Supabase client initialized successfully")
+    except Exception as e:
+        print(f"Warning: Could not initialize Supabase client: {e}")
+        supabase = None
+else:
+    print("Warning: Supabase URL or key not found in environment variables")
 
 # Postgres
 USER = os.getenv("DB_USER")

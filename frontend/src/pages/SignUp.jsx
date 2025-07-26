@@ -21,7 +21,7 @@ function SignUp() {
   const [errors, setErrors] = useState({})
   const [success, setSuccess] = useState(false)
   const navigate = useNavigate()
-  const { register, isAuthenticated } = useAuth()
+  const { register, isAuthenticated, login } = useAuth()
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -63,16 +63,18 @@ function SignUp() {
       setErrors({})
       
       // Send the Google ID token to our backend
-      const backendResponse = await axios.post('http://localhost:8000/auth/google', {
+      await axios.post('http://localhost:8000/auth/google', {
         token: response.credential
+      }, {
+        withCredentials: true
       })
       
-      // Store the tokens and authenticate the user
-      const { access_token, refresh_token } = backendResponse.data
-      localStorage.setItem('auth_token', access_token)
-      localStorage.setItem('refresh_token', refresh_token)
+      // The backend sets HTTP-only cookies automatically, so we can use the login function
+      // which will call fetchUserData and update the authentication state
+      // Pass an empty object since cookies are already set  
+      await login({})
       
-      // Show success message briefly then redirect to sign in
+      // Show success message briefly then redirect to assistant
       setSuccess(true)
       setTimeout(() => {
         navigate('/assistant')

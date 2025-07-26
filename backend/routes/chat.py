@@ -26,7 +26,39 @@ load_dotenv()
 
 # Import Anthropic client configuration
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
-client = anthropic.Anthropic(api_key=anthropic_api_key) if anthropic_api_key else None
+
+# Initialize Anthropic client with better error handling
+client = None
+if anthropic_api_key:
+    try:
+        # Try basic initialization first
+        import anthropic
+        client = anthropic.Anthropic(api_key=anthropic_api_key)
+        print("✅ Anthropic client initialized successfully in chat.py")
+    except TypeError as e:
+        if "proxies" in str(e):
+            print(f"⚠️  Anthropic client proxy error in chat.py, trying alternative initialization: {e}")
+            try:
+                # Alternative: Try initializing with minimal parameters
+                import httpx
+                http_client = httpx.Client()
+                client = anthropic.Anthropic(
+                    api_key=anthropic_api_key,
+                    http_client=http_client
+                )
+                print("✅ Anthropic client initialized with custom http client in chat.py")
+            except Exception as e2:
+                print(f"❌ Alternative Anthropic initialization also failed in chat.py: {e2}")
+                client = None
+        else:
+            print(f"❌ Anthropic client initialization failed in chat.py: {e}")
+            client = None
+    except Exception as e:
+        print(f"❌ Anthropic client initialization failed in chat.py: {e}")
+        client = None
+else:
+    print("⚠️  ANTHROPIC_API_KEY not found in environment variables for chat.py")
+    client = None
 
 openai_client = OpenAI(
     base_url="https://openrouter.ai/api/v1", api_key=os.getenv("OPENROUTER_API_KEY")

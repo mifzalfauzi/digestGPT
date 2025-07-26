@@ -193,19 +193,20 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
       console.log('Loading chat history')
 
       try {
-        const token = localStorage.getItem('auth_token')
-        if (!token) {
-          setMessages([])
-          setIsLoadingHistory(false)
-          return
-        }
+        // const token = localStorage.getItem('auth_token')
+        // if (!token) {
+        //   setMessages([])
+        //   setIsLoadingHistory(false)
+        //   return
+        // }
 
         const response = await axios.get(
           `http://localhost:8000/chat/history/${documentId}`,
           {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
+            // headers: {
+            //   'Authorization': `Bearer ${token}`  
+            // }
+            withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
           }
         )
 
@@ -357,8 +358,8 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
         }, {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-          }
+          },
+          withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
         }
         )
         aiResponse = {
@@ -383,8 +384,8 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
         }, {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-          }
+          },
+          withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
         })
         aiResponse = response.data
       }

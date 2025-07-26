@@ -82,46 +82,42 @@ function SignIn() {
 
    // Handle Google OAuth response
    const handleGoogleResponse = async (response) => {
-     try {
-       setIsGoogleLoading(true)
-       setErrors({})
-       
-       // Clean up any Google popups
-       const googlePopups = document.querySelectorAll('[data-google-popup]')
-       googlePopups.forEach(popup => popup.remove())
-       
-       // Send the Google ID token to our backend (with credentials for cookies)
-       const backendResponse = await axios.post('http://localhost:8000/auth/google', {
-         token: response.credential
-       }, {
-         withCredentials: true  // Include cookies
-       })
-       
-       // Store the access token (refresh token is in HttpOnly cookie)
-       const { access_token } = backendResponse.data
-       localStorage.setItem('auth_token', access_token)
-       
-       // Update auth context (this should trigger navigation to /assistant)
-       await login({ token: access_token })
-       
-     } catch (error) {
-       console.error('Google authentication error:', error)
-       let errorMessage = 'Google sign-in failed. Please try again.'
-       
-       if (error.response?.data?.detail) {
-         if (typeof error.response.data.detail === 'string') {
-           errorMessage = error.response.data.detail
-         } else {
-           // Handle validation error format
-           errorMessage = 'Invalid authentication data. Please try again.'
-         }
-       }
-       
-       setErrors({ submit: errorMessage })
-     } finally {
-       setIsGoogleLoading(false)
-     }
-   }
+    try {
+      setIsGoogleLoading(true)
+      setErrors({})
+  
+      const googlePopups = document.querySelectorAll('[data-google-popup]')
+      googlePopups.forEach(popup => popup.remove())
+  
+      // Send Google token to backend, cookies will be set automatically
+      await axios.post('http://localhost:8000/auth/google', {
+        token: response.credential
+      }, {
+        withCredentials: true
+      })
+  
+      // The backend sets HTTP-only cookies automatically, so we can use the login function
+      // which will call fetchUserData and update the authentication state
+      // Pass an empty object since cookies are already set
+      await login({})
+      
+      // Navigation will be handled by useEffect when isAuthenticated changes
+    } catch (error) {
+      console.error('Google authentication error:', error)
+      let errorMessage = 'Google sign-in failed. Please try again.'
+  
+      if (error.response?.data?.detail) {
+        errorMessage = typeof error.response.data.detail === 'string'
+          ? error.response.data.detail
+          : 'Invalid authentication data. Please try again.'
+      }
+  
+      setErrors({ submit: errorMessage })
+    } finally {
+      setIsGoogleLoading(false)
+    }
+  }
+  
 
    const validateForm = () => {
     const newErrors = {}
