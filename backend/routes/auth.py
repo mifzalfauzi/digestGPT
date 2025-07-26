@@ -24,6 +24,21 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 REFRESH_TOKEN_COOKIE_NAME = "refresh_token"
 REFRESH_TOKEN_COOKIE_MAX_AGE = 30 * 24 * 60 * 60  # 30 days in seconds
 
+ACCESS_TOKEN_COOKIE_NAME = "access_token"
+ACCESS_TOKEN_COOKIE_MAX_AGE = 15 * 60  # 15 minutes in seconds
+
+def set_access_token_cookie(response: Response, access_token: str):
+    """Set access token as secure HttpOnly cookie"""
+    response.set_cookie(
+        key=ACCESS_TOKEN_COOKIE_NAME,
+        value=access_token,
+        max_age=ACCESS_TOKEN_COOKIE_MAX_AGE,
+        httponly=True,
+        secure=False,  # Set to True for HTTPS in production
+        samesite="lax",
+        domain=None  # Will use current domain
+    )
+
 def set_refresh_token_cookie(response: Response, refresh_token: str):
     """Set refresh token as secure HttpOnly cookie"""
     response.set_cookie(
@@ -34,6 +49,15 @@ def set_refresh_token_cookie(response: Response, refresh_token: str):
         secure=False,  # Set to True for HTTPS in production
         samesite="lax",
         domain=None  # Will use current domain
+    )
+
+def clear_access_token_cookie(response: Response):
+    """Clear access token cookie"""
+    response.delete_cookie(
+        key=ACCESS_TOKEN_COOKIE_NAME,
+        httponly=True,
+        secure=False,
+        samesite="lax"
     )
 
 def clear_refresh_token_cookie(response: Response):
@@ -48,6 +72,10 @@ def clear_refresh_token_cookie(response: Response):
 def get_refresh_token_from_cookie(request: Request) -> Optional[str]:
     """Extract refresh token from cookie"""
     return request.cookies.get(REFRESH_TOKEN_COOKIE_NAME)
+
+def get_access_token_from_cookie(request: Request) -> Optional[str]:
+    """Extract access token from cookie"""
+    return request.cookies.get(ACCESS_TOKEN_COOKIE_NAME)
 
 # Google OAuth configuration
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -131,6 +159,7 @@ async def register(user: UserRegister, response: Response, db: Session = Depends
     
     # Set refresh token as HttpOnly cookie
     set_refresh_token_cookie(response, refresh_token)
+    set_access_token_cookie(response, access_token)
     
     return Token(
         access_token=access_token
@@ -170,7 +199,7 @@ async def login(user_credentials: UserLogin, response: Response, db: Session = D
     
     # Set refresh token as HttpOnly cookie
     set_refresh_token_cookie(response, refresh_token)
-
+    set_access_token_cookie(response, access_token)
     return Token(
         access_token=access_token
     )
@@ -219,7 +248,7 @@ async def refresh_token(request: Request, response: Response, token_data: TokenR
     
     # Set new refresh token as HttpOnly cookie
     set_refresh_token_cookie(response, new_refresh_token)
-    
+    set_access_token_cookie(response, access_token)
     return Token(
         access_token=access_token
     )
@@ -347,7 +376,7 @@ async def google_auth(google_request: GoogleTokenRequest, response: Response, db
         
         # Set refresh token as HttpOnly cookie
         set_refresh_token_cookie(response, refresh_token)
-        
+        set_access_token_cookie(response, access_token)
         return Token(
             access_token=access_token
         )
