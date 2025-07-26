@@ -14,6 +14,7 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
+  const [loading_logout, setLoading_logout] = useState(false)
   const [usage, setUsage] = useState({
     documents: { used: 0 },
     chats: { used: 0 },
@@ -219,10 +220,14 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      setLoading_logout(true)
+      console.log('Logging out...')
       // Call logout endpoint to clear cookies on server
       await axios.post(`${API_BASE_URL}/auth/logout`, {}, {
         withCredentials: true
       })
+      console.log('Logout successful')
+      setLoading_logout(false)
     } catch (error) {
       console.error('Logout request failed:', error)
       // Continue with local cleanup even if server request fails
@@ -237,8 +242,8 @@ export const AuthProvider = ({ children }) => {
       })
       
       // Clear any stored tokens (cleanup)
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('refresh_token')
+      // localStorage.removeItem('auth_token')
+      // localStorage.removeItem('refresh_token')
     }
   }
 
@@ -290,6 +295,7 @@ export const AuthProvider = ({ children }) => {
     register,
     login,
     logout,
+    loading_logout,
     refreshUserData,
     canUploadDocument,
     canSendChat,

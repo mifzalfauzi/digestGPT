@@ -13,12 +13,14 @@ import { Button } from "./ui/button"
 import { Menu, X, MessageCircle, FileText, Eye, GripVertical, Sparkles, Zap, AlertTriangle, LogOut, TrendingUp } from "lucide-react"
 import { Card, CardContent } from "./ui/card"
 import { Alert, AlertDescription } from "./ui/alert"
+import { Spinner } from "./ui/spinner"
 
 function Assistant() {
   // Auth context
   const {
     user,
     logout,
+    loading_logout,
     canUploadDocument,
     canSendChat,
     canUseTokens,
@@ -242,13 +244,13 @@ function Assistant() {
   const ensureDocumentText = async (documentId) => {
     try {
       console.log('Fetching document text for ID:', documentId);
-    
+
       const response = await axios.get(`http://localhost:8000/documents/${documentId}`, {
         withCredentials: true  // Include cookies like auth_token
       });
-    
+
       console.log('Backend response for document fetch:', response.data);
-    
+
       updateDocument(selectedDocumentId, {
         results: {
           ...selectedDocument.results,
@@ -256,12 +258,12 @@ function Assistant() {
           document_text: response.data.document_text || response.data.text || response.data.analysis?.document_text
         }
       });
-    
+
       console.log('Updated document with text data');
     } catch (error) {
       console.error('Error fetching document data:', error);
     }
-    
+
   }
 
   // Auto-fetch document text if missing
@@ -397,7 +399,7 @@ function Assistant() {
         const fullDocumentData = await loadHistoricalDocument(documentId)
 
         console.log("Full document data:", fullDocumentData)
-        
+
         // Check if document data was loaded successfully
         if (!fullDocumentData) {
           console.error('Failed to load document data - received null response')
@@ -741,9 +743,9 @@ function Assistant() {
         name: collectionName.trim(),
         description: `Collection created with ${stagedFiles.length} documents`
       }, {
-         headers: {
+        headers: {
           "Content-Type": "application/json"
-       
+
         },
         withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
       })
@@ -774,7 +776,7 @@ function Assistant() {
       setCurrentView('workspace')
       setSidebarOpen(false)
       setActivePanel("chat")
-      
+
       // Clear historical collection state when new uploads happen
       setSelectedHistoricalCollection(null)
       setSelectedHistoricalDocuments([])
@@ -860,7 +862,7 @@ function Assistant() {
       if (file) {
         const formData = new FormData()
         formData.append("file", file)
-        
+
         // Add unique identifier to prevent backend from returning existing documents
         // This ensures each upload creates a new analysis even if filename is duplicate
         formData.append("upload_timestamp", Date.now().toString())
@@ -885,7 +887,7 @@ function Assistant() {
           },
           withCredentials: true  // 🔐 Send HttpOnly cookies (access_token)
         });
-        
+
       } else if (textContent) {
         const textPayload = {
           text: textContent,
@@ -924,7 +926,7 @@ function Assistant() {
 
       // Refresh historical documents to include the newly analyzed document
       await refreshHistoricalDocuments()
-      
+
       // Clear historical collection state when new uploads happen
       setSelectedHistoricalCollection(null)
       setSelectedHistoricalDocuments([])
@@ -1547,7 +1549,7 @@ This business plan effectively balances ambitious growth objectives with compreh
 
             {/* Mobile Menu Button */}
             <div className="lg:hidden fixed top-4 left-4 z-40">
-            <Button
+              <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -1574,13 +1576,19 @@ This business plan effectively balances ambitious growth objectives with compreh
                 variant="ghost"
                 size="sm"
                 onClick={logout}
-                className="bg-[#121212] backdrop-blur-xl shadow-xl border border-border hover:bg-destructive hover:text-destructive-foreground transition-all duration-200 p-2 group"
+                disabled={loading_logout}
+                className="relative bg-[#121212] backdrop-blur-xl shadow-xl border border-border hover:bg-destructive hover:text-destructive-foreground transition-all duration-200 p-2 group"
               >
-                <LogOut className="h-4 w-4 group-hover:text-destructive-foreground" />
+                {loading_logout ? (
+                  <Spinner />
+                ) : (
+                  <LogOut className="h-4 w-4 group-hover:text-destructive-foreground" />
+                )}
                 <span className="absolute top-full right-0 mt-2 px-2 py-1 text-xs bg-popover text-popover-foreground rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                  Sign Out
+                  {loading_logout ? 'Signing Out...' : 'Sign Out'}
                 </span>
               </Button>
+
             </div>
 
             {/* Centered Content Layout */}
@@ -1943,8 +1951,8 @@ This business plan effectively balances ambitious growth objectives with compreh
                   size="sm"
                   onClick={() => setActivePanel("chat")}
                   className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-semibold h-auto min-w-0 rounded-md sm:rounded-lg transition-all duration-200 ${activePanel === "chat"
-                      ? "bg-white dark:bg-gray-700 shadow-sm text-blue-700 dark:text-blue-300"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                    ? "bg-white dark:bg-gray-700 shadow-sm text-blue-700 dark:text-blue-300"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                     }`}
                 >
                   <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
@@ -1955,8 +1963,8 @@ This business plan effectively balances ambitious growth objectives with compreh
                   size="sm"
                   onClick={() => setActivePanel("document")}
                   className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-semibold h-auto min-w-0 rounded-md sm:rounded-lg transition-all duration-200 ${activePanel === "document"
-                      ? "bg-white dark:bg-gray-700 shadow-sm text-blue-700 dark:text-blue-300"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                    ? "bg-white dark:bg-gray-700 shadow-sm text-blue-700 dark:text-blue-300"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                     }`}
                 >
                   <FileText className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
