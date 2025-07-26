@@ -209,7 +209,7 @@ function ModernSidebar({
             )}
           </Button>
 
-          <Button
+          {/* <Button
             onClick={() => {
               onCasualChat()
               // Close mobile sidebar with proper delay
@@ -228,7 +228,7 @@ function ModernSidebar({
           >
             <MessageCircle className="h-3.5 w-3.5 flex-shrink-0" />
             {!collapsed && <span>Normal Chat</span>}
-          </Button>
+          </Button> */}
 
           <Button
             onClick={() => {
@@ -313,10 +313,10 @@ function ModernSidebar({
         {user && user.plan !== 'free' && !collapsed && (
           <div className="space-y-2">
             <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">
-              Your Plan
+              {/* Your Plan */}
             </p>
 
-            <Card className={`p-3 border border-gray-200 dark:border-gray-700 bg-gradient-to-r ${planColors[user.plan]}/10`}>
+            <Card className={`p-3 ${planColors[user.plan]}/10 dark:border-[#121212]`}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   {planIcons[user.plan]}
@@ -331,7 +331,7 @@ function ModernSidebar({
 
               <Button
                 onClick={() => setIsUsageDashboardOpen(true)}
-                variant="outline"
+                // variant="outline"
                 className="w-full bg-black h-8 text-xs text-white"
               >
                 <TrendingUp className="h-3 w-3 mr-1" />

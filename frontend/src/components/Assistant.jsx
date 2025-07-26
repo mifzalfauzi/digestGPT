@@ -51,7 +51,7 @@ function Assistant() {
   const [isDemoMode, setIsDemoMode] = useState(false)
   const [bypassAPI, setBypassAPI] = useState(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
-
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   // Usage dashboard state
   const [showUsageDashboard, setShowUsageDashboard] = useState(false)
 
@@ -1575,12 +1575,15 @@ This business plan effectively balances ambitious growth objectives with compreh
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={logout}
+                onClick={() => setShowLogoutConfirm(true)}
                 disabled={loading_logout}
                 className="relative bg-[#121212] backdrop-blur-xl shadow-xl border border-border hover:bg-destructive hover:text-destructive-foreground transition-all duration-200 p-2 group"
               >
                 {loading_logout ? (
-                  <Spinner />
+                  <div className="flex items-center gap-2">
+                    {/* <Spinner />
+                    <p>Signing Out...</p> */}
+                  </div>
                 ) : (
                   <LogOut className="h-4 w-4 group-hover:text-destructive-foreground" />
                 )}
@@ -1588,6 +1591,37 @@ This business plan effectively balances ambitious growth objectives with compreh
                   {loading_logout ? 'Signing Out...' : 'Sign Out'}
                 </span>
               </Button>
+
+              {loading_logout && (
+                <Spinner />
+              )}
+
+              {showLogoutConfirm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white dark:bg-[#1a1a1a] rounded-lg shadow-lg p-6 w-full max-w-sm">
+                    <h2 className="text-lg font-semibold mb-4">Confirm Logout</h2>
+                    <p className="mb-6 text-sm text-muted-foreground">Are you sure you want to log out?</p>
+                    <div className="flex justify-end gap-3">
+                      <button
+                        onClick={() => setShowLogoutConfirm(false)}
+                        className="px-4 py-2 rounded border border-border bg-muted hover:bg-muted/80"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={async () => {
+                          setShowLogoutConfirm(false)
+                          await logout()
+                        }}
+                        className="px-4 py-2 rounded bg-destructive text-white hover:bg-destructive/90"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
 
             </div>
 

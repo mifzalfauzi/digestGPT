@@ -31,8 +31,9 @@ def set_access_token_cookie(response: Response, access_token: str):
         value=access_token,
         httponly=True,
         max_age=15 * 60,  # 15 minutes
-        secure=False,  # Set to True in production with HTTPS
-        samesite="lax"
+        secure=True,      # Change to True for production (HTTPS)
+        samesite="lax",
+        path="/"
     )
 
 def set_refresh_token_cookie(response: Response, refresh_token: str):
@@ -41,9 +42,10 @@ def set_refresh_token_cookie(response: Response, refresh_token: str):
         key=REFRESH_TOKEN_COOKIE_NAME,
         value=refresh_token,
         httponly=True,
-        max_age=7 * 24 * 60 * 60,  # 7 days
-        secure=False,  # Set to True in production with HTTPS
-        samesite="lax"
+        max_age=30 * 24 * 60 * 60,  # 30 days
+        secure=True,                # Change to True for production (HTTPS)
+        samesite="lax",
+        path="/"
     )
 
 def clear_access_token_cookie(response: Response):
@@ -51,8 +53,9 @@ def clear_access_token_cookie(response: Response):
     response.delete_cookie(
         key=ACCESS_TOKEN_COOKIE_NAME,
         httponly=True,
-        secure=False,
-        samesite="lax"
+        secure=True,
+        samesite="lax",
+        path="/"
     )
 
 def clear_refresh_token_cookie(response: Response):
@@ -60,8 +63,9 @@ def clear_refresh_token_cookie(response: Response):
     response.delete_cookie(
         key=REFRESH_TOKEN_COOKIE_NAME,
         httponly=True,
-        secure=False,
-        samesite="lax"
+        secure=True,
+        samesite="lax",
+        path="/"
     )
 
 # Google OAuth configuration

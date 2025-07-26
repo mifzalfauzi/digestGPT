@@ -60,7 +60,7 @@ const UsageDashboard = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-6">
+      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-6 dark:bg-[#121212]">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
