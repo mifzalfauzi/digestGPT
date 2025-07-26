@@ -7,14 +7,14 @@ import uuid
 
 from database import get_db
 from models import User, Usage, UserPlan
-from auth import verify_token
+from auth_backend import verify_token
 
 # Security scheme
 security = HTTPBearer()
 
 # Cookie configuration
-ACCESS_TOKEN_COOKIE_NAME = "access_token"
-REFRESH_TOKEN_COOKIE_NAME = "refresh_token"
+ACCESS_TOKEN_COOKIE_NAME = "ACCESS_NWST"
+REFRESH_TOKEN_COOKIE_NAME = "REFRESH_NWST"
 
 # Cookie helper functions
 def get_access_token_from_cookie(request: Request) -> Optional[str]:

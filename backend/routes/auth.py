@@ -13,60 +13,67 @@ from google.oauth2 import id_token
 # from google_auth_oauthlib.flow import Flow
 from database import get_db
 from models import User, UserPlan
-from auth import hash_password, verify_password, create_access_token, create_refresh_token, verify_token
+from auth_backend import hash_password, verify_password, create_access_token, create_refresh_token, verify_token
 from dependencies import get_current_active_user, get_user_limits_info, get_access_token_from_cookie, get_refresh_token_from_cookie
 # from gotrue.client import GoTrueClient
 from datetime import datetime
+from auth_helpers import (
+    set_access_token_cookie, 
+    set_refresh_token_cookie, 
+    clear_all_auth_cookies,
+    refresh_rate_limiter,
+    get_current_user_with_auto_refresh
+)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 # Cookie configuration
-ACCESS_TOKEN_COOKIE_NAME = "access_token"
-REFRESH_TOKEN_COOKIE_NAME = "refresh_token"
+ACCESS_TOKEN_COOKIE_NAME = "ACCESS_NWST"
+REFRESH_TOKEN_COOKIE_NAME = "REFRESH_NWST"
 
-def set_access_token_cookie(response: Response, access_token: str):
-    """Set access token as HttpOnly cookie"""
-    response.set_cookie(
-        key=ACCESS_TOKEN_COOKIE_NAME,
-        value=access_token,
-        httponly=True,
-        max_age=15 * 60,  # 15 minutes
-        secure=True,      # Change to True for production (HTTPS)
-        samesite="lax",
-        path="/"
-    )
+# def set_access_token_cookie(response: Response, access_token: str):
+#     """Set access token as HttpOnly cookie"""
+#     response.set_cookie(
+#         key=ACCESS_TOKEN_COOKIE_NAME,
+#         value=access_token,
+#         httponly=True,
+#         max_age=15 * 60,  # 15 minutes
+#         secure=True,      # Change to True for production (HTTPS)
+#         samesite="lax",
+#         path="/"
+#     )
 
-def set_refresh_token_cookie(response: Response, refresh_token: str):
-    """Set refresh token as HttpOnly cookie"""
-    response.set_cookie(
-        key=REFRESH_TOKEN_COOKIE_NAME,
-        value=refresh_token,
-        httponly=True,
-        max_age=30 * 24 * 60 * 60,  # 30 days
-        secure=True,                # Change to True for production (HTTPS)
-        samesite="lax",
-        path="/"
-    )
+# def set_refresh_token_cookie(response: Response, refresh_token: str):
+#     """Set refresh token as HttpOnly cookie"""
+#     response.set_cookie(
+#         key=REFRESH_TOKEN_COOKIE_NAME,
+#         value=refresh_token,
+#         httponly=True,
+#         max_age=30 * 24 * 60 * 60,  # 30 days
+#         secure=True,                # Change to True for production (HTTPS)
+#         samesite="lax",
+#         path="/"
+#     )
 
-def clear_access_token_cookie(response: Response):
-    """Clear access token cookie"""
-    response.delete_cookie(
-        key=ACCESS_TOKEN_COOKIE_NAME,
-        httponly=True,
-        secure=True,
-        samesite="lax",
-        path="/"
-    )
+# def clear_access_token_cookie(response: Response):
+#     """Clear access token cookie"""
+#     response.delete_cookie(
+#         key=ACCESS_TOKEN_COOKIE_NAME,
+#         httponly=True,
+#         secure=True,
+#         samesite="lax",
+#         path="/"
+#     )
 
-def clear_refresh_token_cookie(response: Response):
-    """Clear refresh token cookie"""
-    response.delete_cookie(
-        key=REFRESH_TOKEN_COOKIE_NAME,
-        httponly=True,
-        secure=True,
-        samesite="lax",
-        path="/"
-    )
+# def clear_refresh_token_cookie(response: Response):
+#     """Clear refresh token cookie"""
+#     response.delete_cookie(
+#         key=REFRESH_TOKEN_COOKIE_NAME,
+#         httponly=True,
+#         secure=True,
+#         samesite="lax",
+#         path="/"
+#     )
 
 # Google OAuth configuration
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -159,7 +166,10 @@ async def register(user: UserRegister, response: Response, db: Session = Depends
 @router.post("/login", response_model=Token)
 async def login(user_credentials: UserLogin, response: Response, db: Session = Depends(get_db)):
     """Login user and return JWT tokens"""
-    user = db.query(User).filter(User.email == user_credentials.email).first()
+    
+    normalized_email = user_credentials.email.lower()
+    
+    user = db.query(User).filter(User.email == normalized_email).first()
 
     if not user:
         raise HTTPException(
@@ -196,9 +206,26 @@ async def login(user_credentials: UserLogin, response: Response, db: Session = D
     )
 
 
-@router.post("/refresh", response_model=Token)
-async def refresh_token(request: Request, response: Response, token_data: TokenRefresh = None, db: Session = Depends(get_db)):
-    """Refresh access token using refresh token from cookie or body"""
+async def refresh_token(
+    request: Request, 
+    response: Response, 
+    token_data: TokenRefresh = None, 
+    db: Session = Depends(get_db)
+):
+    """
+    Refresh access token using refresh token from cookie or body.
+    Now includes rate limiting for security.
+    """
+    # Get client identifier for rate limiting (IP address as fallback)
+    client_ip = request.client.host if request.client else "unknown"
+    
+    # Check rate limiting
+    if not refresh_rate_limiter.is_allowed(client_ip):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many refresh attempts. Please try again later."
+        )
+    
     # Get refresh token from cookie or request body
     refresh_token = get_refresh_token_from_cookie(request)
     if not refresh_token and token_data and token_data.refresh_token:
@@ -215,14 +242,14 @@ async def refresh_token(request: Request, response: Response, token_data: TokenR
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token"
+            detail="Invalid or expired refresh token"
         )
     
     user_id = payload.get("sub")
     if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token"
+            detail="Invalid refresh token payload"
         )
     
     # Get user from database
@@ -237,12 +264,11 @@ async def refresh_token(request: Request, response: Response, token_data: TokenR
     access_token = create_access_token(data={"sub": str(user.id)})
     new_refresh_token = create_refresh_token(data={"sub": str(user.id)})
     
-    # Set new refresh token as HttpOnly cookie
+    # Set new tokens as HttpOnly cookies
     set_refresh_token_cookie(response, new_refresh_token)
     set_access_token_cookie(response, access_token)
-    return Token(
-        access_token=access_token
-    )
+    
+    return Token(access_token=access_token)
 
 @router.get("/me", response_model=UserProfileWithUsage)
 async def get_current_user_profile(
@@ -381,13 +407,15 @@ async def google_auth(google_request: GoogleTokenRequest, response: Response, db
         )
 
 @router.post("/logout")
-async def logout(response: Response, current_user: User = Depends(get_current_active_user)):
-    """Logout user and clear refresh token cookie"""
-    clear_refresh_token_cookie(response)
-    clear_access_token_cookie(response)
+async def logout(
+    response: Response, 
+    current_user: User = Depends(get_current_user_with_auto_refresh)  # CHANGED
+):
+    """Logout user and clear all authentication cookies"""
+    clear_all_auth_cookies(response)  # CHANGED
     return {"message": "Successfully logged out"}
 
 @router.get("/check-auth")
-async def check_auth(current_user: User = Depends(get_current_active_user)):
+async def check_auth(current_user: User = Depends(get_current_user_with_auto_refresh)):  # CHANGED
     """Check if user is authenticated with current access token"""
     return {"authenticated": True, "user_id": str(current_user.id)}

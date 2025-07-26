@@ -4,6 +4,50 @@ import axios from 'axios'
 const AuthContext = createContext()
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
+const SessionExpiredModal = ({ isOpen, onClose, message }) => {
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 bg-black dark:bg-[#121212] bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-[#121212] p-6 max-w-md w-full mx-4 ">
+        <div className="flex items-center mb-4">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Session Expired</h3>
+            <p className="text-sm text-gray-600 dark:text-white">Your session has timed out</p>
+          </div>
+        </div>
+        
+        <p className="text-gray-700 dark:text-white mb-6">
+          {message || 'Your session has expired. Please sign in again to continue.'}
+        </p>
+        
+        <div className="flex justify-end space-x-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-600 dark:text-white hover:text-gray-800 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              onClose()
+              window.location.href = '/signin'
+            }}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Sign In Again
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export const useAuth = () => {
   const context = useContext(AuthContext)
   if (!context) {
@@ -15,6 +59,9 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading_logout, setLoading_logout] = useState(false)
+  const [showSessionModal, setShowSessionModal] = useState(false)
+  // const [sessionExpiredMessage, setSessionExpiredMessage] = useState('')
+
   const [usage, setUsage] = useState({
     documents: { used: 0 },
     chats: { used: 0 },
@@ -45,6 +92,8 @@ export const AuthProvider = ({ children }) => {
       chats: { used: 0 },
       tokens: { used: 0 }
     })
+    // setSessionExpiredMessage(message)
+    setShowSessionModal(true)
     
     // Store the session expired message
     sessionStorage.setItem('sessionExpiredMessage', message)
@@ -54,7 +103,12 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('refresh_token')
     
     // Navigate to sign in (this will be handled by the app)
-    window.location.href = '/signin'
+    // window.location.href = '/signin'
+  }
+
+  const closeSessionModal = () => {
+    setShowSessionModal(false)
+    setSessionExpiredMessage('')
   }
 
   const refreshAccessToken = async () => {
@@ -302,12 +356,21 @@ export const AuthProvider = ({ children }) => {
     canUseTokens,
     getRemainingLimits,
     getUsagePercentages,
-    fetchUserData // Export this for use in components that need to re-fetch user data
+    fetchUserData, // Export this for use in components that need to re-fetch user data
+    showSessionModal,
+    // sessionExpiredMessage,
+    closeSessionModal
   }
 
   return (
     <AuthContext.Provider value={value}>
       {children}
+      {/* NEW: Render the session expired modal */}
+      <SessionExpiredModal 
+        isOpen={showSessionModal}
+        onClose={closeSessionModal}
+        // message={sessionExpiredMessage}
+      />
     </AuthContext.Provider>
   )
 } 

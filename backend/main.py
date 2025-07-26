@@ -22,6 +22,9 @@ from routes.chat import router as chat_router
 from routes.usage import router as usage_router
 from routes.collections import router as collections_router
 
+from middleware.auth_middleware import AutoTokenRefreshMiddleware
+from auth_helpers import get_current_user_with_auto_refresh
+
 # Load environment variables
 load_dotenv()
 
@@ -50,6 +53,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(
+    AutoTokenRefreshMiddleware,
+    excluded_paths=[
+        "/",
+        "/health",
+        "/docs",
+        "/redoc", 
+        "/openapi.json",
+        "/favicon.ico",
+        "/auth/login",
+        "/auth/register", 
+        "/auth/google",
+        "/auth/refresh",
+        "/auth/logout",
+        "/convert-docx-to-pdf",  # Legacy endpoint
+        "/pdf/"  # PDF serving endpoint
+    ]
+)
+
 
 # Add security headers middleware
 @app.middleware("http")
