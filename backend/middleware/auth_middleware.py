@@ -27,11 +27,11 @@ class AutoTokenRefreshMiddleware(BaseHTTPMiddleware):
     ):
         super().__init__(app)
         # Paths that don't need authentication or auto-refresh
-        self.excluded_paths = excluded_paths or [
+        self.excluded_paths = excluded_paths if excluded_paths is not None else [
             "/auth/login",
             "/auth/register", 
             "/auth/google",
-            "/auth/refresh",  # Exclude explicit refresh endpoint
+            "/auth/refresh",
             "/docs",
             "/redoc",
             "/openapi.json",
@@ -41,40 +41,54 @@ class AutoTokenRefreshMiddleware(BaseHTTPMiddleware):
         ]
         self.access_token_cookie_name = access_token_cookie_name
         self.refresh_token_cookie_name = refresh_token_cookie_name
+        print(f"🚀 Middleware initialized with excluded paths: {self.excluded_paths}")
 
     async def dispatch(self, request: Request, call_next):
-        # Skip middleware for excluded paths
+        """THIS METHOD MUST EXIST AND HAVE EXACTLY THIS SIGNATURE"""
+        path = request.url.path
+        method = request.method
+        
+        # DEBUG: Log that middleware is being called
+        print(f"🔍 === AUTO-REFRESH MIDDLEWARE START: {method} {path} ===")
+        
+        # Check if should skip
         if self._should_skip_middleware(request):
+            print(f"⏭️  SKIPPING auto-refresh middleware for: {path}")
             return await call_next(request)
         
-        # Check if we need to refresh the access token
+        print(f"🔄 PROCESSING auto-refresh middleware for: {path}")
+        
+        # Your existing refresh logic here...
         refresh_result = await self._attempt_token_refresh(request)
         
         if refresh_result:
-            # Token was refreshed successfully
+            print(f"✅ Token refreshed successfully for: {path}")
             response = await call_next(request)
-            
-            # Set the new tokens in cookies
             self._set_token_cookies(response, refresh_result)
             return response
+        else:
+            print(f"➡️  No refresh needed for: {path}")
         
-        # No refresh needed or refresh failed, proceed normally
-        return await call_next(request)
+        # Continue normally
+        response = await call_next(request)
+        print(f"✅ === AUTO-REFRESH MIDDLEWARE COMPLETE: {path} ===")
+        return response
 
     def _should_skip_middleware(self, request: Request) -> bool:
         """Check if middleware should be skipped for this path"""
         path = request.url.path
         
-        # Skip for excluded paths
+        # Check excluded paths
         for excluded_path in self.excluded_paths:
             if path.startswith(excluded_path):
                 return True
         
-        # Skip for non-authenticated methods that typically don't need auth
+        # Skip OPTIONS requests
         if request.method in ["OPTIONS"]:
             return True
             
         return False
+
 
     async def _attempt_token_refresh(self, request: Request) -> Optional[dict]:
         """
@@ -85,6 +99,9 @@ class AutoTokenRefreshMiddleware(BaseHTTPMiddleware):
             # Get tokens from cookies
             access_token = get_access_token_from_cookie(request)
             refresh_token = get_refresh_token_from_cookie(request)
+            
+            print(f"Access token: {access_token}")
+            print(f"Refresh token: {refresh_token}")
             
             # If no refresh token, can't auto-refresh
             if not refresh_token:
@@ -135,8 +152,8 @@ class AutoTokenRefreshMiddleware(BaseHTTPMiddleware):
                 logger.info(f"Successfully refreshed tokens for user {user_id}")
                 
                 return {
-                    "access_token": new_access_token,
-                    "refresh_token": new_refresh_token
+                    "ACCESS_NWST": new_access_token,
+                    "REFRESH_NWST": new_refresh_token
                 }
                 
             finally:
@@ -153,11 +170,19 @@ class AutoTokenRefreshMiddleware(BaseHTTPMiddleware):
 
     def _set_token_cookies(self, response: Response, tokens: dict):
         """Set new tokens as HttpOnly cookies"""
-        # Import here to avoid circular imports
-        from auth_helpers import set_access_token_cookie, set_refresh_token_cookie
-        
-        set_access_token_cookie(response, tokens["access_token"])
-        set_refresh_token_cookie(response, tokens["refresh_token"])
+        try:
+            # Import here to avoid circular imports
+            from auth_helpers import set_access_token_cookie, set_refresh_token_cookie
+            
+            # FIXED: Use the correct key names from the returned dict
+            print(f"Setting new tokens in cookies: {tokens}")
+            set_access_token_cookie(response, tokens["ACCESS_NWST"])
+            set_refresh_token_cookie(response, tokens["REFRESH_NWST"])
+            logger.info("🍪 Set new tokens in cookies successfully")
+        except Exception as e:
+            logger.error(f"❌ Error setting cookies: {str(e)}")
+            import traceback
+            logger.error(f"❌ Cookie traceback: {traceback.format_exc()}")
 
 
 # Remove the dependency function from here since it's now in auth_helpers.py

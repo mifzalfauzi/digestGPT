@@ -163,47 +163,86 @@ async def register(user: UserRegister, response: Response, db: Session = Depends
         access_token=access_token
     )
 
+# Replace your login function with this DEBUG version to see what's happening:
+
 @router.post("/login", response_model=Token)
 async def login(user_credentials: UserLogin, response: Response, db: Session = Depends(get_db)):
-    """Login user and return JWT tokens"""
+    """Login user and return JWT tokens - DEBUG VERSION"""
+    print(f"\n🔐 === LOGIN ENDPOINT CALLED ===")
+    print(f"🔐 Email: {user_credentials.email}")
     
     normalized_email = user_credentials.email.lower()
     
     user = db.query(User).filter(User.email == normalized_email).first()
 
     if not user:
+        print("❌ User not found")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password"
         )
 
     if not user.password_hash:
+        print("❌ User has no password hash (Google login)")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="This account uses Google login. Please sign in with Google."
         )
 
     if not verify_password(user_credentials.password, user.password_hash):
+        print("❌ Password verification failed")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password"
         )
 
     if not user.is_active:
+        print("❌ User is not active")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user"
         )
 
+    print(f"✅ User authenticated: {user.email}")
+    print(f"🔨 Creating tokens...")
+    
     access_token = create_access_token(data={"sub": str(user.id)})
     refresh_token = create_refresh_token(data={"sub": str(user.id)})
     
-    # Set refresh token as HttpOnly cookie
-    set_refresh_token_cookie(response, refresh_token)
-    set_access_token_cookie(response, access_token)
-    return Token(
-        access_token=access_token
-    )
+    print(f"✅ Tokens created:")
+    print(f"   Access: {access_token[:30]}...")
+    print(f"   Refresh: {refresh_token[:30]}...")
+    
+    print(f"🍪 About to set cookies...")
+    
+    try:
+        # Set refresh token as HttpOnly cookie
+        print(f"🍪 Setting refresh token cookie...")
+        set_refresh_token_cookie(response, refresh_token)
+        print(f"✅ Refresh token cookie set successfully")
+        
+        print(f"🍪 Setting access token cookie...")
+        set_access_token_cookie(response, access_token)
+        print(f"✅ Access token cookie set successfully")
+        
+    except Exception as e:
+        print(f"❌ ERROR setting cookies: {e}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
+    
+    print(f"📤 Returning token response...")
+    return Token(access_token=access_token)
+
+# ALSO: Check your imports at the top of routes/auth.py
+# Make sure you have these imports:
+
+# from auth_helpers import (
+#     set_access_token_cookie, 
+#     set_refresh_token_cookie, 
+#     clear_all_auth_cookies,
+#     refresh_rate_limiter,
+#     get_current_user_with_auto_refresh
+# )
 
 
 async def refresh_token(
