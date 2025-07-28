@@ -36,14 +36,14 @@ def set_access_token_cookie(response: Response, access_token: str):
     print(f"🍪 Token preview: {access_token[:30]}...")
     print(f"🍪 Secure setting: {SECURE_COOKIES}")
     print(f"🍪 Domain setting: {COOKIE_DOMAIN}")
-    print(f"🍪 Max age: {15 * 60} seconds")
+    print(f"🍪 Max age: {1 * 60} seconds")
     
     try:
         response.set_cookie(
             key=ACCESS_TOKEN_COOKIE_NAME,
             value=access_token,
             httponly=True,
-            max_age=15 * 60,  # 15 minutes
+            max_age=1 * 60,  # 15 minutes
             secure=SECURE_COOKIES,  # Should be False for localhost
             samesite="lax",
             path="/",

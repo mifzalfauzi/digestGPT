@@ -9,7 +9,6 @@ import { Separator } from './ui/separator'
 import { MessageCircle, Send, Bot, User, AlertCircle, Trash2, Sparkles, Brain, Zap, ThumbsUp, ThumbsDown, Copy, Check, Clock, ChevronDown } from 'lucide-react'
 import MessageFormatter from './MessageFormatter'
 import TypewriterText from './TypewriterText'
-import { Spinner } from './ui/spinner'
 
 function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode = false, bypassAPI = false, casualMode = false, isDisabled = false, analyzingStatus = null, onLoadingHistoryChange }) {
   // Auth context
@@ -18,7 +17,6 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
     canUseTokens,
     refreshUserData,
     logout,
-    loading_logout,
     isAuthenticated
   } = useAuth()
 
@@ -585,10 +583,6 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
         </div>
       )}
 
-{loading_logout && (
-          <Spinner />
-        )}
-
       {/* Messages Area - Scrollable */}
       <div className="flex-1 overflow-hidden relative dark:bg-[#1f1f1f]">
         <div
@@ -971,8 +965,6 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
             </div>
           </div>
         </form>
-
-        
       </div>
     </div>
   )

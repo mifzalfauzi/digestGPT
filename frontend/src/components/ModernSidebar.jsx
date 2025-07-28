@@ -9,6 +9,7 @@ import SettingsPanel from './SettingsPanel'
 import UsageDashboard from './dashboard/UsageDashboard'
 import { Separator } from './ui/separator'
 import { Spinner } from './ui/spinner'
+import { getInitials } from '../contexts/UserContext'
 
 function ModernSidebar({
   onNewDocument,
@@ -111,12 +112,21 @@ function ModernSidebar({
             </div>
             {!collapsed && (
               <div>
-                <h1 className="text-lg sm:text-xl font-bold text-center">
-                  drop
-                  <span className="text-blue-400">2</span>
-                  chat
-                  <span className="text-red-500">*</span>
-                </h1>
+                <a
+                  href="/main"
+                  className="
+    text-lg sm:text-xl font-bold text-center
+    rounded-md
+    transition-all duration-200
+    hover:bg-gray-100 dark:hover:bg-gray-700
+    hover:px-2 hover:py-1
+  "
+                >
+                  drop<span className="text-blue-400">2</span>chat<span className="text-red-500">*</span>
+                </a>
+
+
+
 
                 <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
                   {isDemoMode ? 'Demo Mode - No API Usage' : bypassAPI ? 'Preview Mode - No API Usage' : ''}
@@ -759,39 +769,42 @@ function ModernSidebar({
       {/* <Separator className="" /> */}
 
       {/* Profile Dropdown */}
-     <div className="relative mt-3 mb-4 ml-2 mr-2 h-8" ref={dropdownRef}> 
-     <button
-    onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-    className="flex items-center justify-start gap-2 text-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors w-full text-left px-2 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
-  >
-    {collapsed ? (
-      <UserCircle className="ml-2 h-4 w-4" />
-    ) : (
-      <>
-        <img
-          src={user.avatar}
+      <div className="relative mt-3 mb-4 ml-2 mr-2 h-8" ref={dropdownRef}>
+        <button
+          onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+          className="flex items-center justify-start gap-2 text-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors w-full text-left px-2 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+        >
+          {collapsed ? (
+            <UserCircle className="ml-2 h-4 w-4" />
+          ) : (
+            <>
+              {/* <img
+          src={getInitials(user.name)}
           alt="Profile"
           className="w-6 h-6 rounded-full border border-gray-300 dark:border-gray-700"
-        />
-      </>
-    )}
+        /> */}
+              <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-blue-500 flex items-center justify-center text-[10px] text-gray-700 dark:text-white">
+                {getInitials(user.name)}
+              </div>
+            </>
+          )}
 
-    <div className="flex flex-col leading-tight">
-      {!collapsed && (
-        <>
-          <span className="font-medium">{user.name}</span>
-          <span className="uppercase text-[12px] text-gray-500 dark:text-gray-400">
-            {user.plan}
-          </span>
-        </>
-      )}
-    </div>
-  </button>
+          <div className="flex flex-col leading-tight">
+            {!collapsed && (
+              <>
+                <span className="font-medium text-[14px]">{user.name}</span>
+                <span className="uppercase text-[12px] text-gray-500 dark:text-gray-400">
+                  {user.plan}
+                </span>
+              </>
+            )}
+          </div>
+        </button>
 
 
         {/* Dropdown Menu */}
         {isProfileDropdownOpen && (
-          <div className="absolute bottom-full mb-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+          <div className="absolute bottom-full mb-2 w-full bg-white dark:bg-background border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
             <div className="py-1">
               <button
                 onClick={() => {

@@ -183,7 +183,7 @@ function SignUp() {
       setTimeout(() => {
         navigate('/signin', {
           state: {
-            message: 'Account created successfully! Please sign in with your credentials.'
+            message: 'Please make sure to verify your email before signing in with your credentials.'
           }
         })
       }, 1500)
@@ -255,7 +255,7 @@ function SignUp() {
             <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-500" />
               <span className="text-sm text-green-600 dark:text-green-400">
-                Account created successfully! Redirecting to sign in...
+              Please check your email for account verification. Redirecting to sign in.
               </span>
             </div>
           )}

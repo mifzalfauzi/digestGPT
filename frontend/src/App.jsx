@@ -11,6 +11,7 @@ import Dashboard from './pages/Dashboard'
 import ComingSoonPage from './components/ComingSoon'
 import StripeCheckout from './components/StripeCheckout'
 import { Card, CardHeader, CardTitle, CardContent } from './components/ui/card'
+import VerifyEmail from './pages/VerifyEmail'
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -88,6 +89,11 @@ function AppContent() {
         <Route path="/main" element={
           <PublicRoute>
             <LandingPage />
+          </PublicRoute>
+        } />
+        <Route path="/verify-email" element={
+          <PublicRoute>
+            <VerifyEmail />
           </PublicRoute>
         } />
         <Route path="/" element={<Navigate to="/coming-soon" replace />} />

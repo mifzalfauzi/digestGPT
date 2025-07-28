@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr, validator
 from typing import Optional
 from uuid import UUID
+import uuid
 import os
 from sqlalchemy import func
 import httpx
@@ -24,6 +25,10 @@ from auth_helpers import (
     refresh_rate_limiter,
     get_current_user_with_auto_refresh
 )
+from email.message import EmailMessage
+import smtplib
+from dotenv import load_dotenv
+from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -96,9 +101,9 @@ class UserLogin(BaseModel):
     password: str
 
 class Token(BaseModel):
-    access_token: str
+    access_token: str   
     token_type: str = "bearer"
-    expires_in: int = 15 * 60  # 15 minutes in seconds
+    expires_in: int = 1 * 60  # 15 minutes in seconds
 
 class TokenRefresh(BaseModel):
     refresh_token: Optional[str] = None  # Optional since it can come from cookie
@@ -126,42 +131,61 @@ class GoogleTokenRequest(BaseModel):
 class GoogleAuthResponse(BaseModel):
     authorization_url: str
 
-@router.post("/register", response_model=Token)
+@router.post("/register")
 async def register(user: UserRegister, response: Response, db: Session = Depends(get_db)):
     """Register a new user"""
-    normalized_email = user.email.lower() 
-    # Check if user already exists
-    existing_user = db.query(User).filter(func.lower(User.email) == normalized_email).first()
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+    try:
+        normalized_email = user.email.lower() 
+        
+        # Check if user already exists
+        existing_user = db.query(User).filter(func.lower(User.email) == normalized_email).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+            
+        # Generate verification token
+        verification_token = str(uuid.uuid4())
+        
+        expiration_time = datetime.now() + timedelta(hours=24)
+        
+        # Create new user (starts as inactive until email verified)
+        hashed_password = hash_password(user.password)
+        new_user = User(
+            email=normalized_email,
+            password_hash=hashed_password,
+            name=user.name,
+            plan=user.plan,
+            verification_token=verification_token,
+            is_active=False,  # Will be set to True after email verification
+            verification_token_expires_at=expiration_time,
+            email_verified=False  # Will be set to True after email verification
         )
+        
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        
+        # Send verification email
+        send_verification_email(normalized_email, verification_token)
+        
+        return {"message": "Verification email sent. Please check your email to activate your account."}
     
-    # Create new user
-    hashed_password = hash_password(user.password)
-    new_user = User(
-        email=normalized_email,
-        password_hash=hashed_password,
-        name=user.name,
-        plan=user.plan
-    )
+    except HTTPException:
+        raise
     
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    
-    # Create tokens
-    access_token = create_access_token(data={"sub": str(new_user.id)})
-    refresh_token = create_refresh_token(data={"sub": str(new_user.id)})
-    
-    # Set refresh token as HttpOnly cookie
-    set_refresh_token_cookie(response, refresh_token)
-    set_access_token_cookie(response, access_token)
-    
-    return Token(
-        access_token=access_token
-    )
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Registration error: {str(e)}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Registration failed. Please try again."
+        )
+
+
 
 # Replace your login function with this DEBUG version to see what's happening:
 
@@ -458,3 +482,137 @@ async def logout(
 async def check_auth(current_user: User = Depends(get_current_user_with_auto_refresh)):  # CHANGED
     """Check if user is authenticated with current access token"""
     return {"authenticated": True, "user_id": str(current_user.id)}
+
+@router.get("/verify-email")
+async def verify_email(token: str, db: Session = Depends(get_db)):
+    """Verify user's email with expiration check"""
+    print(f"🔍 VERIFICATION START - Token: '{token}'")
+    
+    try:
+        # Search for user
+        user = db.query(User).filter(User.verification_token == token).first()
+        
+        if not user:
+            print(f"❌ No user found with token")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail="Invalid or expired verification token"
+            )
+        
+        print(f"✅ Found user: {user.email}")
+        
+        # Check if token has expired
+        from datetime import datetime
+        current_time = datetime.now()
+        
+        if user.verification_token_expires_at and current_time > user.verification_token_expires_at:
+            print(f"❌ Token expired at: {user.verification_token_expires_at}")
+            print(f"❌ Current time: {current_time}")
+            
+            # Clear expired token
+            user.verification_token = None
+            user.verification_token_expires_at = None
+            db.commit()
+            
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail="Verification token has expired. Please request a new verification email."
+            )
+        
+        # Check if already verified
+        if user.email_verified:
+            print(f"ℹ️ Email already verified")
+            return {"message": "Email already verified. You can now log in."}
+        
+        print(f"🔄 Updating user status...")
+        
+        # Verify email and activate account
+        user.email_verified = True
+        user.email_verified_at = datetime.now()
+        user.is_active = True
+        user.verification_token = None  # Clear token
+        user.verification_token_expires_at = None  # Clear expiration
+        
+        db.commit()
+        print(f"✅ User verified successfully")
+        
+        return {"message": "Email verified successfully! Your account is now active. You can log in."}
+    
+    except HTTPException:
+        raise
+    
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Email verification failed. Please try again."
+        )
+
+load_dotenv()
+
+SENDER_EMAIL = os.getenv("SENDER_EMAIL")
+SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")
+
+def send_verification_email(to_email, token):
+    """Send verification email to correct frontend URL"""
+    print(f"\n📧 === EMAIL SENDING DEBUG ===")
+    print(f"📧 Sending to: {to_email}")
+    print(f"📧 Token: {token}")
+
+    # FIXED: Correct URL that matches your route
+    verification_url = f"http://localhost:3000/verify-email?token={token}"
+    print(f"📧 Verification URL: {verification_url}")
+    
+    msg = EmailMessage()
+    msg["Subject"] = "Verify your email"
+    msg["From"] = SENDER_EMAIL
+    msg["To"] = to_email
+    
+    html_content = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h2 style="color: #333; margin-bottom: 10px;">Welcome! Please verify your email</h2>
+                <p style="color: #666; font-size: 16px;">Click the button below to verify your email address and activate your account.</p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{verification_url}" 
+                   style="background-color: #4CAF50; 
+                          color: white; 
+                          padding: 12px 24px; 
+                          text-decoration: none; 
+                          border-radius: 6px; 
+                          font-weight: bold;
+                          display: inline-block;">
+                    Verify Email Address
+                </a>
+            </div>
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                <p style="color: #666; font-size: 14px;">
+                    If the button doesn't work, copy and paste this link in your browser:
+                </p>
+                <p style="color: #4CAF50; word-break: break-all; font-size: 14px;">
+                    {verification_url}
+                </p>
+                <p style="color: #999; font-size: 12px; margin-top: 20px;">
+                    This verification link will expire for security reasons. If you didn't create an account, please ignore this email.
+                </p>
+            </div>
+        </body>
+    </html>
+    """
+    
+    msg.set_content(f"Click to verify your account: {verification_url}")
+    msg.add_alternative(html_content, subtype='html')
+    
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(SENDER_EMAIL, SENDER_PASSWORD)
+            smtp.send_message(msg)
+        print(f"✅ Email sent successfully to {to_email}")
+    except Exception as e:
+        print(f"❌ Email sending failed: {str(e)}")
+        raise

@@ -35,6 +35,8 @@ class User(Base):
     # email_confirmed_at = Column(DateTime, nullable=True)
     email_verified = Column(Boolean, nullable=True, default=False)
     email_verified_at = Column(DateTime(timezone=True), nullable=True)
+    verification_token = Column(String, nullable=True)
+    verification_token_expires_at = Column(DateTime, nullable=True)
 
 
 # 2. Document table

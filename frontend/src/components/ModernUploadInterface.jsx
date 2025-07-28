@@ -320,7 +320,7 @@ const ModernUploadInterface = forwardRef(({
       <Card className="shadow-2xl border-0 bg-white/90 dark:bg-[#121212] backdrop-blur-sm animate-fade-in-scale">
         <CardContent className="p-6">
           <Tabs value={inputMode} onValueChange={handleTabSwitch} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-6 bg-slate-100 dark:bg-gray-700 p-1 rounded-xl h-auto">
+            <TabsList className="grid w-full grid-cols-2 mb-6 bg-slate-100 dark:bg-gray-700 p-1 rounded-xl h-auto">
               <TabsTrigger 
                 value="file" 
                 className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:shadow-md rounded-lg py-2.5 px-3 text-sm transition-all duration-200 font-medium"
@@ -343,7 +343,7 @@ const ModernUploadInterface = forwardRef(({
                   Multiple
                 </Badge>
               </TabsTrigger>
-              <TabsTrigger 
+              {/* <TabsTrigger 
                 value="text" 
                 className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:shadow-md rounded-lg py-2.5 px-3 text-sm transition-all duration-200 font-medium"
               >
@@ -353,7 +353,7 @@ const ModernUploadInterface = forwardRef(({
                 <Badge variant="secondary" className=" ml-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200 text-xs px-1.5 py-0.5 hidden sm:block">
                   Direct
                 </Badge>
-              </TabsTrigger>
+              </TabsTrigger> */}
             </TabsList>
 
             <form onSubmit={inputMode === 'collection' ? handleCollectionUpload : handleSubmit}>
@@ -665,7 +665,7 @@ const ModernUploadInterface = forwardRef(({
               </TabsContent>
 
               {/* Professional Submit Button */}
-              <div className="mt-6 pt-4 border-t border-slate-200/50 dark:border-gray-700/50">
+              <div className="mt-6 pt-4 border-slate-200/50 dark:border-gray-700/50">
                 <Button 
                   type="submit" 
                   disabled={loading || 

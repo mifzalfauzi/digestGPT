@@ -128,7 +128,10 @@ export const AuthProvider = ({ children }) => {
       const authStatus = await checkAuthStatus()
       if (authStatus) {
         // Re-fetch user data to ensure we have the latest information
-        await fetchUserData()
+        await fetchUserData();
+
+        // Optional: force full reload to fix edge cookie/auth sync issues
+        window.location.reload();
         return true
       } else {
         console.error('Auth check failed after token refresh')
@@ -181,11 +184,16 @@ export const AuthProvider = ({ children }) => {
         setIsLoading(true)
         
         // Clear any old localStorage tokens since we're using cookies now
-        localStorage.removeItem('auth_token')
-        localStorage.removeItem('refresh_token')
+        // localStorage.removeItem('auth_token')
+        // localStorage.removeItem('refresh_token')
         
         // Check if we're authenticated via cookies
-        const authStatus = await checkAuthStatus()
+        let authStatus = await checkAuthStatus()
+        if (!authStatus) {
+          console.warn('First auth check failed. Retrying after delay...');
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          authStatus = await checkAuthStatus();
+        }
         if (authStatus) {
           console.log('Found valid authentication cookies')
           await fetchUserData()
@@ -210,6 +218,8 @@ export const AuthProvider = ({ children }) => {
         axios.get(`${API_BASE_URL}/auth/me`, { withCredentials: true }),
         axios.get(`${API_BASE_URL}/usage/me`, { withCredentials: true })
       ])
+
+      console.log(userResponse.data)
       
       setUser(userResponse.data)
       setIsAuthenticated(true)
@@ -231,9 +241,9 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.post(`${API_BASE_URL}/auth/register`, userData, {
         withCredentials: true  // Include cookies in request
       })
-      
+      console.log(response.data)
       // Fetch user data after successful registration
-      await fetchUserData()
+      // await fetchUserData()
       
       return response.data
     } catch (error) {
