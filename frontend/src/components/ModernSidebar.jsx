@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { Badge } from './ui/badge'
-import { Brain, Upload, FileText, Home, MessageCircle, Settings, HelpCircle, Sparkles, Activity, X, Menu, PanelLeftClose, ChevronDown, LayoutDashboard, Crown, Star, Zap, TrendingUp, PanelTopClose, PanelLeftIcon, Clock, MessageSquare, History } from 'lucide-react'
+import { Brain, Upload, FileText, Home, MessageCircle, Settings, HelpCircle, Sparkles, Activity, X, Menu, PanelLeftClose, ChevronDown, LayoutDashboard, Crown, Star, Zap, TrendingUp, PanelTopClose, PanelLeftIcon, Clock, MessageSquare, History, UserCircle, LogOut } from 'lucide-react'
 import SettingsPanel from './SettingsPanel'
 import UsageDashboard from './dashboard/UsageDashboard'
+import { Separator } from './ui/separator'
+import { Spinner } from './ui/spinner'
 
 function ModernSidebar({
   onNewDocument,
@@ -41,8 +43,12 @@ function ModernSidebar({
 }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isUsageDashboardOpen, setIsUsageDashboardOpen] = useState(false)
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
   const navigate = useNavigate()
-  const { user, usage, getUsagePercentages } = useAuth()
+  const { user, usage, getUsagePercentages, logout, loading_logout } = useAuth()
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const dropdownRef = useRef(null)
 
   const planIcons = {
     free: <Zap className="h-4 w-4" />,
@@ -57,6 +63,18 @@ function ModernSidebar({
   }
 
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(false)
+
+  // Click outside handler for profile dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsProfileDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   useEffect(() => {
     if (isChatLoadingHistory) {
@@ -165,21 +183,6 @@ function ModernSidebar({
             </p>
           )}
 
-          {/* <Button 
-            onClick={() => {
-              navigate('/dashboard')
-              onClose?.()
-            }}
-            variant="ghost" 
-            className={`w-full text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 h-8 py-2 text-sm ${
-              collapsed ? 'justify-center px-0' : 'justify-start gap-2'
-            }`}
-            title={collapsed ? 'Dashboard' : ''}
-          >
-            <LayoutDashboard className="h-3.5 w-3.5 flex-shrink-0" />
-            {!collapsed && <span>Dashboard</span>}
-          </Button> */}
-
           <Button
             onClick={() => {
               // Clear all collection and document states
@@ -208,27 +211,6 @@ function ModernSidebar({
               </>
             )}
           </Button>
-
-          {/* <Button
-            onClick={() => {
-              onCasualChat()
-              // Close mobile sidebar with proper delay
-              if (onClose) {
-                if (window.innerWidth < 1024) {
-                  setTimeout(() => onClose(), 150)
-                } else {
-                  onClose()
-                }
-              }
-            }}
-            variant="ghost"
-            className={`w-full text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 h-8 py-2 text-sm touch-manipulation ${collapsed ? 'justify-center px-0' : 'justify-start gap-2'
-              }`}
-            title={collapsed ? 'Chat' : ''}
-          >
-            <MessageCircle className="h-3.5 w-3.5 flex-shrink-0" />
-            {!collapsed && <span>Normal Chat</span>}
-          </Button> */}
 
           <Button
             onClick={() => {
@@ -341,23 +323,9 @@ function ModernSidebar({
           </div>
         )}
 
-        {/* Chat Loading Indicator - Subtle and brief */}
-        {/* {isChatLoadingHistory && !collapsed && (
-          <div className="px-2 py-1 mb-1">
-            <div className="flex items-center gap-2 px-2 py-1 bg-blue-50/30 dark:bg-blue-900/5 rounded-md">
-              <div className="flex space-x-1">
-                <div className="w-1 h-1 bg-blue-400 dark:bg-blue-500 rounded-full animate-pulse"></div>
-                <div className="w-1 h-1 bg-blue-400 dark:bg-blue-500 rounded-full animate-pulse [animation-delay:0.2s]"></div>
-                <div className="w-1 h-1 bg-blue-400 dark:bg-blue-500 rounded-full animate-pulse [animation-delay:0.4s]"></div>
-              </div>
-              <span className="text-xs text-blue-500/70 dark:text-blue-400/70 font-light">Loading history...</span>
-            </div>
-          </div>
-        )} */}
-
         {/* Active Document/Collection Section - Responsive */}
         {(selectedDocumentId || selectedHistoricalCollection) && (
-          <div 
+          <div
             className={`space-y-2 relative ${isChatLoadingHistory ? 'pointer-events-none' : ''}`}
             onClickCapture={(e) => {
               if (isChatLoadingHistory) {
@@ -386,7 +354,7 @@ function ModernSidebar({
                     <div className="space-y-1 max-h-48 sm:max-h-72 overflow-y-auto">
                       <div className="space-y-1">
                         {/* Collection Header - Mobile Responsive */}
-                        <div 
+                        <div
                           className={`${collapsed ? 'p-2' : 'p-2 sm:p-2.5 lg:p-3'} rounded-lg transition-all duration-200 group bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-700 shadow-sm touch-manipulation select-none`}
                           style={{ minHeight: collapsed ? 'auto' : '44px' }} // Ensure minimum touch target size
                         >
@@ -422,7 +390,7 @@ function ModernSidebar({
 
                         {/* Collection Documents - Always Visible on Mobile */}
                         {isExpanded && !collapsed && (
-                          <div 
+                          <div
                             className={`ml-2 sm:ml-4 space-y-1 relative ${isChatLoadingHistory ? 'pointer-events-none select-none' : ''}`}
                             onClickCapture={(e) => {
                               if (isChatLoadingHistory) {
@@ -436,7 +404,7 @@ function ModernSidebar({
                             style={isChatLoadingHistory ? { pointerEvents: 'none !important' } : {}}
                           >
                             {/* Loading overlay for documents during chat history loading */}
-                            {showLoadingOverlay  && (
+                            {showLoadingOverlay && (
                               <div className="absolute inset-0 bg-white/70 dark:bg-gray-900/70 z-50 rounded-lg flex items-center justify-center" style={{ pointerEvents: 'auto !important' }}>
                                 <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-800 rounded-full shadow-lg border">
                                   <div className="flex space-x-1">
@@ -460,10 +428,10 @@ function ModernSidebar({
                                     console.log('Document switching completely blocked during chat history loading')
                                     return false
                                   }
-                                  
+
                                   e.preventDefault()
                                   e.stopPropagation()
-                                  
+
                                   console.log('Selecting historical document:', doc.id, doc.filename)
                                   onSelectHistoricalDocument(doc.id, doc, selectedHistoricalCollection)
                                   // Close mobile sidebar after selection with proper delay
@@ -471,17 +439,16 @@ function ModernSidebar({
                                     setTimeout(() => onClose(), 200)
                                   }
                                 }}
-                                className={`p-2 sm:p-2.5 rounded-lg transition-all duration-200 group touch-manipulation select-none ${
-                                  isChatLoadingHistory 
-                                    ? 'cursor-not-allowed opacity-20 bg-gray-200 dark:bg-gray-700/70 pointer-events-none' 
-                                    : 'cursor-pointer'
-                                } ${selectedDocumentId === doc.id && !isChatLoadingHistory
-                                  ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700 shadow-sm'
-                                  : isChatLoadingHistory 
-                                    ? 'border border-gray-400 dark:border-gray-500'
-                                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent active:bg-blue-50 dark:active:bg-blue-900/20 active:scale-[0.98]'
+                                className={`p-2 sm:p-2.5 rounded-lg transition-all duration-200 group touch-manipulation select-none ${isChatLoadingHistory
+                                  ? 'cursor-not-allowed opacity-20 bg-gray-200 dark:bg-gray-700/70 pointer-events-none'
+                                  : 'cursor-pointer'
+                                  } ${selectedDocumentId === doc.id && !isChatLoadingHistory
+                                    ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700 shadow-sm'
+                                    : isChatLoadingHistory
+                                      ? 'border border-gray-400 dark:border-gray-500'
+                                      : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent active:bg-blue-50 dark:active:bg-blue-900/20 active:scale-[0.98]'
                                   }`}
-                                style={{ 
+                                style={{
                                   minHeight: '44px',
                                   pointerEvents: isChatLoadingHistory ? 'none !important' : 'auto',
                                   userSelect: isChatLoadingHistory ? 'none' : 'auto'
@@ -545,7 +512,7 @@ function ModernSidebar({
                       </p>
                     )}
                     <div className="space-y-1">
-                      <div 
+                      <div
                         className={`${collapsed ? 'p-2' : 'p-2 sm:p-2.5 lg:p-3'} rounded-lg cursor-pointer transition-all duration-200 group bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700 shadow-sm touch-manipulation select-none`}
                         style={{ minHeight: collapsed ? 'auto' : '44px' }} // Ensure minimum touch target size
                       >
@@ -649,7 +616,7 @@ function ModernSidebar({
 
                         {/* Collection Documents - Always Visible, Mobile Responsive */}
                         {isExpanded && !collapsed && (
-                          <div 
+                          <div
                             className={`ml-2 sm:ml-4 space-y-1 relative ${isChatLoadingHistory ? 'pointer-events-none select-none' : ''}`}
                             onClickCapture={(e) => {
                               if (isChatLoadingHistory) {
@@ -687,10 +654,10 @@ function ModernSidebar({
                                     console.log('Document switching completely blocked during chat history loading')
                                     return false
                                   }
-                                  
+
                                   e.preventDefault()
                                   e.stopPropagation()
-                                  
+
                                   console.log('Selecting current session document:', doc.id, doc.filename)
                                   onSelectDocument(doc.id)
                                   // Close mobile sidebar after selection with proper delay
@@ -698,17 +665,16 @@ function ModernSidebar({
                                     setTimeout(() => onClose(), 200)
                                   }
                                 }}
-                                className={`p-2 sm:p-2.5 rounded-lg transition-all duration-200 group touch-manipulation select-none ${
-                                  isChatLoadingHistory 
-                                    ? 'cursor-not-allowed opacity-20 bg-gray-200 dark:bg-gray-700/70 pointer-events-none' 
-                                    : 'cursor-pointer'
-                                } ${selectedDocumentId === doc.id && !isChatLoadingHistory
-                                  ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700 shadow-sm'
-                                  : isChatLoadingHistory 
-                                    ? 'border border-gray-400 dark:border-gray-500'
-                                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent active:bg-blue-50 dark:active:bg-blue-900/20 active:scale-[0.98]'
+                                className={`p-2 sm:p-2.5 rounded-lg transition-all duration-200 group touch-manipulation select-none ${isChatLoadingHistory
+                                  ? 'cursor-not-allowed opacity-20 bg-gray-200 dark:bg-gray-700/70 pointer-events-none'
+                                  : 'cursor-pointer'
+                                  } ${selectedDocumentId === doc.id && !isChatLoadingHistory
+                                    ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700 shadow-sm'
+                                    : isChatLoadingHistory
+                                      ? 'border border-gray-400 dark:border-gray-500'
+                                      : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent active:bg-blue-50 dark:active:bg-blue-900/20 active:scale-[0.98]'
                                   }`}
-                                style={{ 
+                                style={{
                                   minHeight: '44px',
                                   pointerEvents: isChatLoadingHistory ? 'none !important' : 'auto',
                                   userSelect: isChatLoadingHistory ? 'none' : 'auto'
@@ -767,50 +733,127 @@ function ModernSidebar({
             })()}
           </div>
         )}
-
-
       </div>
 
-      {/* Modern Footer */}
-      <div className="p-2 sm:p-3 border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-[#121212] space-y-1.5">
-        <div className={`flex ${collapsed ? 'flex-col' : ''} gap-1.5`}>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsSettingsOpen(true)}
-            className={`text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 h-7 py-1.5 touch-manipulation text-xs ${collapsed ? 'justify-center w-full' : 'flex-1 justify-start gap-1.5'
-              }`}
-            title={collapsed ? 'Settings' : ''}
-          >
-            <Settings className="h-3 w-3 flex-shrink-0" />
-            {!collapsed && <span>Settings</span>}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 h-7 py-1.5 touch-manipulation text-xs ${collapsed ? 'justify-center w-full' : 'flex-1 justify-start gap-1.5'
-              }`}
-            title={collapsed ? 'Help' : ''}
-          >
-            <HelpCircle className="h-3 w-3 flex-shrink-0" />
-            {!collapsed && <span>Help</span>}
-          </Button>
-        </div>
+      <div className="ml-3 mr-3 mb-4 h-8">
+        {/* <Button
+          onClick={() => setIsUsageDashboardOpen(true)}
+          className={`w-full h-8 text-xs text-white flex items-center justify-center ${collapsed ? 'dark:bg-[#121212]' : 'bg-black'
+            }`}
+        >
+          {collapsed ? (
+            <div className="flex items-center justify-center rounded-md p-1">
+              <TrendingUp className="h-4 w-4" />
+            </div>
+          ) : (
+            <>
+              <TrendingUp className="h-3 w-3 mr-1" />
+              View Usage
+            </>
+          )}
+        </Button> */}
+      </div>
 
-        {!collapsed && (
-          <div className=" pt-1.5 border-gray-200 dark:border-gray-700">
-            <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-              {isDemoMode ? (
-                <>Demo Preview - <span className="font-medium text-orange-400">No API Usage</span></>
-              ) : bypassAPI ? (
-                <>Interface Preview - <span className="font-medium text-green-400">No API Usage</span></>
-              ) : (
-                <></>
+
+
+      {/* <Separator className="" /> */}
+
+      {/* Profile Dropdown */}
+     <div className="relative mt-3 mb-4 ml-2 mr-2 h-8" ref={dropdownRef}> 
+     <button
+    onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+    className="flex items-center justify-start gap-2 text-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors w-full text-left px-2 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+  >
+    {collapsed ? (
+      <UserCircle className="ml-2 h-4 w-4" />
+    ) : (
+      <>
+        <img
+          src={user.avatar}
+          alt="Profile"
+          className="w-6 h-6 rounded-full border border-gray-300 dark:border-gray-700"
+        />
+      </>
+    )}
+
+    <div className="flex flex-col leading-tight">
+      {!collapsed && (
+        <>
+          <span className="font-medium">{user.name}</span>
+          <span className="uppercase text-[12px] text-gray-500 dark:text-gray-400">
+            {user.plan}
+          </span>
+        </>
+      )}
+    </div>
+  </button>
+
+
+        {/* Dropdown Menu */}
+        {isProfileDropdownOpen && (
+          <div className="absolute bottom-full mb-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+            <div className="py-1">
+              <button
+                onClick={() => {
+                  // Add your help handler here
+                  //  setIsProfileDropdownOpen(false);
+                }}
+                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+              >
+                <UserCircle className="h-4 w-4" />
+                {user.email}
+              </button>
+              <button
+                onClick={() => {
+                  setIsSettingsOpen(true);
+                  setIsProfileDropdownOpen(false);
+                }}
+                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+              >
+                <Settings className="h-4 w-4" />
+                Settings
+              </button>
+              <button
+                onClick={() => {
+                  // Add your help handler here
+                  setIsProfileDropdownOpen(false);
+                }}
+                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+              >
+                <HelpCircle className="h-4 w-4" />
+                Help
+              </button>
+              <button
+                onClick={() => setShowLogoutConfirm(true)}
+                disabled={loading_logout}
+                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </button>
+
+              {loading_logout && (
+                <Spinner />
               )}
-            </p>
+            </div>
           </div>
         )}
       </div>
+
+      {/* Simplified Footer - Status Info Only */}
+      {!collapsed && (
+        <div className="p-2 sm:p-3 border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-[#121212]">
+          <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+            {isDemoMode ? (
+              <>Demo Preview - <span className="font-medium text-orange-400">No API Usage</span></>
+            ) : bypassAPI ? (
+              <>Interface Preview - <span className="font-medium text-green-400">No API Usage</span></>
+            ) : (
+              <></>
+            )}
+          </p>
+        </div>
+      )}
 
       {/* Settings Panel */}
       <SettingsPanel
@@ -824,8 +867,37 @@ function ModernSidebar({
           onClose={() => setIsUsageDashboardOpen(false)}
         />
       )}
+
+
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-[#1a1a1a] rounded-lg shadow-lg p-6 w-full max-w-sm">
+            <h2 className="text-lg font-semibold mb-4">Confirm Logout</h2>
+            <p className="mb-6 text-sm text-muted-foreground">Are you sure you want to log out?</p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="px-4 py-2 rounded border border-border bg-muted hover:bg-muted/80"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setShowLogoutConfirm(false)
+                  await logout()
+                }}
+                className="px-4 py-2 rounded bg-destructive text-white hover:bg-destructive/90"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-export default ModernSidebar 
+export default ModernSidebar

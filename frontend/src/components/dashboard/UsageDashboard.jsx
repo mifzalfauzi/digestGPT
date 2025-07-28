@@ -78,7 +78,7 @@ const UsageDashboard = ({ onClose }) => {
         </div>
 
         {/* User Info & Plan */}
-        <div className="space-y-4">
+        {/* <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{user.name}</h3>
@@ -91,11 +91,22 @@ const UsageDashboard = ({ onClose }) => {
               </div>
             </Badge>
           </div>
-        </div>
+        </div> */}
 
         {/* Usage Statistics */}
         <div className="space-y-6">
-          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Current Usage</h4>
+        <div className="flex items-center justify-between">
+    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+      Current Usage
+    </h4>
+
+    <Badge className={`px-3 py-1 ${planColors[user.plan.toLowerCase()]}`}>
+      <div className="flex items-center gap-1">
+        {planIcons[user.plan.toLowerCase()]}
+        <span className="font-semibold">{user.plan.toUpperCase()} PLAN</span>
+      </div>
+    </Badge>
+  </div>
           
           {/* Documents Usage */}
           <div className="space-y-3">

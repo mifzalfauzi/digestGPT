@@ -1561,7 +1561,7 @@ This business plan effectively balances ambitious growth objectives with compreh
 
             {/* User Actions - Top Right */}
             <div className="fixed top-4 right-4 z-40 flex items-center gap-2">
-              <Button
+              {/* <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowUsageDashboard(true)}
@@ -1571,8 +1571,8 @@ This business plan effectively balances ambitious growth objectives with compreh
                 <span className="absolute top-full right-0 mt-2 px-2 py-1 text-xs bg-popover text-popover-foreground rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
                   View Usage & Plan
                 </span>
-              </Button>
-              <Button
+              </Button> */}
+              {/* <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowLogoutConfirm(true)}
@@ -1583,14 +1583,14 @@ This business plan effectively balances ambitious growth objectives with compreh
                   <div className="flex items-center gap-2">
                     {/* <Spinner />
                     <p>Signing Out...</p> */}
-                  </div>
+                  {/* </div>
                 ) : (
                   <LogOut className="h-4 w-4 group-hover:text-destructive-foreground" />
                 )}
                 <span className="absolute top-full right-0 mt-2 px-2 py-1 text-xs bg-popover text-popover-foreground rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
                   {loading_logout ? 'Signing Out...' : 'Sign Out'}
                 </span>
-              </Button>
+              </Button> */} 
 
               {loading_logout && (
                 <Spinner />

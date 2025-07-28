@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
-import { Eye, FileText, Brain, TrendingUp, Clock, Sparkles, Target, AlertTriangle, CheckCircle2, BookOpen } from 'lucide-react'
+import { Eye, FileText, Brain, TrendingUp, Clock, Sparkles, Target, AlertTriangle, CheckCircle2, BookOpen, Key, ArrowBigDown } from 'lucide-react'
 import ProfessionalAnalysisDisplay from './ProfessionalAnalysisDisplay'
 import KeyConceptsDisplay from './KeyConceptsDisplay'
 import HighlightableText from './HighlightableText'
@@ -78,17 +78,17 @@ This business plan effectively balances growth ambitions with comprehensive risk
       // For demo mode, return a placeholder PDF URL
       return "data:application/pdf;base64,JVBERi0xLjMKMSAwIG9iaiAiZGVtbyI="
     }
-    
+
     if (bypassAPI) {
       // For bypass mode, return another placeholder
       return "data:application/pdf;base64,JVBERi0xLjMKMSAwIG9iaiAiYnlwYXNzIgo="
     }
-    
+
     // For newly uploaded files with file object
     if (file && file.type === 'application/pdf') {
       return URL.createObjectURL(file)
     }
-    
+
     // For historical documents with file_url from backend
     if (results?.file_url && results.filename?.toLowerCase().endsWith('.pdf')) {
       // Clean up the URL - remove trailing question mark if present
@@ -96,14 +96,14 @@ This business plan effectively balances growth ambitions with comprehensive risk
       console.log('Historical PDF URL:', cleanUrl)
       return cleanUrl
     }
-    
+
     return null
   }
 
-  const isPDF = (file && file.type === 'application/pdf' && !isDemoMode && !bypassAPI) || 
-                (results?.filename?.toLowerCase().endsWith('.pdf') && results?.file_url && !isDemoMode && !bypassAPI)
+  const isPDF = (file && file.type === 'application/pdf' && !isDemoMode && !bypassAPI) ||
+    (results?.filename?.toLowerCase().endsWith('.pdf') && results?.file_url && !isDemoMode && !bypassAPI)
   const isDOCX = (file && file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' && !isDemoMode && !bypassAPI) ||
-                 (results?.filename?.endsWith('.docx') && !isDemoMode && !bypassAPI)
+    (results?.filename?.endsWith('.docx') && !isDemoMode && !bypassAPI)
   const hasDocumentViewer = isPDF || isDOCX
 
   // Set default tab based on document availability
@@ -218,10 +218,8 @@ This business plan effectively balances growth ambitions with comprehensive risk
       {/* Enhanced Header - Fixed at top */}
       <div className="border-b flex-shrink-0 px-2 sm:px-3 lg:px-4 py-2 sm:py-3 bg-white/80 dark:bg-[#121212] backdrop-blur-sm">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 lg:gap-0">
+          {/* LEFT SIDE */}
           <div className="flex items-center gap-2">
-            {/* <div className="p-1 sm:p-1.5 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/40 dark:to-purple-900/40 rounded-xl">
-              <Brain className="h-3 w-3 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4 text-blue-600 dark:text-blue-400" />
-            </div> */}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <h2 className="text-xs sm:text-sm lg:text-base font-bold text-slate-900 dark:text-white">
@@ -229,35 +227,38 @@ This business plan effectively balances growth ambitions with comprehensive risk
                   {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
                   {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal">(Preview)</span>}
                 </h2>
-                <Badge className={`text-xs border-0 px-1 py-0.5 ${isDemoMode
-                  ? 'bg-gradient-to-r from-orange-500 to-yellow-600 text-white'
-                  : bypassAPI
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
-                    : 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white'
-                  }`}>
-                  <Sparkles className="h-1.5 w-1.5 sm:h-2 sm:w-2 mr-0.5" />
-                  <span className="hidden sm:inline">
-                    {isDemoMode ? 'Demo Data' : bypassAPI ? 'Preview Data' : 'Analyzed'}
-                  </span>
-                  <span className="sm:hidden">
-                    {isDemoMode ? '🎭' : bypassAPI ? '👁️' : '✓'}
-                  </span>
-                </Badge>
               </div>
             </div>
           </div>
+
+          {/* RIGHT SIDE (document viewer) */}
+          {/* {hasDocumentViewer && (
+            <div className="flex justify-end">
+              <div className="flex items-center gap-1 bg-white dark:bg-black rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
+                <FileText className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                <span className="hidden sm:inline">{isPDF ? 'PDF Viewer' : 'DOCX Viewer'}</span>
+                <span className="sm:hidden">{isPDF ? 'PDF' : 'DOCX'}</span>
+              </div>
+            </div>
+          )} */}
         </div>
       </div>
+
 
       {/* Enhanced Content - Scrollable */}
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
           <div className="flex-shrink-0 px-2 sm:px-3 lg:px-4 pt-2 sm:pt-3 dark:bg-[#121212]">
-            <TabsList className={`grid w-full ${hasDocumentViewer ? 'grid-cols-4' : 'grid-cols-3'} bg-slate-100 dark:bg-[#000000] dark:text-white p-0.5 sm:p-1 rounded-xl h-auto`}>
+            <TabsList className={`grid w-full ${hasDocumentViewer ? 'grid-cols-5' : 'grid-cols-3'} bg-slate-100 dark:bg-[#000000] dark:text-white p-0.5 sm:p-1 rounded-xl h-auto`}>
               <TabsTrigger value="analysis" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
                 <Brain className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
                 <span className="hidden md:inline">Analysis</span>
                 <span className="md:hidden">AI</span>
+              </TabsTrigger>
+              <TabsTrigger value="swot" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
+                <Key className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                <span className="hidden md:inline">SWOT</span>
+                <span className="md:hidden">SWOT</span>
               </TabsTrigger>
               <TabsTrigger value="insights" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
                 <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
