@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react'
-import { Eye, EyeOff, Lock, Mail, Zap, AlertCircle, Loader2, Shield, Users, TrendingUp, CheckCircle } from 'lucide-react'
+import { Mail, Zap, AlertCircle, Loader2, Shield, Users, TrendingUp, CheckCircle, ArrowRight } from 'lucide-react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import axios from 'axios'
 
 function SignIn() {
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-  const [isMicrosoftLoading, setIsMicrosoftLoading] = useState(false)
   const [errors, setErrors] = useState({})
+  const [linkSent, setLinkSent] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
   const { login, isAuthenticated } = useAuth()
@@ -27,6 +25,8 @@ function SignIn() {
 
     // 1. Check for message from URL parameters (highest priority)
     const urlMessage = searchParams.get('message')
+    const urlError = searchParams.get('error')
+    
     if (urlMessage && !messageSet) {
       switch (urlMessage) {
         case 'verify_email':
@@ -44,6 +44,15 @@ function SignIn() {
           setMessageType('info')
           messageSet = true
           break
+        case 'welcome':
+          setMessage('Welcome! You have been signed in successfully.')
+          setMessageType('success')
+          messageSet = true
+          // For welcome message, redirect to assistant after a short delay
+          setTimeout(() => {
+            navigate('/assistant')
+          }, 2000)
+          break
         default:
           break
       }
@@ -52,7 +61,38 @@ function SignIn() {
       if (messageSet) {
         setSearchParams({})
         
-        // Auto-dismiss message after 5 seconds
+        // Auto-dismiss message after 10 seconds
+        setTimeout(() => {
+          setMessage('')
+          setMessageType('')
+        }, 10000)
+      }
+    }
+
+    // Handle error messages from magic link
+    if (urlError && !messageSet) {
+      switch (urlError) {
+        case 'invalid_link':
+          setMessage('Invalid or expired sign-in link. Please request a new one.')
+          setMessageType('error')
+          messageSet = true
+          break
+        case 'link_expired':
+          setMessage('Sign-in link expired. Please request a new one.')
+          setMessageType('error')
+          messageSet = true
+          break
+        case 'login_failed':
+          setMessage('Sign-in failed. Please try again.')
+          setMessageType('error')
+          messageSet = true
+          break
+        default:
+          break
+      }
+
+      if (messageSet) {
+        setSearchParams({})
         setTimeout(() => {
           setMessage('')
           setMessageType('')
@@ -105,6 +145,7 @@ function SignIn() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
+      console.log('✅ User is authenticated, redirecting to assistant...')
       navigate('/assistant')
     }
   }, [isAuthenticated, navigate])
@@ -175,41 +216,52 @@ function SignIn() {
     }
   }
 
-  const validateForm = () => {
-    const newErrors = {}
-    
-    if (!email) {
-      newErrors.email = 'Email is required'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Please enter a valid email address'
-    }
-    
-    if (!password) {
-      newErrors.password = 'Password is required'
-    } else if (password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters'
-    }
-    
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleSubmit = async (e) => {
+  // Handle Magic Link submission
+  const handleMagicLinkSubmit = async (e) => {
     e.preventDefault()
     
-    if (!validateForm()) return
-    
+    if (!email) {
+      setMessage('Please enter your email address')
+      setMessageType('error')
+      return
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setMessage('Please enter a valid email address')
+      setMessageType('error')
+      return
+    }
+
     setIsLoading(true)
+    setMessage('')
     setErrors({})
-    
+
     try {
-      await login({ email, password })
-      // Navigation will be handled by useEffect when isAuthenticated changes
-    } catch (error) {
-      console.error('Login error:', error)
-      setErrors({ 
-        submit: error.response?.data?.detail || 'Invalid email or password. Please try again.' 
+      console.log('🔄 Sending magic link request for:', email)
+      
+      const response = await fetch('http://localhost:8000/auth/send-magic-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: email.toLowerCase() }),
       })
+
+      const data = await response.json()
+      console.log('📡 Magic link response:', response.status, data)
+
+      if (response.ok) {
+        setLinkSent(true)
+        setMessage(data.message)
+        setMessageType('success')
+      } else {
+        setMessage(data.detail || 'Failed to send magic link')
+        setMessageType('error')
+      }
+    } catch (error) {
+      console.error('❌ Magic link error:', error)
+      setMessage('Network error. Please check your connection and try again.')
+      setMessageType('error')
     } finally {
       setIsLoading(false)
     }
@@ -262,20 +314,64 @@ function SignIn() {
     }
   }
 
-  const handleMicrosoftSignIn = async () => {
-    setIsMicrosoftLoading(true)
-    setErrors({})
-    
-    try {
-      // Simulate Microsoft OAuth
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      console.log('Microsoft sign in attempt')
-      // Handle Microsoft authentication here
-    } catch (error) {
-      setErrors({ submit: 'Microsoft sign-in failed. Please try again.' })
-    } finally {
-      setIsMicrosoftLoading(false)
-    }
+  const requestNewLink = () => {
+    setLinkSent(false)
+    setMessage('')
+    setMessageType('')
+    setEmail('')
+  }
+
+  // If link was sent, show the "check email" screen
+  if (linkSent) {
+    return (
+      <div className="min-h-screen flex">
+        {/* Left Side - Branding & Features */}
+        <div className="hidden lg:flex lg:w-1/2 bg-[#1f1f1f] relative overflow-hidden">
+          <div className="relative z-10 flex flex-col justify-center px-12 py-16 text-white">
+            <div className="space-y-8">
+              {/* Logo and content removed for simplicity */}
+            </div>
+          </div>
+        </div>
+        
+        {/* Right Side - Check Email Message */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 dark:bg-[#121212] p-8">
+          <div className="w-full max-w-md text-center space-y-8">
+            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto">
+              <Mail className="h-8 w-8 text-white" />
+            </div>
+            
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                Check Your Email
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                We've sent a secure sign-in link to <strong>{email}</strong>
+              </p>
+            </div>
+            
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <p className="text-sm text-blue-700 dark:text-blue-400">
+                The link expires in 15 minutes for security
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={requestNewLink}
+                className="w-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg transition-colors"
+              >
+                Send Another Link
+              </button>
+              
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Didn't receive the email? Check your spam folder or try again.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -315,7 +411,7 @@ function SignIn() {
                 ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400'
                 : messageType === 'error'
                 ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
-                : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400'
+                : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400'
             }`}>
               <div className="flex-shrink-0 mt-0.5">
                 {messageType === 'success' && (
@@ -349,7 +445,7 @@ function SignIn() {
           <div className="space-y-3">
             <button 
               onClick={handleGoogleSignIn}
-              disabled={isGoogleLoading || isLoading || isMicrosoftLoading}
+              disabled={isGoogleLoading || isLoading}
               className="w-full h-12 border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-medium rounded-lg flex items-center justify-center gap-3 hover:shadow-md disabled:opacity-50"
             >
               {isGoogleLoading ? (
@@ -386,8 +482,8 @@ function SignIn() {
             </div>
           )}
 
-          {/* Email Form */}
-          <div className="space-y-5">
+          {/* Magic Link Form */}
+          <div className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Email Address
@@ -400,96 +496,57 @@ function SignIn() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
-                  className={`pl-10 h-12 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${errors.email ? 'border-red-500 focus:ring-red-500' : ''}`}
+                  className="pl-10 h-12 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   disabled={isLoading}
+                  required
                 />
               </div>
-              {errors.email && (
-                <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-                  {typeof errors.email === 'string' ? errors.email : 'Email validation failed'}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                <input 
-                  type={showPassword ? "text" : "password"}
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className={`pl-10 pr-12 h-12 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${errors.password ? 'border-red-500 focus:ring-red-500' : ''}`}
-                  disabled={isLoading}
-                />
-                <button 
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                  disabled={isLoading}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-                  {typeof errors.password === 'string' ? errors.password : 'Password validation failed'}
-                </p>
-              )}
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input 
-                  id="remember-me" 
-                  type="checkbox" 
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
-                  Remember me
-                </label>
-              </div>
-              <button 
-                onClick={() => console.log('Forgot password clicked')}
-                className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors bg-transparent border-none cursor-pointer"
-              >
-                Forgot Password?
-              </button>
             </div>
 
             <button 
-              onClick={handleSubmit}
-              disabled={isLoading || isGoogleLoading || isMicrosoftLoading}
-              className="w-full h-12 bg-black dark:bg-white text-white dark:text-black hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 font-medium rounded-lg flex items-center justify-center"
+              onClick={handleMagicLinkSubmit}
+              disabled={isLoading || isGoogleLoading || !email}
+              className="w-full h-12 bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-100 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 font-medium rounded-lg flex items-center justify-center gap-2"
             >
               {isLoading ? (
-                <div className="flex items-center gap-2">
+                <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Signing in...
-                </div>
+                  Sending Magic Link...
+                </>
               ) : (
-                'Sign In'
+                <>
+                  Continue with email
+                </>
               )}
             </button>
           </div>
 
+          {/* Info about Magic Links */}
+          {/* <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+              How it works:
+            </h3>
+            <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+              <li>• Enter your email address</li>
+              <li>• Check your email for a secure link</li>
+              <li>• Click the link to sign in instantly</li>
+              <li>• No passwords to remember!</li>
+            </ul>
+          </div> */}
+
           {/* Sign Up Link */}
           <div className="text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Don't have an account?{' '}
+            {/* <p className="text-sm text-gray-600 dark:text-gray-400">
+              Prefer traditional signup?{' '}
               <button 
                 onClick={() => navigate('/signup')}
                 className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-semibold transition-colors bg-transparent border-none cursor-pointer"
               >
-                Sign Up
+                Create Account
               </button>
-            </p>
+            </p> */}
             {/* Add resend verification link */}
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+            {/* <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
               Need to verify your email?{' '}
               <button 
                 onClick={() => navigate('/resend-verification')}
@@ -497,7 +554,7 @@ function SignIn() {
               >
                 Resend verification email
               </button>
-            </p>
+            </p> */}
           </div>
 
           {/* Footer */}

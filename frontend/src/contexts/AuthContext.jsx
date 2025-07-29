@@ -74,12 +74,50 @@ export const AuthProvider = ({ children }) => {
   // Configure axios to always include credentials for cookie support
   axios.defaults.withCredentials = true
 
+  
+
+  // Enhanced auth check with better logging
+  const checkAuth = async () => {
+    try {
+      console.log('🔍 Checking authentication status...')
+      
+      const response = await axios.get(`${API_BASE_URL}/auth/check-auth`, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      console.log('📡 Auth check response:', response.status, response.data)
+
+      if (response.status === 200) {
+        console.log('✅ User is authenticated:', response.data)
+        return true
+      } else {
+        console.log('❌ User is not authenticated')
+        return false
+      }
+    } catch (error) {
+      console.error('❌ Auth check error:', error.response?.status, error.response?.data)
+      return false
+    }
+  }
+
   // Helper function to check if we're authenticated by making a test request
   const checkAuthStatus = async () => {
     try {
-      await axios.get(`${API_BASE_URL}/auth/check-auth`)
+      const response = await axios.get(`${API_BASE_URL}/auth/check-auth`, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      console.log('✅ Auth check successful')
+      setIsAuthenticated(true)
       return true
     } catch (error) {
+      console.log('❌ Auth check failed:', error.response?.status)
+      setIsAuthenticated(false)
       return false
     }
   }
@@ -108,7 +146,7 @@ export const AuthProvider = ({ children }) => {
 
   const closeSessionModal = () => {
     setShowSessionModal(false)
-    setSessionExpiredMessage('')
+    // setSessionExpiredMessage('')
   }
 
   const refreshAccessToken = async () => {
@@ -183,9 +221,18 @@ export const AuthProvider = ({ children }) => {
       try {
         setIsLoading(true)
         
+        // Skip auth check if we're on the auth-callback page
+        if (window.location.pathname === '/auth-callback') {
+          console.log('⏭️ Skipping auth check - on auth-callback page')
+          setIsLoading(false)
+          return
+        }
+        
         // Clear any old localStorage tokens since we're using cookies now
         // localStorage.removeItem('auth_token')
         // localStorage.removeItem('refresh_token')
+        
+        // Note: Cookies should now work across ports without SameSite restrictions in development
         
         // Check if we're authenticated via cookies
         let authStatus = await checkAuthStatus()
@@ -208,21 +255,34 @@ export const AuthProvider = ({ children }) => {
         setIsLoading(false)
       }
     }
-
+  
     initAuth()
   }, [])
 
   const fetchUserData = async () => {
     try {
+      console.log('👤 Fetching user data...')
+      
       const [userResponse, usageResponse] = await Promise.all([
-        axios.get(`${API_BASE_URL}/auth/me`, { withCredentials: true }),
-        axios.get(`${API_BASE_URL}/usage/me`, { withCredentials: true })
+        axios.get(`${API_BASE_URL}/auth/me`, { 
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }),
+        axios.get(`${API_BASE_URL}/usage/me`, { 
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
       ])
 
-      console.log(userResponse.data)
+      console.log('✅ User data fetched:', userResponse.data)
       
       setUser(userResponse.data)
       setIsAuthenticated(true)
+      setIsLoading(false)
       
       // The backend now returns the full structure with limits
       const usageData = usageResponse.data
@@ -230,8 +290,9 @@ export const AuthProvider = ({ children }) => {
       
       return userResponse.data
     } catch (error) {
-      console.error('Failed to fetch user data:', error)
+      console.error('❌ Failed to fetch user data:', error)
       setIsAuthenticated(false)
+      setIsLoading(false)
       throw error
     }
   }
@@ -261,8 +322,9 @@ export const AuthProvider = ({ children }) => {
         await fetchUserData()
         return { success: true }
       } else if (Object.keys(credentials).length === 0) {
-        // Empty credentials means cookies are already set (e.g., after Google OAuth)
+        // Empty credentials means cookies are already set (e.g., after Google OAuth or Magic Link)
         // Just fetch user data to establish authentication state
+        console.log('🔄 Login with empty credentials - fetching user data...')
         await fetchUserData()
         return { success: true }
       } else {
@@ -278,6 +340,28 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Login failed:', error)
+      throw error
+    }
+  }
+
+  // NEW: Send magic link function
+  const sendMagicLink = async (email) => {
+    try {
+      console.log('🔗 Sending magic link to:', email)
+      
+      const response = await axios.post(`${API_BASE_URL}/auth/send-magic-link`, {
+        email: email.toLowerCase()
+      }, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      console.log('✅ Magic link sent:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('❌ Magic link error:', error)
       throw error
     }
   }
@@ -367,7 +451,10 @@ export const AuthProvider = ({ children }) => {
     getRemainingLimits,
     getUsagePercentages,
     fetchUserData, // Export this for use in components that need to re-fetch user data
+    checkAuth, // Export this for magic link verification
+    sendMagicLink, // NEW: Export magic link function
     showSessionModal,
+    checkAuthStatus,
     // sessionExpiredMessage,
     closeSessionModal
   }
@@ -383,4 +470,4 @@ export const AuthProvider = ({ children }) => {
       />
     </AuthContext.Provider>
   )
-} 
+}

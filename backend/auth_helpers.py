@@ -26,112 +26,120 @@ print(f"🔧 IS_PRODUCTION: {IS_PRODUCTION}")
 print(f"🔧 SECURE_COOKIES env: {os.getenv('SECURE_COOKIES', 'false')}")
 print(f"🔧 SECURE_COOKIES final: {SECURE_COOKIES}")
 print(f"🔧 COOKIE_DOMAIN: {COOKIE_DOMAIN}")
+if IS_PRODUCTION:
+    print(f"🔧 COOKIE MODE: Production (secure=True, samesite=lax)")
+else:
+    print(f"🔧 COOKIE MODE: Development (secure=False, no samesite restriction)")
 print(f"🔧 ==============================")
 
 def set_access_token_cookie(response: Response, access_token: str):
-    """Set access token as HttpOnly cookie with debug output"""
-    print(f"🍪 === SETTING ACCESS TOKEN COOKIE ===")
-    print(f"🍪 Cookie name: {ACCESS_TOKEN_COOKIE_NAME}")
-    print(f"🍪 Token length: {len(access_token)}")
-    print(f"🍪 Token preview: {access_token[:30]}...")
-    print(f"🍪 Secure setting: {SECURE_COOKIES}")
-    print(f"🍪 Domain setting: {COOKIE_DOMAIN}")
-    print(f"🍪 Max age: {1 * 60} seconds")
-    
-    try:
+    """Set access token as HttpOnly cookie"""
+    # For development, we need more permissive cookie settings
+    if IS_PRODUCTION:
         response.set_cookie(
             key=ACCESS_TOKEN_COOKIE_NAME,
             value=access_token,
             httponly=True,
-            max_age=1 * 60,  # 15 minutes
-            secure=SECURE_COOKIES,  # Should be False for localhost
+            max_age=15 * 60,  # 15 minutes
+            secure=True,
             samesite="lax",
-            path="/",
-            domain=COOKIE_DOMAIN  # Should be None for localhost
+            path="/"
         )
-        print(f"✅ ACCESS TOKEN COOKIE SET SUCCESSFULLY")
-        print(f"✅ Cookie should be: {ACCESS_TOKEN_COOKIE_NAME}={access_token[:20]}...")
-        
-    except Exception as e:
-        print(f"❌ ERROR SETTING ACCESS TOKEN COOKIE: {e}")
-        import traceback
-        print(f"❌ Traceback: {traceback.format_exc()}")
+    else:
+        # Development: No SameSite restriction to allow cross-port cookies
+        response.set_cookie(
+            key=ACCESS_TOKEN_COOKIE_NAME,
+            value=access_token,
+            httponly=True,
+            max_age=15 * 60,  # 15 minutes
+            secure=False,
+            # No samesite for development
+            path="/"
+        )
 
 def set_refresh_token_cookie(response: Response, refresh_token: str):
-    """Set refresh token as HttpOnly cookie with debug output"""
-    print(f"🍪 === SETTING REFRESH TOKEN COOKIE ===")
-    print(f"🍪 Cookie name: {REFRESH_TOKEN_COOKIE_NAME}")
-    print(f"🍪 Token length: {len(refresh_token)}")
-    print(f"🍪 Token preview: {refresh_token[:30]}...")
-    print(f"🍪 Secure setting: {SECURE_COOKIES}")
-    print(f"🍪 Domain setting: {COOKIE_DOMAIN}")
-    print(f"🍪 Max age: {7 * 24 * 60 * 60} seconds")
-    
-    try:
+    """Set refresh token as HttpOnly cookie"""
+    # For development, we need more permissive cookie settings
+    if IS_PRODUCTION:
         response.set_cookie(
             key=REFRESH_TOKEN_COOKIE_NAME,
             value=refresh_token,
             httponly=True,
-            max_age=7 * 24 * 60 * 60,  # 7 days
-            secure=SECURE_COOKIES,  # Should be False for localhost
+            max_age=30 * 24 * 60 * 60,  # 30 days
+            secure=True,
             samesite="lax",
-            path="/",
-            domain=COOKIE_DOMAIN  # Should be None for localhost
+            path="/"
         )
-        print(f"✅ REFRESH TOKEN COOKIE SET SUCCESSFULLY")
-        print(f"✅ Cookie should be: {REFRESH_TOKEN_COOKIE_NAME}={refresh_token[:20]}...")
-        
-    except Exception as e:
-        print(f"❌ ERROR SETTING REFRESH TOKEN COOKIE: {e}")
-        import traceback
-        print(f"❌ Traceback: {traceback.format_exc()}")
+    else:
+        # Development: No SameSite restriction to allow cross-port cookies
+        response.set_cookie(
+            key=REFRESH_TOKEN_COOKIE_NAME,
+            value=refresh_token,
+            httponly=True,
+            max_age=30 * 24 * 60 * 60,  # 30 days
+            secure=False,
+            # No samesite for development
+            path="/"
+        )
 
-def clear_access_token_cookie(response: Response):
-    """Clear access token cookie"""
-    response.delete_cookie(
-        key=ACCESS_TOKEN_COOKIE_NAME,
-        httponly=True,
-        secure=SECURE_COOKIES,
-        samesite="lax",
-        path="/",
-        domain=COOKIE_DOMAIN
-    )
 
-def clear_refresh_token_cookie(response: Response):
-    """Clear refresh token cookie"""
-    response.delete_cookie(
-        key=REFRESH_TOKEN_COOKIE_NAME,
-        httponly=True,
-        secure=SECURE_COOKIES,
-        samesite="lax",
-        path="/",
-        domain=COOKIE_DOMAIN
-    )
+
+# def clear_access_token_cookie(response: Response):
+#     """Clear access token cookie"""
+#     response.delete_cookie(
+#         key=ACCESS_TOKEN_COOKIE_NAME,
+#         httponly=True,
+#         secure=SECURE_COOKIES,
+#         samesite="lax",
+#         path="/",
+#         domain=COOKIE_DOMAIN
+#     )
+
+# def clear_refresh_token_cookie(response: Response):
+#     """Clear refresh token cookie"""
+#     response.delete_cookie(
+#         key=REFRESH_TOKEN_COOKIE_NAME,
+#         httponly=True,
+#         secure=SECURE_COOKIES,
+#         samesite="lax",
+#         path="/",
+#         domain=COOKIE_DOMAIN
+#     )
 
 
 def clear_all_auth_cookies(response: Response):
-    """Clear both access and refresh token cookies"""
-    print(f"🗑️  === CLEARING ALL AUTH COOKIES ===")
-    try:
+    """Clear all authentication cookies"""
+    if IS_PRODUCTION:
         response.delete_cookie(
             key=ACCESS_TOKEN_COOKIE_NAME,
             httponly=True,
-            secure=SECURE_COOKIES,
+            secure=True,
             samesite="lax",
-            path="/",
-            domain=COOKIE_DOMAIN
+            path="/"
         )
         response.delete_cookie(
             key=REFRESH_TOKEN_COOKIE_NAME,
             httponly=True,
-            secure=SECURE_COOKIES,
+            secure=True,
             samesite="lax",
-            path="/",
-            domain=COOKIE_DOMAIN
+            path="/"
         )
-        print(f"✅ ALL COOKIES CLEARED SUCCESSFULLY")
-    except Exception as e:
-        print(f"❌ ERROR CLEARING COOKIES: {e}")
+    else:
+        # Development: Match the permissive settings used when setting cookies
+        response.delete_cookie(
+            key=ACCESS_TOKEN_COOKIE_NAME,
+            httponly=True,
+            secure=False,
+            # No samesite for development
+            path="/"
+        )
+        response.delete_cookie(
+            key=REFRESH_TOKEN_COOKIE_NAME,
+            httponly=True,
+            secure=False,
+            # No samesite for development
+            path="/"
+        )
 
 # Enhanced dependency that works with auto-refresh middleware
 async def get_current_user_with_auto_refresh(request: Request, db: Session = Depends(get_db)) -> User:

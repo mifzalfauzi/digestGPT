@@ -783,22 +783,41 @@ function ModernSidebar({
           alt="Profile"
           className="w-6 h-6 rounded-full border border-gray-300 dark:border-gray-700"
         /> */}
-              <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-blue-500 flex items-center justify-center text-[10px] text-gray-700 dark:text-white">
-                {getInitials(user.name)}
-              </div>
+        {user && (
+          <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-blue-500 flex items-center justify-center text-[10px] text-gray-700 dark:text-white">
+            {getInitials(user.email)}
+          </div>
+        )}
+              {/* <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-blue-500 flex items-center justify-center text-[10px] text-gray-700 dark:text-white">
+                {getInitials(user.email)}
+              </div> */}
             </>
           )}
 
-          <div className="flex flex-col leading-tight">
-            {!collapsed && (
-              <>
-                <span className="font-medium text-[14px]">{user.name}</span>
-                <span className="uppercase text-[12px] text-gray-500 dark:text-gray-400">
-                  {user.plan}
-                </span>
-              </>
-            )}
+<div className="flex flex-col leading-tight">
+  {!collapsed && (
+    <>
+      {user ? (
+        <>
+          <span className="font-medium text-[14px]">{user.email}</span>
+          <span className="uppercase text-[12px] text-gray-500 dark:text-gray-400">
+            {user.plan}
+          </span>
+        </>
+      ) : (
+        <>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 border-2 border-gray-400 border-t-blue-500 rounded-full animate-spin"></div>
+            <span className="font-medium text-[14px] text-gray-400">Loading...</span>
           </div>
+          <span className="uppercase text-[12px] text-gray-400">
+            --
+          </span>
+        </>
+      )}
+    </>
+  )}
+</div>
         </button>
 
 

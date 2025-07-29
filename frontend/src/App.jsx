@@ -13,6 +13,8 @@ import StripeCheckout from './components/StripeCheckout'
 import { Card, CardHeader, CardTitle, CardContent } from './components/ui/card'
 import VerifyEmail from './pages/VerifyEmail'
 import ResendVerification from './pages/ResendVerification'
+import AuthCallback from './pages/AuthCallback'
+import WelcomePage from './pages/WelcomePage'
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -75,6 +77,11 @@ function AppContent() {
             <StripeCheckout />
           </ProtectedRoute>
         } />
+        <Route path="/welcome" element={
+          <ProtectedRoute>
+            <WelcomePage />
+          </ProtectedRoute>
+        } />
         
         {/* Public Routes */}
         <Route path="/signin" element={
@@ -108,6 +115,12 @@ function AppContent() {
             <ResendVerification />
           </PublicRoute>
         } />
+        {/* <Route path="/auth-callback" element={
+          <PublicRoute>
+            <AuthCallback />
+          </PublicRoute>
+        } /> */}
+        <Route path="/auth-callback" element={<AuthCallback />} />
         {/* Fallback route */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
