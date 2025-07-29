@@ -112,8 +112,20 @@ function ModernSidebar({
             </div>
             {!collapsed && (
               <div>
-                <a
-                  href="/main"
+                <button
+                   onClick={() => {
+                    // Clear all collection and document states
+                    onClearHistoricalCollection()
+                    onNewDocument()
+                    // Close mobile sidebar with slight delay to ensure state is updated
+                    if (onClose) {
+                      if (window.innerWidth < 1024) {
+                        setTimeout(() => onClose(), 150)
+                      } else {
+                        onClose()
+                      }
+                    }
+                  }}
                   className="
     text-lg sm:text-xl font-bold text-center
     rounded-md
@@ -123,7 +135,7 @@ function ModernSidebar({
   "
                 >
                   drop<span className="text-blue-400">2</span>chat<span className="text-red-500">*</span>
-                </a>
+                </button>
 
 
 
@@ -302,36 +314,51 @@ function ModernSidebar({
         )}
 
         {/* Non-free users: Show plan info */}
-        {user && user.plan !== 'free' && !collapsed && (
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">
-              {/* Your Plan */}
-            </p>
+        {user && user.plan !== 'free' && (
+  <>
+    {!collapsed ? (
+      <div className="space-y-2">
+        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-2">
+          {/* Your Plan */}
+        </p>
 
-            <Card className={`p-3 ${planColors[user.plan]}/10 dark:border-[#121212]`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  {planIcons[user.plan]}
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {user.plan.toUpperCase()}
-                  </span>
-                </div>
-                <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200 text-xs">
-                  Active
-                </Badge>
-              </div>
-
-              <Button
-                onClick={() => setIsUsageDashboardOpen(true)}
-                // variant="outline"
-                className="w-full bg-black h-8 text-xs text-white"
-              >
-                <TrendingUp className="h-3 w-3 mr-1" />
-                View Usage
-              </Button>
-            </Card>
+        <Card className={`p-3 ${planColors[user.plan]}/10 dark:border-[#121212]`}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              {planIcons[user.plan]}
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                {user.plan.toUpperCase()}
+              </span>
+            </div>
+            <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200 text-xs">
+              Active
+            </Badge>
           </div>
-        )}
+
+          <Button
+            onClick={() => setIsUsageDashboardOpen(true)}
+            className="w-full bg-black h-8 text-xs text-white"
+          >
+            <TrendingUp className="h-3 w-3 mr-1" />
+            View Usage
+          </Button>
+        </Card>
+      </div>
+    ) : (
+      <div className="flex justify-center">
+        <Button
+          onClick={() => setIsUsageDashboardOpen(true)}
+          size="icon"
+          variant="ghost"
+          className="text-muted-foreground hover:text-black dark:hover:text-white"
+        >
+          <TrendingUp className="h-4 w-4" />
+        </Button>
+      </div>
+    )}
+  </>
+)}
+
 
         {/* Active Document/Collection Section - Responsive */}
         {(selectedDocumentId || selectedHistoricalCollection) && (

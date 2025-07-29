@@ -114,16 +114,13 @@ export const AuthProvider = ({ children }) => {
       })
       console.log('✅ Auth check successful')
       setIsAuthenticated(true)
-      
-      // Also fetch user data when auth check succeeds
-      await fetchUserData()
-      
       return true
     } catch (error) {
       console.log('❌ Auth check failed:', error.response?.status)
       setIsAuthenticated(false)
       return false
     }
+    // ❌ DON'T set loading state here - let the caller handle it
   }
 
   const handleSessionExpired = (message = 'Your session has expired. Please sign in again.') => {
@@ -223,7 +220,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        setIsLoading(true)
+        setIsLoading(true) // Start loading
         
         // Skip auth check if we're on the auth-callback page
         if (window.location.pathname === '/auth-callback') {
@@ -232,30 +229,31 @@ export const AuthProvider = ({ children }) => {
           return
         }
         
-        // Clear any old localStorage tokens since we're using cookies now
-        // localStorage.removeItem('auth_token')
-        // localStorage.removeItem('refresh_token')
-        
-        // Note: Cookies should now work across ports without SameSite restrictions in development
+        console.log('🔄 Starting auth initialization...')
         
         // Check if we're authenticated via cookies
         let authStatus = await checkAuthStatus()
+        
         if (!authStatus) {
           console.warn('First auth check failed. Retrying after delay...');
           await new Promise((resolve) => setTimeout(resolve, 2000));
           authStatus = await checkAuthStatus();
         }
+        
         if (authStatus) {
           console.log('Found valid authentication cookies')
           await fetchUserData()
+          console.log('✅ Auth initialization complete - user authenticated')
         } else {
-          console.log('No valid authentication found')
+          console.log('No valid authentication found - user not authenticated')
           setIsAuthenticated(false)
         }
       } catch (error) {
         console.error('Auth initialization failed:', error)
         setIsAuthenticated(false)
       } finally {
+        // ✅ ALWAYS set loading to false here, regardless of success/failure
+        console.log('🏁 Auth initialization finished, setting loading to false')
         setIsLoading(false)
       }
     }
@@ -281,22 +279,23 @@ export const AuthProvider = ({ children }) => {
           },
         })
       ])
-
+  
       console.log('✅ User data fetched:', userResponse.data)
       
       setUser(userResponse.data)
       setIsAuthenticated(true)
-      setIsLoading(false)
+      // ❌ REMOVE this line - don't set loading here
+      // setIsLoading(false)
       
-      // The backend now returns the full structure with limits
       const usageData = usageResponse.data
-      setUsage(usageData.usage) // Extract the usage object which contains documents, chats, tokens with limits
+      setUsage(usageData.usage)
       
       return userResponse.data
     } catch (error) {
       console.error('❌ Failed to fetch user data:', error)
       setIsAuthenticated(false)
-      setIsLoading(false)
+      // ❌ REMOVE this line - don't set loading here  
+      // setIsLoading(false)
       throw error
     }
   }
