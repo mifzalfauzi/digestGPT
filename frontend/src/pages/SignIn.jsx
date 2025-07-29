@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Eye, EyeOff, Lock, Mail, Zap, AlertCircle, Loader2, Shield, Users, TrendingUp, CheckCircle } from 'lucide-react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import axios from 'axios'
 
@@ -12,38 +12,95 @@ function SignIn() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [isMicrosoftLoading, setIsMicrosoftLoading] = useState(false)
   const [errors, setErrors] = useState({})
-  const [successMessage, setSuccessMessage] = useState('')
   const navigate = useNavigate()
   const location = useLocation()
   const { login, isAuthenticated } = useAuth()
+  
+  // UNIFIED MESSAGE HANDLING
+  const [message, setMessage] = useState('')
+  const [messageType, setMessageType] = useState('') // 'success', 'info', 'error'
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  // Handle success message from signup redirect or session expiry
+  // SINGLE useEffect for ALL message handling
   useEffect(() => {
-    // Check for session expired message in sessionStorage
-    const sessionExpiredMessage = sessionStorage.getItem('sessionExpiredMessage')
-    if (sessionExpiredMessage) {
-      setErrors({ submit: sessionExpiredMessage })
-      sessionStorage.removeItem('sessionExpiredMessage')
-      // Clear the error after 10 seconds
-      setTimeout(() => setErrors({}), 10000)
-      return
-    }
-    
-    // Handle location state messages
-    if (location.state?.message) {
-      if (location.state?.expired) {
-        // Session expired message - show as error
-        setErrors({ submit: location.state.message })
-        // Clear the error after 10 seconds
-        setTimeout(() => setErrors({}), 10000)
-      } else {
-        // Regular success message
-        setSuccessMessage(location.state.message)
-        // Clear the message after 5 seconds
-        setTimeout(() => setSuccessMessage(''), 5000)
+    let messageSet = false;
+
+    // 1. Check for message from URL parameters (highest priority)
+    const urlMessage = searchParams.get('message')
+    if (urlMessage && !messageSet) {
+      switch (urlMessage) {
+        case 'verify_email':
+          setMessage('Please check your email and verify your account before signing in.')
+          setMessageType('info')
+          messageSet = true
+          break
+        case 'email_verified':
+          setMessage('Email verified successfully! You can now sign in.')
+          setMessageType('success')
+          messageSet = true
+          break
+        case 'verification_required':
+          setMessage('Please verify your email before signing in.')
+          setMessageType('info')
+          messageSet = true
+          break
+        default:
+          break
+      }
+      
+      // Clear URL parameters after showing message
+      if (messageSet) {
+        setSearchParams({})
+        
+        // Auto-dismiss message after 5 seconds
+        setTimeout(() => {
+          setMessage('')
+          setMessageType('')
+        }, 10000)
       }
     }
-  }, [location.state])
+
+    // 2. Check for message from navigation state (if no URL message)
+    if (location.state?.message && !messageSet) {
+      if (location.state?.expired) {
+        // Session expired message - show as error
+        setMessage(location.state.message)
+        setMessageType('error')
+        messageSet = true
+        // Clear the error after 10 seconds
+        setTimeout(() => {
+          setMessage('')
+          setMessageType('')
+        }, 10000)
+      } else {
+        // Regular success message
+        setMessage(location.state.message)
+        setMessageType('success')
+        messageSet = true
+        // Clear the message after 5 seconds
+        setTimeout(() => {
+          setMessage('')
+          setMessageType('')
+        }, 5000)
+      }
+      
+      // Clear the state to prevent message from showing on refresh
+      navigate(location.pathname, { replace: true, state: {} })
+    }
+
+    // 3. Check for session expired message in sessionStorage (if no other messages)
+    const sessionExpiredMessage = sessionStorage.getItem('sessionExpiredMessage')
+    if (sessionExpiredMessage && !messageSet) {
+      setMessage(sessionExpiredMessage)
+      setMessageType('error')
+      sessionStorage.removeItem('sessionExpiredMessage')
+      // Clear the error after 10 seconds
+      setTimeout(() => {
+        setMessage('')
+        setMessageType('')
+      }, 10000)
+    }
+  }, [location, searchParams, navigate, setSearchParams])
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -77,11 +134,11 @@ function SignIn() {
           cancel_on_tap_outside: false
         })
       }
-         }).catch(console.error)
-   }, [])
+    }).catch(console.error)
+  }, [])
 
-   // Handle Google OAuth response
-   const handleGoogleResponse = async (response) => {
+  // Handle Google OAuth response
+  const handleGoogleResponse = async (response) => {
     try {
       setIsGoogleLoading(true)
       setErrors({})
@@ -117,9 +174,8 @@ function SignIn() {
       setIsGoogleLoading(false)
     }
   }
-  
 
-   const validateForm = () => {
+  const validateForm = () => {
     const newErrors = {}
     
     if (!email) {
@@ -159,7 +215,7 @@ function SignIn() {
     }
   }
 
-    const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true)
     setErrors({})
     
@@ -204,9 +260,9 @@ function SignIn() {
       setErrors({ submit: 'Google sign-in failed. Please try again.' })
       setIsGoogleLoading(false)
     }
-   }
+  }
 
-   const handleMicrosoftSignIn = async () => {
+  const handleMicrosoftSignIn = async () => {
     setIsMicrosoftLoading(true)
     setErrors({})
     
@@ -228,82 +284,12 @@ function SignIn() {
       <div className="hidden lg:flex lg:w-1/2 bg-[#1f1f1f] relative overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
-          {/* <div className="absolute top-0 left-0 w-72 h-72 bg-white rounded-full -translate-x-1/2 -translate-y-1/2"></div>
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/2 translate-y-1/2"></div>
-          <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-white rounded-full -translate-x-1/2 -translate-y-1/2"></div> */}
+          {/* Background elements removed for simplicity */}
         </div>
         
         <div className="relative z-10 flex flex-col justify-center px-12 py-16 text-white">
           <div className="space-y-8">
-            {/* Logo */}
-            <div className="flex items-center gap-4">
-              {/* <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                <Zap className="h-8 w-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold">DigesText</h1>
-                <p className="text-blue-200">Intelligent text processing</p>
-              </div> */}
-            </div>
-            
-            {/* Hero Text */}
-            {/* <div className="space-y-4">
-              <h2 className="text-3xl font-bold leading-tight">
-                Transform your workflow with AI-powered text processing
-              </h2>
-              <p className="text-lg text-blue-100 leading-relaxed">
-                Join thousands of professionals who trust DigesText to streamline their document processing and boost productivity.
-              </p>
-            </div> */}
-            
-            {/* Features */}
-            {/* <div className="space-y-6">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
-                  <Shield className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">Enterprise Security</h3>
-                  <p className="text-blue-100">Bank-grade encryption and compliance standards</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">Boost Productivity</h3>
-                  <p className="text-blue-100">Process documents 10x faster with AI assistance</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
-                  <Users className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">Team Collaboration</h3>
-                  <p className="text-blue-100">Seamless sharing and real-time collaboration</p>
-                </div>
-              </div>
-            </div> */}
-            
-            {/* Stats */}
-            {/* <div className="grid grid-cols-3 gap-6 pt-8 border-t border-white/20">
-              <div className="text-center">
-                <div className="text-2xl font-bold">50K+</div>
-                <div className="text-sm text-blue-200">Active Users</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold">1M+</div>
-                <div className="text-sm text-blue-200">Documents Processed</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold">99.9%</div>
-                <div className="text-sm text-blue-200">Uptime</div>
-              </div>
-            </div> */}
+            {/* Logo and content removed for simplicity */}
           </div>
         </div>
       </div>
@@ -311,17 +297,6 @@ function SignIn() {
       {/* Right Side - Sign In Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 dark:bg-[#121212] p-8">
         <div className="w-full max-w-md space-y-8">
-          {/* Mobile Logo */}
-          {/* <div className="lg:hidden text-center space-y-4">
-            <div className="flex items-center justify-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Zap className="h-6 w-6 text-white" />
-              </div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-800 dark:from-white dark:via-blue-200 dark:to-indigo-200 bg-clip-text text-transparent">
-                DigesText
-              </h1>
-            </div>
-          </div> */}
           
           {/* Header */}
           <div className="text-center space-y-2">
@@ -332,6 +307,43 @@ function SignIn() {
               State-of-the-art AI-powered document analysis.
             </p>
           </div>
+
+          {/* UNIFIED MESSAGE DISPLAY */}
+          {message && (
+            <div className={`rounded-lg p-4 flex items-start gap-3 ${
+              messageType === 'success' 
+                ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400'
+                : messageType === 'error'
+                ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
+                : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400'
+            }`}>
+              <div className="flex-shrink-0 mt-0.5">
+                {messageType === 'success' && (
+                  <CheckCircle className="h-4 w-4" />
+                )}
+                {messageType === 'info' && (
+                  <AlertCircle className="h-4 w-4" />
+                )}
+                {messageType === 'error' && (
+                  <AlertCircle className="h-4 w-4" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">{message}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setMessage('')
+                  setMessageType('')
+                }}
+                className="flex-shrink-0 ml-auto text-current opacity-70 hover:opacity-100"
+              >
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          )}
 
           {/* OAuth Buttons */}
           <div className="space-y-3">
@@ -352,24 +364,6 @@ function SignIn() {
               )}
               Continue with Google
             </button>
-
-            {/* <button 
-              onClick={handleMicrosoftSignIn}
-              disabled={isMicrosoftLoading || isLoading || isGoogleLoading}
-              className="w-full h-12 border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-medium rounded-lg flex items-center justify-center gap-3 hover:shadow-md disabled:opacity-50"
-            >
-              {isMicrosoftLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <svg className="h-5 w-5" viewBox="0 0 24 24">
-                  <path fill="#f25022" d="M1 1h10v10H1z"/>
-                  <path fill="#00a4ef" d="M13 1h10v10H13z"/>
-                  <path fill="#7fba00" d="M1 13h10v10H1z"/>
-                  <path fill="#ffb900" d="M13 13h10v10H13z"/>
-                </svg>
-              )}
-              Continue with Microsoft
-            </button> */}
           </div>
 
           {/* Divider */}
@@ -382,15 +376,7 @@ function SignIn() {
             </div>
           </div>
 
-          {/* Success Message */}
-          {successMessage && (
-            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-500" />
-              <span className="text-sm text-green-600 dark:text-green-400">{successMessage}</span>
-            </div>
-          )}
-
-          {/* Error Message */}
+          {/* Error Message for form validation only */}
           {errors.submit && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-red-500" />
@@ -478,7 +464,7 @@ function SignIn() {
             <button 
               onClick={handleSubmit}
               disabled={isLoading || isGoogleLoading || isMicrosoftLoading}
-              className="w-full h-12 dark:bg-white text-black hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 font-medium rounded-lg flex items-center justify-center"
+              className="w-full h-12 bg-black dark:bg-white text-white dark:text-black hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 font-medium rounded-lg flex items-center justify-center"
             >
               {isLoading ? (
                 <div className="flex items-center gap-2">
@@ -500,6 +486,16 @@ function SignIn() {
                 className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-semibold transition-colors bg-transparent border-none cursor-pointer"
               >
                 Sign Up
+              </button>
+            </p>
+            {/* Add resend verification link */}
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+              Need to verify your email?{' '}
+              <button 
+                onClick={() => navigate('/resend-verification')}
+                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors bg-transparent border-none cursor-pointer"
+              >
+                Resend verification email
               </button>
             </p>
           </div>

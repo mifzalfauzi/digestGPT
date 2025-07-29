@@ -181,11 +181,7 @@ function SignUp() {
       // Show success message briefly then redirect to sign in
       setSuccess(true)
       setTimeout(() => {
-        navigate('/signin', {
-          state: {
-            message: 'Please make sure to verify your email before signing in with your credentials.'
-          }
-        })
+        navigate('/signin?message=verify_email')
       }, 1500)
 
     } catch (error) {

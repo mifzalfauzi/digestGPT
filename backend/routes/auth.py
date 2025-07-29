@@ -616,3 +616,84 @@ def send_verification_email(to_email, token):
     except Exception as e:
         print(f"❌ Email sending failed: {str(e)}")
         raise
+    
+# Add this to your auth.py routes
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+@router.post("/resend-verification")
+async def resend_verification_email(
+    request: ResendVerificationRequest, 
+    db: Session = Depends(get_db)
+):
+    """Resend verification email for unverified users"""
+    print(f"\n📧 === RESEND VERIFICATION REQUEST ===")
+    print(f"📧 Email: {request.email}")
+    
+    try:
+        normalized_email = request.email.lower()
+        print(f"📧 Normalized email: {normalized_email}")
+        
+        # Find user by email
+        user = db.query(User).filter(func.lower(User.email) == normalized_email).first()
+        
+        if not user:
+            print(f"❌ User not found: {normalized_email}")
+            # Don't reveal if email exists or not for security
+            return {
+                "message": "If the email exists and is unverified, a verification email has been sent.",
+                "success": True
+            }
+        
+        print(f"✅ Found user: {user.email}")
+        print(f"🔍 User status:")
+        print(f"   - is_active: {user.is_active}")
+        print(f"   - email_verified: {user.email_verified}")
+        print(f"   - has_verification_token: {user.verification_token is not None}")
+        
+        # Check if user is already verified
+        if user.email_verified and user.is_active:
+            print(f"ℹ️ User already verified")
+            return {
+                "message": "This email is already verified. You can log in.",
+                "success": True,
+                "already_verified": True
+            }
+        
+        # Generate new verification token (important for security)
+        old_token = user.verification_token
+        user.verification_token = str(uuid.uuid4())
+        user.email_verified = True
+        user.email_verified_at = datetime.now()
+        user.is_active = True
+        user.verification_token = None  # Clear token
+        user.verification_token_expires_at = None  # Clear expiration
+
+        print(f"🔄 Updating verification token:")
+        print(f"   - Old token: {old_token}")
+        print(f"   - New token: {user.verification_token}")
+        
+        db.commit()
+        print(f"✅ Token updated in database")
+        
+        # Send new verification email
+        print(f"📧 Sending verification email...")
+        send_verification_email(normalized_email, user.verification_token)
+        print(f"✅ Verification email sent successfully")
+        
+        return {
+            "message": "Verification email sent successfully. Please check your email.",
+            "success": True
+        }
+    
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Resend verification error: {str(e)}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
+        
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to resend verification email. Please try again."
+        )

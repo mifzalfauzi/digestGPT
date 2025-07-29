@@ -12,6 +12,7 @@ import ComingSoonPage from './components/ComingSoon'
 import StripeCheckout from './components/StripeCheckout'
 import { Card, CardHeader, CardTitle, CardContent } from './components/ui/card'
 import VerifyEmail from './pages/VerifyEmail'
+import ResendVerification from './pages/ResendVerification'
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -102,7 +103,11 @@ function AppContent() {
             <ComingSoonPage />
           </PublicRoute>
         } />
-        
+        <Route path="/resend-verification" element={
+          <PublicRoute>
+            <ResendVerification />
+          </PublicRoute>
+        } />
         {/* Fallback route */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

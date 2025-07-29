@@ -98,7 +98,7 @@ export default function VerifyEmail() {
             <p className="text-gray-600 dark:text-gray-400">{message}</p>
             <p className="text-sm text-gray-500">Redirecting to login in 3 seconds...</p>
             <button 
-              onClick={() => navigate('/signin')}
+              onClick={() => navigate('/signin?message=email_verified')}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
             >
               Go to Login Now
