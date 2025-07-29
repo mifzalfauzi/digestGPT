@@ -114,6 +114,10 @@ export const AuthProvider = ({ children }) => {
       })
       console.log('✅ Auth check successful')
       setIsAuthenticated(true)
+      
+      // Also fetch user data when auth check succeeds
+      await fetchUserData()
+      
       return true
     } catch (error) {
       console.log('❌ Auth check failed:', error.response?.status)
@@ -179,7 +183,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Token refresh failed:', error)
       // If refresh fails, handle session expiry
-      handleSessionExpired('Session expired. Please sign in again.')
+      handleSessionExpired('')
       return false
     } finally {
       setRefreshingToken(false)

@@ -1,16 +1,26 @@
-// src/pages/AuthCallback.js - Enhanced version
-import React, { useEffect } from 'react';
+// src/pages/AuthCallback.js - Fixed to run only once
+import React, { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext'; // Import useAuth
+import { useAuth } from '../contexts/AuthContext';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { checkAuthStatus } = useAuth(); // Get the auth refresh function
+  const { checkAuthStatus, fetchUserData } = useAuth();
+  const hasRun = useRef(false); // Prevent multiple runs
 
   useEffect(() => {
+    // Prevent multiple executions
+    if (hasRun.current) {
+      console.log('⏭️ AuthCallback already processed, skipping...');
+      return;
+    }
+
     const handleAuthCallback = async () => {
       try {
+        hasRun.current = true; // Mark as started
+        console.log('🚀 AuthCallback starting (single run)...');
+
         // Get token from URL parameters
         const token = searchParams.get('token');
         const welcome = searchParams.get('welcome');
@@ -29,7 +39,7 @@ export default function AuthCallback() {
           headers: {
             'Content-Type': 'application/json',
           },
-          credentials: 'include', // Important for cookies
+          credentials: 'include',
           body: JSON.stringify({ token })
         });
 
@@ -39,43 +49,45 @@ export default function AuthCallback() {
           // Clear the URL immediately for security
           window.history.replaceState({}, document.title, window.location.pathname);
           
-          // IMPORTANT: Refresh auth context after cookies are set
+          // Refresh auth context AND fetch user data
           console.log('🔄 Refreshing authentication context...');
           await checkAuthStatus();
           
-          // Small delay to ensure auth context is updated
-          setTimeout(() => {
-            // Redirect to app
-            if (welcome === 'true') {
-              navigate('/welcome');
-            } else {
-              navigate('/assistant');
-            }
-          }, 100);
+          console.log('👤 Fetching user data...');
+          await fetchUserData();
+          
+          console.log('✅ User data loaded, redirecting...');
+          
+          // Redirect to app
+          if (welcome === 'true') {
+            navigate('/welcome', { replace: true }); // Use replace to avoid back button issues
+          } else {
+            navigate('/assistant', { replace: true });
+          }
           
         } else {
           const error = await response.json();
           console.error('❌ Auth extraction failed:', error);
           
           if (error.detail?.includes('expired')) {
-            navigate('/signin?error=token_expired&message=Authentication link expired. Please request a new one.');
+            navigate('/signin?error=token_expired', { replace: true });
           } else {
-            navigate('/signin?error=auth_failed&message=Authentication failed. Please try again.');
+            navigate('/signin?error=auth_failed', { replace: true });
           }
         }
         
       } catch (error) {
         console.error('❌ Auth callback error:', error);
-        navigate('/signin?error=callback_failed&message=Something went wrong. Please try again.');
+        navigate('/signin?error=callback_failed', { replace: true });
       }
     };
 
     // Run the callback handler
     handleAuthCallback();
-  }, [navigate, searchParams, checkAuthStatus]);
+  }, []); // Empty dependency array - run only once on mount
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 flex items-center justify-center">
+    <div className="min-h-screen bg-white dark:bg-background flex items-center justify-center">
       <div className="text-center space-y-6 p-8">
         {/* Animated Spinner */}
         <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
@@ -99,6 +111,12 @@ export default function AuthCallback() {
               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
             </svg>
             <span>Verifying authentication token</span>
+          </div>
+          <div className="flex items-center justify-center space-x-2">
+            <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+            <span>Loading user profile</span>
           </div>
           <div className="flex items-center justify-center space-x-2">
             <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
