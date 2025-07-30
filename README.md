@@ -1,10 +1,10 @@
 # 🧠 DocuChat - AI Document Analyzer
 
-A full-stack web application that uses Anthropic's Claude to analyze PDF and DOCX documents, providing summaries, key points, and risk flags.
+A full-stack web application that uses Anthropic's Claude to analyze PDF documents, providing summaries, key points, SWOT analysis and risk flags.
 
 ## ✨ Features
 
-- 📁 **File Upload**: Support for PDF and DOCX documents (up to 10MB)
+- 📁 **File Upload**: Support for PDF documents (up to 10MB)
 - 📝 **Text Input**: Direct text analysis via paste
 - 🤖 **AI Analysis**: Powered by Anthropic Claude
 - 📊 **Comprehensive Results**:

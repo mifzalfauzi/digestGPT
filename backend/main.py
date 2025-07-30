@@ -24,7 +24,7 @@ from routes.documents import router as documents_router
 from routes.chat import router as chat_router
 from routes.usage import router as usage_router
 from routes.collections import router as collections_router
-
+from routes.stripe_routes import router as stripe_router
 from middleware.auth_middleware import AutoTokenRefreshMiddleware
 from auth_helpers import get_current_user_with_auto_refresh
 
@@ -122,7 +122,7 @@ app.include_router(documents_router)
 app.include_router(chat_router)
 app.include_router(usage_router)
 app.include_router(collections_router)
-
+app.include_router(stripe_router)   
 # Anthropic configuration
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
 

@@ -72,7 +72,7 @@ function AppContent() {
             <Dashboard />
           </ProtectedRoute>
         } />
-         <Route path="/stripe-checkout" element={
+         <Route path="/upgrade" element={
           <ProtectedRoute>
             <StripeCheckout />
           </ProtectedRoute>

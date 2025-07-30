@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { Badge } from './ui/badge'
-import { Brain, Upload, FileText, Home, MessageCircle, Settings, HelpCircle, Sparkles, Activity, X, Menu, PanelLeftClose, ChevronDown, LayoutDashboard, Crown, Star, Zap, TrendingUp, PanelTopClose, PanelLeftIcon, Clock, MessageSquare, History, UserCircle, LogOut } from 'lucide-react'
+import { Brain, Upload, FileText, Home, MessageCircle, Settings, HelpCircle, Sparkles, Activity, X, Menu, PanelLeftClose, ChevronDown, LayoutDashboard, Crown, Star, Zap, TrendingUp, PanelTopClose, PanelLeftIcon, Clock, MessageSquare, CreditCard, History, UserCircle, LogOut } from 'lucide-react'
 import SettingsPanel from './SettingsPanel'
 import UsageDashboard from './dashboard/UsageDashboard'
 import { Separator } from './ui/separator'
@@ -861,6 +861,16 @@ function ModernSidebar({
               >
                 <UserCircle className="h-4 w-4" />
                 {user.email}
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/upgrade'); 
+                  setIsProfileDropdownOpen(false);
+                }}
+                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+              >
+                <CreditCard className="h-4 w-4" />  
+                Upgrade Plan
               </button>
               <button
                 onClick={() => {
