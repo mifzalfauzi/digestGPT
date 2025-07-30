@@ -170,7 +170,8 @@ export const AuthProvider = ({ children }) => {
         await fetchUserData();
 
         // Optional: force full reload to fix edge cookie/auth sync issues
-        window.location.reload();
+        // window.location.reload();
+        
         return true
       } else {
         console.error('Auth check failed after token refresh')

@@ -1,4 +1,4 @@
-# Create a new file: stripe_routes.py
+# Update your stripe_routes.py
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -9,10 +9,11 @@ from database import get_db
 from models import User, UserPlan
 from dependencies import get_current_active_user
 import logging
+import json
 
 # Configure Stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")  # This can be None
 
 router = APIRouter(prefix="/stripe", tags=["stripe"])
 
@@ -23,6 +24,9 @@ class CheckoutRequest(BaseModel):
 
 class PortalRequest(BaseModel):
     return_url: str = "http://localhost:3000/dashboard"
+    
+class ManualUpdateRequest(BaseModel):
+    session_id: str
 
 @router.post("/create-checkout-session")
 async def create_checkout_session(
@@ -33,6 +37,7 @@ async def create_checkout_session(
     """Create a Stripe Checkout Session for subscription"""
     try:
         print(f"🛒 Creating checkout session for user: {current_user.email}")
+        print(f"📋 Price ID: {request.price_id}")
         
         # Create or get Stripe customer
         stripe_customer_id = current_user.stripe_customer_id
@@ -156,15 +161,31 @@ async def get_subscription_status(
 
 @router.post("/webhook")
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
-    """Handle Stripe webhooks"""
+    """Handle Stripe webhooks - gracefully handle missing webhook secret"""
     payload = await request.body()
     sig_header = request.headers.get('stripe-signature')
     
     try:
+        # If webhook secret is not configured, just log and return success
+        if not STRIPE_WEBHOOK_SECRET:
+            print("⚠️ Webhook received but STRIPE_WEBHOOK_SECRET not configured")
+            print("💡 Payments will work, but plan updates won't be automatic")
+            print("🔧 Set up webhook secret later for automatic plan updates")
+            
+            # Parse the event without verification (for development only)
+            try:
+                event = json.loads(payload)
+                print(f"🔔 Webhook event type: {event.get('type', 'unknown')}")
+            except:
+                print("📦 Could not parse webhook payload")
+            
+            return {"status": "received", "message": "webhook secret not configured"}
+        
+        # If webhook secret is configured, verify the signature
         event = stripe.Webhook.construct_event(
             payload, sig_header, STRIPE_WEBHOOK_SECRET
         )
-        print(f"🔔 Received Stripe webhook: {event['type']}")
+        print(f"🔔 Verified webhook: {event['type']}")
         
         if event['type'] == 'checkout.session.completed':
             session = event['data']['object']
@@ -189,6 +210,85 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     except Exception as e:
         print(f"❌ Webhook error: {e}")
         raise HTTPException(status_code=500, detail="Webhook processing failed")
+
+# Manual plan update endpoint for when webhooks aren't configured
+@router.post("/update-plan-manual")
+async def update_plan_manual(
+    request: ManualUpdateRequest,  # Changed: now properly receives the request body
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Manually update user plan after successful payment (for when webhooks aren't set up)"""
+    try:
+        print(f"🔄 Manual plan update requested by: {current_user.email}")
+        print(f"📋 Session ID: {request.session_id}")
+        print(f"👤 Current user plan: {current_user.plan.value}")
+        
+        # Retrieve the checkout session from Stripe
+        session = stripe.checkout.Session.retrieve(request.session_id)
+        print(f"💳 Session payment status: {session.payment_status}")
+        print(f"🏪 Session customer: {session.customer}")
+        print(f"👤 User customer ID: {current_user.stripe_customer_id}")
+        
+        if session.payment_status == 'paid' and session.customer == current_user.stripe_customer_id:
+            # Get subscription details
+            subscription_id = session.subscription
+            subscription = stripe.Subscription.retrieve(subscription_id)
+            price_id = subscription['items']['data'][0]['price']['id']
+            
+            print(f"🔍 Found price_id: {price_id}")
+            print(f"🔍 STRIPE_PRICE_ID_STANDARD: {os.getenv('STRIPE_PRICE_ID_STANDARD')}")
+            print(f"🔍 STRIPE_PRICE_ID_PRO: {os.getenv('STRIPE_PRICE_ID_PRO')}")
+            
+            # Store old plan for logging
+            old_plan = current_user.plan.value
+            
+            # Update user plan based on price_id
+            if price_id == os.getenv("STRIPE_PRICE_ID_STANDARD"):
+                current_user.plan = UserPlan.STANDARD
+                print("✅ Setting plan to STANDARD")
+            elif price_id == os.getenv("STRIPE_PRICE_ID_PRO"):
+                current_user.plan = UserPlan.PRO
+                print("✅ Setting plan to PRO")
+            else:
+                print(f"⚠️ Unknown price_id: {price_id}")
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Unknown price_id: {price_id}. Check your environment variables."
+                )
+            
+            # Update subscription info
+            current_user.stripe_subscription_id = subscription_id
+            current_user.subscription_status = "active"
+            
+            # Commit changes
+            db.commit()
+            db.refresh(current_user)  # Refresh to get updated data
+            
+            print(f"✅ Successfully updated user {current_user.email}")
+            print(f"✅ Plan changed from {old_plan} to {current_user.plan.value}")
+            print(f"✅ Subscription ID: {subscription_id}")
+            
+            return {
+                "status": "success", 
+                "old_plan": old_plan,
+                "new_plan": current_user.plan.value,
+                "subscription_id": subscription_id,
+                "user_email": current_user.email
+            }
+        else:
+            error_msg = f"Validation failed - Payment status: {session.payment_status}, Customer match: {session.customer == current_user.stripe_customer_id}"
+            print(f"❌ {error_msg}")
+            raise HTTPException(status_code=400, detail=error_msg)
+            
+    except stripe.error.StripeError as e:
+        print(f"❌ Stripe error: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
+    except Exception as e:
+        print(f"❌ Error manually updating plan: {str(e)}")
+        import traceback
+        print(f"❌ Full traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Failed to update plan: {str(e)}")
 
 async def handle_successful_payment(session, db: Session):
     """Handle successful payment from checkout"""

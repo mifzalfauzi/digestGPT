@@ -64,16 +64,16 @@ export default function LandingPage() {
 
           <div className="flex items-center space-x-3">
             <Link to="/signin">
-              <Button variant="ghost" className="hidden md:inline-flex text-sm">
-                Sign In
+              <Button variant="ghost" className="hidden md:inline-flex text-sm bg-white text-black hover:bg-black hover:text-white">
+                Get Started
               </Button>
             </Link>
-            <Link to="/signup">
+            {/* <Link to="/signup">
               <Button className="bg-white text-black hover:bg-black hover:text-white text-sm">
                 Get Started
                 <ArrowRight className="ml-2 h-3.5 w-3.5" />
               </Button>
-            </Link>
+            </Link> */}
             <Button variant="ghost" size="sm" className="md:hidden">
               <Menu className="h-4 w-4" />
             </Button>

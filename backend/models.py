@@ -37,6 +37,10 @@ class User(Base):
     email_verified_at = Column(DateTime(timezone=True), nullable=True)
     verification_token = Column(String, nullable=True)
     verification_token_expires_at = Column(DateTime, nullable=True)
+    
+    stripe_customer_id = Column(String, nullable=True, index=True)
+    stripe_subscription_id = Column(String, nullable=True, index=True)
+    subscription_status = Column(String, nullable=True) # active, inactive, past_due, incomplete, incomplete_expired, trialing, paused, canceled, unpaid
 
 
 # 2. Document table

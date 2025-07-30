@@ -10,50 +10,52 @@ import SignUp from './pages/SignUp'
 import Dashboard from './pages/Dashboard'
 import ComingSoonPage from './components/ComingSoon'
 import StripeCheckout from './components/StripeCheckout'
-import { Card, CardHeader, CardTitle, CardContent } from './components/ui/card'
 import VerifyEmail from './pages/VerifyEmail'
 import ResendVerification from './pages/ResendVerification'
 import AuthCallback from './pages/AuthCallback'
 import WelcomePage from './pages/WelcomePage'
+import StripeSuccess from './components/StripeSuccess'
+import StripeCancel from './components/StripeCancel'
+import CheckingAuthPage from './pages/CheckingAuth'
 
-// Protected Route Component
+// Simplified Protected Route Component
 function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
+  
+  console.log('🛡️ ProtectedRoute - isAuthenticated:', isAuthenticated, 'loading:', isLoading)
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
-            <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-          </div>
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      </div>
-    )
+  // Show loading while auth is being checked
+  if (isLoading) {
+    return <CheckingAuthPage />
   }
 
-  return isAuthenticated ? children : <Navigate to="/signin" replace />
+  // If not authenticated, redirect to signin
+  if (!isAuthenticated) {
+    // Store the intended path for after login
+    sessionStorage.setItem('intendedPath', window.location.pathname)
+    return <Navigate to="/signin" replace />
+  }
+
+  // User is authenticated, render the protected component
+  return children
 }
 
 // Public Route Component (redirect to assistant if authenticated)
 function PublicRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
-            <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-          </div>
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      </div>
-    )
+  // Show loading while auth is being checked
+  if (isLoading) {
+    return <CheckingAuthPage />
   }
 
-  return isAuthenticated ? <Navigate to="/assistant" replace /> : children
+  // If authenticated, redirect to assistant
+  if (isAuthenticated) {
+    return <Navigate to="/assistant" replace />
+  }
+
+  // User is not authenticated, render the public component
+  return children
 }
 
 function AppContent() {
@@ -72,9 +74,19 @@ function AppContent() {
             <Dashboard />
           </ProtectedRoute>
         } />
-         <Route path="/upgrade" element={
+        <Route path="/upgrade" element={
           <ProtectedRoute>
             <StripeCheckout />
+          </ProtectedRoute>
+        } />
+        <Route path="/stripe-success" element={
+          <ProtectedRoute>
+            <StripeSuccess />
+          </ProtectedRoute>
+        } />
+        <Route path="/stripe-cancel" element={
+          <ProtectedRoute>
+            <StripeCancel />
           </ProtectedRoute>
         } />
         <Route path="/welcome" element={
@@ -94,20 +106,15 @@ function AppContent() {
             <SignUp />
           </PublicRoute>
         } />
-        <Route path="/main" element={
+        {/* <Route path="/main" element={
           <PublicRoute>
             <LandingPage />
           </PublicRoute>
-        } />
+        } /> */}
+        <Route path="/main" element={<LandingPage />} />
         <Route path="/verify-email" element={
           <PublicRoute>
             <VerifyEmail />
-          </PublicRoute>
-        } />
-        <Route path="/" element={<Navigate to="/coming-soon" replace />} />
-        <Route path="/coming-soon" element={
-          <PublicRoute>
-            <ComingSoonPage />
           </PublicRoute>
         } />
         <Route path="/resend-verification" element={
@@ -115,13 +122,18 @@ function AppContent() {
             <ResendVerification />
           </PublicRoute>
         } />
-        {/* <Route path="/auth-callback" element={
+        <Route path="/coming-soon" element={
           <PublicRoute>
-            <AuthCallback />
+            <ComingSoonPage />
           </PublicRoute>
-        } /> */}
+        } />
+        
+        {/* Special routes that don't need auth protection */}
         <Route path="/auth-callback" element={<AuthCallback />} />
-        {/* Fallback route */}
+        <Route path="/checking-auth" element={<CheckingAuthPage />} />
+        
+        {/* Default redirects */}
+        <Route path="/" element={<Navigate to="/coming-soon" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
@@ -138,4 +150,4 @@ function App() {
   )
 }
 
-export default App 
+export default App

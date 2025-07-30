@@ -11,12 +11,21 @@ export default function StripeCheckout() {
   const [loading, setLoading] = useState({});
   const { user } = useAuth();
 
+  // Debug environment variables
+  React.useEffect(() => {
+    console.log('🔧 Environment Variables Debug:');
+    console.log('VITE_STRIPE_PUBLISHABLE_KEY:', import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ? 'Set ✅' : 'Missing ❌');
+    console.log('VITE_STRIPE_PRICE_ID_STANDARD:', import.meta.env.VITE_STRIPE_PRICE_ID_STANDARD || 'Missing ❌');
+    console.log('VITE_STRIPE_PRICE_ID_PRO:', import.meta.env.VITE_STRIPE_PRICE_ID_PRO || 'Missing ❌');
+    console.log('🔍 All VITE_ env vars:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')));
+  }, []);
+
   const plans = [
     {
       id: 'standard',
       name: 'Standard Plan',
       price: '$3.99',
-      priceId: import.meta.env.VITE_STRIPE_PRICE_STANDARD, // Replace with actual price ID
+      priceId: import.meta.env.VITE_STRIPE_PRICE_ID_STANDARD || null, // Will be null if undefined
       icon: <Star className="h-6 w-6" />,
       features: [
         'Priority support',
@@ -24,14 +33,14 @@ export default function StripeCheckout() {
         'Access to Elva* (powered by Claude 4 Sonnet) for 100 interactions',
         'Usage of 100k tokens per month'
       ],
-      color: 'bg-background',
+      color: 'from-blue-500 to-blue-600',
       description: 'Ideal for students, hobbyists, and casual users'
     },
     {
       id: 'pro',
       name: 'Pro Plan',
       price: '$6.99',
-      priceId: import.meta.env.VITE_STRIPE_PRICE_PRO, // Replace with actual price ID
+      priceId: import.meta.env.VITE_STRIPE_PRICE_ID_PRO || null, // Will be null if undefined
       icon: <Crown className="h-6 w-6" />,
       features: [
         'Extra usage*',
@@ -39,7 +48,7 @@ export default function StripeCheckout() {
         'Access to Elva* (powered by Claude 4 Sonnet) for 350 interactions',
         'Usage of 350k tokens per month'
       ],
-      color: 'bg-background',
+      color: 'from-purple-500 to-purple-600',
       popular: false,
       description: 'Perfect for researchers and professionals'
     }
@@ -47,7 +56,32 @@ export default function StripeCheckout() {
 
   const handleUpgrade = async (plan) => {
     try {
+      console.log('🛒 Starting upgrade for:', plan.name);
+      console.log('📋 Plan Price ID:', plan.priceId);
+      console.log('👤 Current user:', user);
+      console.log('🔐 User authenticated:', !!user);
+      console.log('📧 User email:', user?.email);
+      console.log('🍪 Document cookies:', document.cookie);
+
       setLoading(prev => ({ ...prev, [plan.id]: true }));
+
+      // Check if price ID is available
+      if (!plan.priceId) {
+        throw new Error(`Price ID not configured for ${plan.name}. Please add VITE_STRIPE_PRICE_ID_${plan.id.toUpperCase()} to your .env file.`);
+      }
+
+      // Validate user is logged in
+      if (!user) {
+        throw new Error('Please log in to upgrade your plan.');
+      }
+
+      console.log('📡 Sending request to server...');
+      console.log('🔗 Request URL:', 'http://localhost:8000/stripe/create-checkout-session');
+      console.log('📦 Request body:', JSON.stringify({
+        price_id: plan.priceId,
+        success_url: `${window.location.origin}/stripe-success`,
+        cancel_url: `${window.location.origin}/stripe-cancel`
+      }, null, 2));
 
       // Create checkout session
       const response = await fetch('http://localhost:8000/stripe/create-checkout-session', {
@@ -63,18 +97,53 @@ export default function StripeCheckout() {
         })
       });
 
+      console.log('📡 Response status:', response.status);
+
       if (!response.ok) {
-        throw new Error('Failed to create checkout session');
+        const errorText = await response.text();
+        console.error('❌ Server error:', response.status, response.statusText);
+        console.error('❌ Error body:', errorText);
+        console.error('❌ Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        let errorMessage = 'Failed to create checkout session';
+        
+        if (response.status === 401) {
+          errorMessage = 'Authentication failed. Please log in again.';
+        } else {
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.detail || errorMessage;
+          } catch (e) {
+            errorMessage = errorText || errorMessage;
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
-      const { checkout_url } = await response.json();
+      const data = await response.json();
+      console.log('✅ Checkout session created:', data);
+
+      if (!data.checkout_url) {
+        throw new Error('No checkout URL received from server');
+      }
 
       // Redirect to Stripe Checkout
-      window.location.href = checkout_url;
+      window.location.href = data.checkout_url;
 
     } catch (error) {
-      console.error('Upgrade error:', error);
-      alert('Failed to start upgrade process. Please try again.');
+      console.error('❌ Upgrade error:', error);
+      
+      let userMessage = error.message || 'Failed to start upgrade process. Please try again.';
+      
+      // Show specific error messages
+      if (error.message.includes('Price ID not configured')) {
+        userMessage = `${error.message}\n\nPlease contact support or check your configuration.`;
+      } else if (error.message.includes('log in')) {
+        userMessage = 'Please log in to continue with your upgrade.';
+      }
+      
+      alert(userMessage);
     } finally {
       setLoading(prev => ({ ...prev, [plan.id]: false }));
     }
@@ -91,7 +160,7 @@ export default function StripeCheckout() {
         },
         credentials: 'include',
         body: JSON.stringify({
-          return_url: `${window.location.origin}/dashboard`
+          return_url: `${window.location.origin}/stripe-success`
         })
       });
 
@@ -110,6 +179,9 @@ export default function StripeCheckout() {
     }
   };
 
+  // Check if any price IDs are missing
+  const missingPriceIds = plans.filter(plan => !plan.priceId);
+
   return (
     <div className="min-h-screen bg-white dark:bg-[#121212] py-12">
       <div className="max-w-6xl mx-auto px-4">
@@ -118,37 +190,42 @@ export default function StripeCheckout() {
           <p className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Upgrade Your Plan
           </p>
-          {/* <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Unlock powerful AI document analysis with advanced features and priority support.
-            </p> */}
         </div>
 
         <Separator className="my-4" />
 
+        {/* Configuration Warning */}
+        {missingPriceIds.length > 0 && (
+          <div className="mb-8 p-4 bg-yellow-100 dark:bg-yellow-900 border border-yellow-300 dark:border-yellow-700 rounded-lg">
+            <h4 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+              ⚠️ Configuration Required
+            </h4>
+            <p className="text-yellow-700 dark:text-yellow-300 text-sm">
+              Missing price IDs for: {missingPriceIds.map(p => p.name).join(', ')}
+            </p>
+            <p className="text-yellow-700 dark:text-yellow-300 text-sm mt-1">
+              Add these to your .env file:
+            </p>
+            <code className="block mt-2 p-2 bg-yellow-200 dark:bg-yellow-800 rounded text-xs">
+              {missingPriceIds.map(plan => 
+                `VITE_STRIPE_PRICE_ID_${plan.id.toUpperCase()}=price_your_price_id_here`
+              ).join('\n')}
+            </code>
+          </div>
+        )}
+
         {/* Current Plan Info */}
         {user && (
-          <div className=" rounded-lg shadow-lg p-6 mb-8">
+          <div className="rounded-lg shadow-lg p-6 mb-8">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Current Plan: {user.plan.toUpperCase()}
+                  Current Plan: {user.plan?.toUpperCase() || 'FREE'}
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
                   Signed in as {user.email}
                 </p>
               </div>
-              {/* {user.plan !== 'free' && (
-                <button
-                  onClick={handleManageSubscription}
-                  disabled={loading.manage}
-                  className="bg-white dark:bg-black border  hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-                >
-                  {loading.manage ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : null}
-                  Manage Subscription
-                </button>
-              )} */}
             </div>
           </div>
         )}
@@ -157,23 +234,19 @@ export default function StripeCheckout() {
         <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {plans.map((plan) => (
             <div key={plan.id} className="relative group">
-              {/* Plan Description */}
-              
-
               {/* Main Card */}
               <div
-  className={`
-    relative bg-white dark:bg-black rounded-2xl shadow-xl overflow-hidden 
-    border border-gray-200 dark:border-gray-700 transition-all duration-300
-    hover:shadow-2xl hover:-translate-y-1
-    min-h-[560px] flex flex-col justify-between
-    ${plan.popular
-      ? 'ring-2 ring-purple-500 scale-105 shadow-purple-500/20'
-      : 'hover:border-gray-300 dark:hover:border-gray-600'
-    }
-  `}
->
-
+                className={`
+                  relative bg-white dark:bg-black rounded-2xl shadow-xl overflow-hidden 
+                  border border-gray-200 dark:border-gray-700 transition-all duration-300
+                  hover:shadow-2xl hover:-translate-y-1
+                  min-h-[560px] flex flex-col justify-between
+                  ${plan.popular
+                    ? 'ring-2 ring-purple-500 scale-105 shadow-purple-500/20'
+                    : 'hover:border-gray-300 dark:hover:border-gray-600'
+                  }
+                `}
+              >
                 {/* Popular Badge */}
                 {plan.popular && (
                   <div className="absolute top-0 left-0 right-0 z-10">
@@ -187,10 +260,10 @@ export default function StripeCheckout() {
                   {/* Plan Header */}
                   <div className="text-center mb-8">
                     <div className={`
-              inline-flex p-4 rounded-2xl bg-gradient-to-br ${plan.color} 
-              text-white mb-6 shadow-lg transform transition-transform 
-              group-hover:scale-110 duration-300
-            `}>
+                      inline-flex p-4 rounded-2xl bg-gradient-to-br ${plan.color} 
+                      text-white mb-6 shadow-lg transform transition-transform 
+                      group-hover:scale-110 duration-300
+                    `}>
                       {plan.icon}
                     </div>
 
@@ -208,19 +281,19 @@ export default function StripeCheckout() {
                     </div>
 
                     {plan.description && (
-                <div className="text-center mb-4">
-                  <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
-                    {plan.description}
-                  </p>
-                </div>
-              )}
+                      <div className="text-center mb-4">
+                        <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                          {plan.description}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <Separator className="my-4" />
 
                   {/* Plan Progression Text */}
                   {plan.id === 'pro' && (
-                    <div className=" mb-6">
+                    <div className="mb-6">
                       <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">
                         Everything in Standard Plan, plus
                       </p>
@@ -228,7 +301,7 @@ export default function StripeCheckout() {
                   )}
 
                   {plan.id === 'standard' && (
-                    <div className=" mb-6">
+                    <div className="mb-6">
                       <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">
                         Everything in Free Plan, plus
                       </p>
@@ -254,20 +327,20 @@ export default function StripeCheckout() {
                   {/* CTA Button */}
                   <button
                     onClick={() => handleUpgrade(plan)}
-                    disabled={loading[plan.id] || user?.plan === plan.id}
+                    disabled={loading[plan.id] || user?.plan === plan.id || !plan.priceId}
                     className={`
-              w-full py-4 px-6 rounded-xl font-semibold transition-all duration-200 
-              flex items-center justify-center gap-2 text-sm tracking-wide
-              ${user?.plan === plan.id
+                      w-full py-4 px-6 rounded-xl font-semibold transition-all duration-200 
+                      flex items-center justify-center gap-2 text-sm tracking-wide
+                      ${user?.plan === plan.id
                         ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                        : `
-                  bg-gradient-to-r ${plan.color} text-white 
-                  hover:opacity-90 hover:scale-[1.02] hover:shadow-lg 
-                  active:scale-[0.98] shadow-md
-                  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500
-                `
+                        : !plan.priceId
+                        ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                        : `bg-gradient-to-r ${plan.color} text-white 
+                           hover:opacity-90 hover:scale-[1.02] hover:shadow-lg 
+                           active:scale-[0.98] shadow-md
+                           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500`
                       }
-            `}
+                    `}
                   >
                     {loading[plan.id] ? (
                       <>
@@ -278,6 +351,10 @@ export default function StripeCheckout() {
                       <>
                         <Check className="h-5 w-5" />
                         <span>Current Plan</span>
+                      </>
+                    ) : !plan.priceId ? (
+                      <>
+                        <span>Configuration Required</span>
                       </>
                     ) : (
                       <>
@@ -298,6 +375,9 @@ export default function StripeCheckout() {
             </div>
           ))}
         </div>
+
+        {/* Debug Info in Development */}
+        
       </div>
     </div>
   );

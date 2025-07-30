@@ -13,7 +13,7 @@ function SignIn() {
   const navigate = useNavigate()
   const location = useLocation()
   const { login, isAuthenticated } = useAuth()
-  
+
   // UNIFIED MESSAGE HANDLING
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState('') // 'success', 'info', 'error'
@@ -26,7 +26,7 @@ function SignIn() {
     // 1. Check for message from URL parameters (highest priority)
     const urlMessage = searchParams.get('message')
     const urlError = searchParams.get('error')
-    
+
     if (urlMessage && !messageSet) {
       switch (urlMessage) {
         case 'verify_email':
@@ -56,11 +56,11 @@ function SignIn() {
         default:
           break
       }
-      
+
       // Clear URL parameters after showing message
       if (messageSet) {
         setSearchParams({})
-        
+
         // Auto-dismiss message after 10 seconds
         setTimeout(() => {
           setMessage('')
@@ -123,7 +123,7 @@ function SignIn() {
           setMessageType('')
         }, 5000)
       }
-      
+
       // Clear the state to prevent message from showing on refresh
       navigate(location.pathname, { replace: true, state: {} })
     }
@@ -154,7 +154,7 @@ function SignIn() {
   useEffect(() => {
     const loadGoogleScript = () => {
       if (window.google) return Promise.resolve()
-      
+
       return new Promise((resolve, reject) => {
         const script = document.createElement('script')
         script.src = 'https://accounts.google.com/gsi/client'
@@ -183,33 +183,33 @@ function SignIn() {
     try {
       setIsGoogleLoading(true)
       setErrors({})
-  
+
       const googlePopups = document.querySelectorAll('[data-google-popup]')
       googlePopups.forEach(popup => popup.remove())
-  
+
       // Send Google token to backend, cookies will be set automatically
       await axios.post('http://localhost:8000/auth/google', {
         token: response.credential
       }, {
         withCredentials: true
       })
-  
+
       // The backend sets HTTP-only cookies automatically, so we can use the login function
       // which will call fetchUserData and update the authentication state
       // Pass an empty object since cookies are already set
       await login({})
-      
+
       // Navigation will be handled by useEffect when isAuthenticated changes
     } catch (error) {
       console.error('Google authentication error:', error)
       let errorMessage = 'Google sign-in failed. Please try again.'
-  
+
       if (error.response?.data?.detail) {
         errorMessage = typeof error.response.data.detail === 'string'
           ? error.response.data.detail
           : 'Invalid authentication data. Please try again.'
       }
-  
+
       setErrors({ submit: errorMessage })
     } finally {
       setIsGoogleLoading(false)
@@ -219,7 +219,7 @@ function SignIn() {
   // Handle Magic Link submission
   const handleMagicLinkSubmit = async (e) => {
     e.preventDefault()
-    
+
     if (!email) {
       setMessage('Please enter your email address')
       setMessageType('error')
@@ -238,7 +238,7 @@ function SignIn() {
 
     try {
       console.log('🔄 Sending magic link request for:', email)
-      
+
       const response = await fetch('http://localhost:8000/auth/send-magic-link', {
         method: 'POST',
         headers: {
@@ -270,13 +270,13 @@ function SignIn() {
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true)
     setErrors({})
-    
+
     try {
       if (window.google && window.google.accounts) {
         // Clean up any existing popups first
         const existingPopups = document.querySelectorAll('[data-google-popup]')
         existingPopups.forEach(popup => popup.remove())
-        
+
         // Create a hidden div to render Google button
         const buttonContainer = document.createElement('div')
         buttonContainer.setAttribute('data-google-popup', 'true')
@@ -284,7 +284,7 @@ function SignIn() {
         buttonContainer.style.top = '-9999px'
         buttonContainer.style.left = '-9999px'
         document.body.appendChild(buttonContainer)
-        
+
         // Render the Google button
         window.google.accounts.id.renderButton(buttonContainer, {
           theme: 'outline',
@@ -292,7 +292,7 @@ function SignIn() {
           type: 'standard',
           width: 300
         })
-        
+
         // Auto-click the button after a short delay
         setTimeout(() => {
           const googleButton = buttonContainer.querySelector('div[role="button"]')
@@ -303,7 +303,7 @@ function SignIn() {
             window.google.accounts.id.prompt()
           }
         }, 100)
-        
+
       } else {
         throw new Error('Google Identity Services not loaded')
       }
@@ -333,14 +333,14 @@ function SignIn() {
             </div>
           </div>
         </div>
-        
+
         {/* Right Side - Check Email Message */}
         <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 dark:bg-[#121212] p-8">
           <div className="w-full max-w-md text-center space-y-8">
             <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto">
               <Mail className="h-8 w-8 text-white" />
             </div>
-            
+
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                 Check Your Email
@@ -349,7 +349,7 @@ function SignIn() {
                 We've sent a secure sign-in link to <strong>{email}</strong>
               </p>
             </div>
-            
+
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
               <p className="text-sm text-blue-700 dark:text-blue-400">
                 The link expires in 15 minutes for security
@@ -363,7 +363,7 @@ function SignIn() {
               >
                 Send Another Link
               </button>
-              
+
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Didn't receive the email? Check your spam folder or try again.
               </p>
@@ -382,18 +382,18 @@ function SignIn() {
         <div className="absolute inset-0 opacity-10">
           {/* Background elements removed for simplicity */}
         </div>
-        
+
         <div className="relative z-10 flex flex-col justify-center px-12 py-16 text-white">
           <div className="space-y-8">
             {/* Logo and content removed for simplicity */}
           </div>
         </div>
       </div>
-      
+
       {/* Right Side - Sign In Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 dark:bg-[#121212] p-8">
         <div className="w-full max-w-md space-y-8">
-          
+
           {/* Header */}
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -406,13 +406,12 @@ function SignIn() {
 
           {/* UNIFIED MESSAGE DISPLAY */}
           {message && (
-            <div className={`rounded-lg p-4 flex items-start gap-3 ${
-              messageType === 'success' 
+            <div className={`rounded-lg p-4 flex items-start gap-3 ${messageType === 'success'
                 ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400'
                 : messageType === 'error'
-                ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
-                : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400'
-            }`}>
+                  ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
+                  : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400'
+              }`}>
               <div className="flex-shrink-0 mt-0.5">
                 {messageType === 'success' && (
                   <CheckCircle className="h-4 w-4" />
@@ -443,19 +442,19 @@ function SignIn() {
 
           {/* OAuth Buttons */}
           <div className="space-y-3">
-            <button 
+            <button
               onClick={handleGoogleSignIn}
               disabled={isGoogleLoading || isLoading}
-              className="w-full h-12 border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-medium rounded-lg flex items-center justify-center gap-3 hover:shadow-md disabled:opacity-50"
+              className="w-full h-12 border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-all duration-200 bg-white dark:bg-[#121212] text-gray-900 dark:text-white font-medium rounded-lg flex items-center justify-center gap-3 hover:shadow-md disabled:opacity-50"
             >
               {isGoogleLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <svg className="h-5 w-5" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                 </svg>
               )}
               Continue with Google
@@ -484,26 +483,30 @@ function SignIn() {
 
           {/* Magic Link Form */}
           <div className="space-y-6">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                <input 
-                  type="email" 
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  className="pl-10 h-12 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  disabled={isLoading}
-                  required
-                />
-              </div>
-            </div>
+  <div>
+    <div className="relative">
+      <input 
+        type="email" 
+        id="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder=""
+        className="h-12 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#121212] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all peer"
+        disabled={isLoading}
+        required
+      />
+      <label 
+        htmlFor="email" 
+        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 transition-all duration-200 pointer-events-none
+                   peer-focus:-top-1 peer-focus:left-3 peer-focus:text-xs peer-focus:text-blue-500 peer-focus:font-medium peer-focus:bg-white dark:peer-focus:bg-[#121212] peer-focus:px-1
+                   peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-3 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-gray-600 dark:peer-[:not(:placeholder-shown)]:text-gray-300 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-[#121212] peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:font-medium"
+      >
+        Email address
+      </label>
+    </div>
+  </div>
 
-            <button 
+            <button
               onClick={handleMagicLinkSubmit}
               disabled={isLoading || isGoogleLoading || !email}
               className="w-full h-12 bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-100 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 font-medium rounded-lg flex items-center justify-center gap-2"
