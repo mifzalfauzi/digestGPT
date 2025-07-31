@@ -851,13 +851,13 @@ function ModernSidebar({
         {/* Dropdown Menu */}
         {isProfileDropdownOpen && (
           <div className="absolute bottom-full mb-2 w-full bg-white dark:bg-background border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
-            <div className="py-1">
+            <div className="px-1 py-1">
               <button
                 onClick={() => {
                   // Add your help handler here
                   //  setIsProfileDropdownOpen(false);
                 }}
-                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-500 flex items-center gap-2 transition-all" 
               >
                 <UserCircle className="h-4 w-4" />
                 {user.email}
@@ -867,7 +867,7 @@ function ModernSidebar({
                   navigate('/upgrade'); 
                   setIsProfileDropdownOpen(false);
                 }}
-                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:rounded-md flex items-center gap-2 transition-all"
               >
                 <CreditCard className="h-4 w-4" />  
                 Upgrade Plan
@@ -877,7 +877,7 @@ function ModernSidebar({
                   setIsSettingsOpen(true);
                   setIsProfileDropdownOpen(false);
                 }}
-                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:rounded-md flex items-center gap-2 transition-all"
               >
                 <Settings className="h-4 w-4" />
                 Settings
@@ -887,7 +887,7 @@ function ModernSidebar({
                   // Add your help handler here
                   setIsProfileDropdownOpen(false);
                 }}
-                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:rounded-md flex items-center gap-2 transition-all"
               >
                 <HelpCircle className="h-4 w-4" />
                 Help
@@ -895,7 +895,7 @@ function ModernSidebar({
               <button
                 onClick={() => setShowLogoutConfirm(true)}
                 disabled={loading_logout}
-                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:rounded-md flex items-center gap-2 transition-all "
               >
                 <LogOut className="h-4 w-4" />
                 Sign Out
