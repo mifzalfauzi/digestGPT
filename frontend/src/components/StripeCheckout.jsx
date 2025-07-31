@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { useAuth } from '../contexts/AuthContext';
-import { Crown, Star, Zap, Check, Loader2, CheckCircle } from 'lucide-react';
+import { Crown, Star, Zap, Check, Loader2, CheckCircle, ArrowLeft } from 'lucide-react';
 import { Separator } from './ui/separator';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
@@ -12,13 +12,13 @@ export default function StripeCheckout() {
   const { user } = useAuth();
 
   // Debug environment variables
-  React.useEffect(() => {
-    console.log('🔧 Environment Variables Debug:');
-    console.log('VITE_STRIPE_PUBLISHABLE_KEY:', import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ? 'Set ✅' : 'Missing ❌');
-    console.log('VITE_STRIPE_PRICE_ID_STANDARD:', import.meta.env.VITE_STRIPE_PRICE_ID_STANDARD || 'Missing ❌');
-    console.log('VITE_STRIPE_PRICE_ID_PRO:', import.meta.env.VITE_STRIPE_PRICE_ID_PRO || 'Missing ❌');
-    console.log('🔍 All VITE_ env vars:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')));
-  }, []);
+  // React.useEffect(() => {
+  //   console.log('🔧 Environment Variables Debug:');
+  //   console.log('VITE_STRIPE_PUBLISHABLE_KEY:', import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ? 'Set ✅' : 'Missing ❌');
+  //   console.log('VITE_STRIPE_PRICE_ID_STANDARD:', import.meta.env.VITE_STRIPE_PRICE_ID_STANDARD || 'Missing ❌');
+  //   console.log('VITE_STRIPE_PRICE_ID_PRO:', import.meta.env.VITE_STRIPE_PRICE_ID_PRO || 'Missing ❌');
+  //   console.log('🔍 All VITE_ env vars:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')));
+  // }, []);
 
   const plans = [
     {
@@ -184,7 +184,17 @@ export default function StripeCheckout() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#121212] py-12">
+      <div className="absolute top-6 left-6 z-50">
+        <button
+          onClick={() => window.location.href = '/assistant'}
+          className="inline-flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 shadow-sm"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          <span className="font-medium">Back</span>
+        </button>
+      </div>
       <div className="max-w-6xl mx-auto px-4">
+        
         {/* Header */}
         <div className="text-center mb-12">
           <p className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
@@ -195,7 +205,7 @@ export default function StripeCheckout() {
         <Separator className="my-4" />
 
         {/* Configuration Warning */}
-        {missingPriceIds.length > 0 && (
+        {/* {missingPriceIds.length > 0 && (
           <div className="mb-8 p-4 bg-yellow-100 dark:bg-yellow-900 border border-yellow-300 dark:border-yellow-700 rounded-lg">
             <h4 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
               ⚠️ Configuration Required
@@ -212,7 +222,7 @@ export default function StripeCheckout() {
               ).join('\n')}
             </code>
           </div>
-        )}
+        )} */}
 
         {/* Current Plan Info */}
         {user && (

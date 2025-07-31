@@ -44,6 +44,7 @@ export default function StripeSuccess() {
       });
 
       console.log('📡 Update response status:', response.status);
+      console.log('📡 Update response:', response);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -53,7 +54,7 @@ export default function StripeSuccess() {
 
       const data = await response.json();
       console.log('✅ Plan updated successfully:', data);
-      
+
       setStatus('success');
       setMessage('Subscription activated successfully!');
       setPlanDetails(data);
@@ -70,7 +71,21 @@ export default function StripeSuccess() {
     }
   };
 
-  const retryUpdate = () => {
+  const retryUpdate = async () => {
+    setStatus('loading');
+    setMessage('Updating your subscription...');
+    console.log('🔄 Retrying update with session ID:', sessionId);
+    // Call the manual update endpoint
+    const response = await fetch('http://localhost:8000/stripe/update-plan-manual', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        session_id: sessionId
+      })
+    });
     updateUserPlan();
   };
 
@@ -79,15 +94,17 @@ export default function StripeSuccess() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-white dark:bg-background flex items-center justify-center px-4">
       <div className="max-w-md w-full">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
-          
+        <div className="bg-white dark:bg-background rounded-lg p-8 text-center">
+
           {/* Loading State */}
           {status === 'loading' && (
             <>
-              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 dark:bg-blue-900 mb-6">
-                <Loader2 className="h-8 w-8 text-blue-600 dark:text-blue-300 animate-spin" />
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-6">
+                <span className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                <span className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                <span className="w-2 h-2 bg-white rounded-full animate-bounce"></span>
               </div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                 Processing Payment
@@ -95,9 +112,9 @@ export default function StripeSuccess() {
               <p className="text-gray-600 dark:text-gray-300 mb-6">
                 {message}
               </p>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              {/* <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '75%' }}></div>
-              </div>
+              </div> */}
             </>
           )}
 
@@ -113,24 +130,24 @@ export default function StripeSuccess() {
               <p className="text-gray-600 dark:text-gray-300 mb-6">
                 {message}
               </p>
-              
+
               {planDetails && (
                 <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
                   <p className="text-sm text-green-800 dark:text-green-200">
-                    <strong>New Plan:</strong> {planDetails.plan?.toUpperCase() || 'Updated'}
+                    <strong>New Plan:</strong> {planDetails.new_plan?.toUpperCase()} 
                   </p>
-                  {planDetails.subscription_id && (
+                  {/* {planDetails.subscription_id && (
                     <p className="text-xs text-green-600 dark:text-green-300 mt-1">
                       Subscription: {planDetails.subscription_id}
                     </p>
-                  )}
+                  )} */}
                 </div>
               )}
 
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Redirecting to dashboard in 3 seconds...
+                Redirecting to dashboard
               </p>
-              
+
               <button
                 onClick={goToDashboard}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
@@ -149,13 +166,13 @@ export default function StripeSuccess() {
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                 Activation Issue
               </h2>
-              <p className="text-gray-600 dark:text-gray-300 mb-6">
+              {/* <p className="text-gray-600 dark:text-gray-300 mb-6">
                 {message}
-              </p>
-              
+              </p> */}
+
               <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
                 <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                  <strong>Don't worry!</strong> Your payment was processed successfully. 
+                  <strong>Don't worry!</strong> Your payment was processed successfully.
                   We're just having trouble activating your subscription automatically.
                 </p>
               </div>
@@ -167,14 +184,14 @@ export default function StripeSuccess() {
                 >
                   Try Again
                 </button>
-                
+
                 <button
                   onClick={goToDashboard}
                   className="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
                 >
                   Go to Dashboard
                 </button>
-                
+
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   If the issue persists, contact support with session: {sessionId}
                 </p>
@@ -183,13 +200,13 @@ export default function StripeSuccess() {
           )}
 
           {/* Debug Info */}
-          {process.env.NODE_ENV === 'development' && (
+          {/* {process.env.NODE_ENV === 'development' && (
             <div className="mt-6 p-3 bg-gray-100 dark:bg-gray-700 rounded text-xs">
               <p><strong>Debug:</strong></p>
               <p>Session ID: {sessionId}</p>
               <p>Status: {status}</p>
             </div>
-          )}
+          )} */}
         </div>
       </div>
     </div>
