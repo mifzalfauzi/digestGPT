@@ -38,7 +38,7 @@ PLAN_LIMITS = {
         "token_limit": 100000
     },
     UserPlan.PRO: {
-        "doc_limit": 120,
+        "doc_limit": 150,
         "chat_limit": 350,
         "token_limit": 350000
     }

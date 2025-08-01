@@ -2054,8 +2054,10 @@ This business plan effectively balances ambitious growth objectives with compreh
                   <div className="h-full flex items-center justify-center bg-white dark:bg-background p-6">
                     <div className="text-center space-y-6 max-w-md">
                       <div className="relative">
-                        <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl">
-                          <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-24 h-24 rounded-3xl flex items-center justify-center mx-auto">
+                        <span className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                    <span className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                    <span className="w-2 h-2 bg-white rounded-full animate-bounce"></span>
                         </div>
                         <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
                           <Sparkles className="h-4 w-4 text-white" />
@@ -2145,8 +2147,10 @@ This business plan effectively balances ambitious growth objectives with compreh
                   <div className="h-full flex items-center justify-center bg-white dark:bg-background p-12">
                     <div className="text-center space-y-8 max-w-lg">
                       <div className="relative">
-                        <div className="w-32 h-32 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl">
-                          <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-32 h-32 rounded-3xl flex items-center justify-center mx-auto">
+                        <span className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                    <span className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                    <span className="w-2 h-2 bg-white rounded-full animate-bounce"></span>
                         </div>
                         <div className="absolute -top-3 -right-3 w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
                           <Sparkles className="h-5 w-5 text-white" />
@@ -2190,8 +2194,10 @@ This business plan effectively balances ambitious growth objectives with compreh
                   <div className="h-full flex items-center justify-center bg-white dark:bg-background p-12">
                     <div className="text-center space-y-8 max-w-lg">
                       <div className="relative">
-                        <div className="w-32 h-32 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl">
-                          <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-32 h-32 rounded-3xl flex items-center justify-center mx-auto">
+                        <span className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                    <span className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                    <span className="w-2 h-2 bg-white rounded-full animate-bounce"></span>
                         </div>
                         <div className="absolute -top-3 -right-3 w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
                           <Sparkles className="h-5 w-5 text-white" />

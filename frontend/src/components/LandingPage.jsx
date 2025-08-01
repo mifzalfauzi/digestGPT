@@ -387,7 +387,7 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <Card className=" shadow-xl flex flex-col justify-between dark:bg-black">
                 <CardHeader className="text-center pb-6 pt-8">
-                  <CardTitle className="text-2xl">Demo Plan</CardTitle>
+                  <CardTitle className="text-2xl">Free Plan</CardTitle>
                   <div className="mt-4">
                     <span className="text-4xl font-bold">$0</span>
                     <span className="text-lg text-gray-600 dark:text-gray-400">/month</span>
@@ -496,7 +496,7 @@ export default function LandingPage() {
                 <CardHeader className="text-center pb-6 pt-8">
                   <CardTitle className="text-2xl">Pro Plan</CardTitle>
                   <div className="mt-4">
-                    <span className="text-4xl font-bold">$6.99</span>
+                    <span className="text-4xl font-bold">$7.99</span>
                     <span className="text-lg text-gray-600 dark:text-gray-400">/month</span>
                     {/* <span className="block text-sm text-gray-500 dark:text-gray-400 mt-1">or $60 per year</span> */}
                   </div>
@@ -511,7 +511,7 @@ export default function LandingPage() {
                     </div>
                     <div className="flex items-center text-sm">
                       <CheckCircle className="h-4 w-4 text-green-500 mr-3" />
-                      <span>120 document uploads</span>
+                      <span>150 document uploads</span>
                     </div>
                     <div className="flex items-center text-sm">
                       <CheckCircle className="h-4 w-4 text-green-500 mr-3" />

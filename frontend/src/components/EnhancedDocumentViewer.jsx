@@ -223,7 +223,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <h2 className="text-xs sm:text-sm lg:text-base font-bold text-slate-900 dark:text-white">
-                  Dashboard
+                  Content Information
                   {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
                   {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal">(Preview)</span>}
                 </h2>
@@ -262,8 +262,8 @@ This business plan effectively balances growth ambitions with comprehensive risk
               </TabsTrigger>
               <TabsTrigger value="insights" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
                 <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
-                <span className="hidden md:inline">Insights & Risks</span>
-                <span className="md:hidden">Insights</span>
+                <span className="hidden md:inline">Outlook</span>
+                <span className="md:hidden">Outlook</span>
               </TabsTrigger>
               {hasDocumentViewer && (
                 <TabsTrigger value="document-viewer" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
@@ -355,9 +355,16 @@ This business plan effectively balances growth ambitions with comprehensive risk
 
             <TabsContent value="swot" className="h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter">  
                   <SWOTAnalysis
-                    swot={results?.swot_analysis}
-                    // concepts={isDemoMode ? results?.key_concepts || [] : bypassAPI ? results?.analysis?.key_concepts || [] : (results?.analysis?.key_concepts || [])}
-                    onExplainConcept={onExplainConcept}
+                    swot={
+                      isDemoMode || bypassAPI 
+                        ? undefined // Let component use mock data
+                        : results?.analysis?.swot_analysis || results?.swot_analysis || {
+                            strengths: [],
+                            weaknesses: [],
+                            opportunities: [],
+                            threats: []
+                          }
+                    }
                     isDemoMode={isDemoMode}
                     bypassAPI={bypassAPI}
                   />  
@@ -377,7 +384,10 @@ This business plan effectively balances growth ambitions with comprehensive risk
                           Executive Summary
                         </CardTitle>
                         <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
-                          Summary by Claude
+                          Summary by <span className="text-center inline-block font-bold">
+                  Elva
+                  <span className="text-red-500">*</span>
+                </span>
                         </p>
                       </div>
                     </div>

@@ -632,10 +632,10 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
 
               <div className="space-y-2">
                 <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                  Loading chat history...
+                  Loading conversation
                 </h3>
                 <p className="text-slate-600 dark:text-gray-300 max-w-md mx-auto text-xs sm:text-sm px-4">
-                  Checking for previous conversations with this document.
+                  Setting up conversation environment with the document.
                 </p>
               </div>
 

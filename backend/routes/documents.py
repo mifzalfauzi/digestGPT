@@ -213,7 +213,7 @@ async def upload_and_analyze_document(
             key_points=json.dumps(analysis.get("key_points", [])),
             risk_flags=json.dumps(analysis.get("risk_flags", [])),
             key_concepts=json.dumps(analysis.get("key_concepts", [])),
-            swot_analysis=json.dumps(analysis.get("swot_analysis", [])),
+            swot_analysis=json.dumps(analysis.get("swot_analysis", {})), 
             word_count=word_count,
             analysis_method=analysis.get("analysis_method", "single"),
             file_url=file_url  # Store the file URL for later retrieval
@@ -319,7 +319,7 @@ async def analyze_text_direct(
             key_points=json.dumps(analysis.get("key_points", [])),
             risk_flags=json.dumps(analysis.get("risk_flags", [])),
             key_concepts=json.dumps(analysis.get("key_concepts", [])),
-            swot_analysis=json.dumps(analysis.get("swot_analysis", [])),
+            swot_analysis=json.dumps(analysis.get("swot_analysis", {})),
             word_count=word_count,
             analysis_method=analysis.get("analysis_method", "single"),
             file_url=None  # Text documents don't have file URLs
@@ -407,7 +407,6 @@ async def get_document(
     db: Session = Depends(get_db)
 ):
     """Get a specific document with full analysis"""
-    # Get document
     document = (
         db.query(Document)
         .filter(Document.id == document_id, Document.user_id == current_user.id)
@@ -420,20 +419,63 @@ async def get_document(
             detail="Document not found"
         )
     
-    # Parse JSON fields
+    # ✅ FIXED - Parse JSON fields correctly
     try:
         key_points = json.loads(document.key_points) if document.key_points else []
-        print("Key points:", key_points)
         risk_flags = json.loads(document.risk_flags) if document.risk_flags else []
         key_concepts = json.loads(document.key_concepts) if document.key_concepts else []
-        swot_analysis = json.loads(document.swot_analysis) if document.swot_analysis else []
-        print("Risk flags:", risk_flags)
-        print("Key concepts:", key_concepts)
-        print("SWOT analysis:", swot_analysis)
-    except json.JSONDecodeError:
+        
+        # ✅ FIXED - Parse SWOT as object, with proper fallback
+        swot_analysis = {}
+        if document.swot_analysis:
+            try:
+                parsed_swot = json.loads(document.swot_analysis)
+                # Ensure it has the correct structure
+                if isinstance(parsed_swot, dict):
+                    swot_analysis = {
+                        "strengths": parsed_swot.get("strengths", []),
+                        "weaknesses": parsed_swot.get("weaknesses", []),
+                        "opportunities": parsed_swot.get("opportunities", []),
+                        "threats": parsed_swot.get("threats", [])
+                    }
+                else:
+                    # If it's somehow still an array, convert to empty structure
+                    swot_analysis = {
+                        "strengths": [],
+                        "weaknesses": [],
+                        "opportunities": [],
+                        "threats": []
+                    }
+            except json.JSONDecodeError:
+                swot_analysis = {
+                    "strengths": [],
+                    "weaknesses": [],
+                    "opportunities": [],
+                    "threats": []
+                }
+        else:
+            swot_analysis = {
+                "strengths": [],
+                "weaknesses": [],
+                "opportunities": [],
+                "threats": []
+            }
+            
+        print("Parsed SWOT analysis:", swot_analysis)
+        print("SWOT analysis type:", type(swot_analysis))
+        print("SWOT strengths count:", len(swot_analysis.get("strengths", [])))
+        
+    except json.JSONDecodeError as e:
+        print(f"JSON decode error: {e}")
         key_points = []
         risk_flags = []
         key_concepts = []
+        swot_analysis = {
+            "strengths": [],
+            "weaknesses": [],
+            "opportunities": [],
+            "threats": []
+        }
     
     return {
         "id": document.id,
@@ -445,17 +487,17 @@ async def get_document(
         "analysis_method": document.analysis_method,
         "uploaded_at": document.uploaded_at.isoformat(),
         "document_text": document.document_text,
-        "file_url": getattr(document, 'file_url', None),  # Add file URL for PDF viewing
-        "key_points": key_points,  # Add parsed data at root level
+        "file_url": getattr(document, 'file_url', None),
+        "key_points": key_points,
         "risk_flags": risk_flags,
         "key_concepts": key_concepts,
-        "swot_analysis": swot_analysis,
+        "swot_analysis": swot_analysis,  # ✅ FIXED - Now properly structured
         "analysis": {
             "summary": document.summary,
-            "key_points": key_points,  # Use parsed arrays instead of raw strings
+            "key_points": key_points,
             "risk_flags": risk_flags,
             "key_concepts": key_concepts,
-            "swot_analysis": swot_analysis
+            "swot_analysis": swot_analysis  # ✅ FIXED - Now properly structured
         }
     }
 

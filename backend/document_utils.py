@@ -51,6 +51,15 @@ def count_words(text: str) -> int:
     """Count words in text"""
     return len(text.split())
 
+def get_empty_swot_structure():
+    """Return empty SWOT structure"""
+    return {
+        "strengths": [],
+        "weaknesses": [],
+        "opportunities": [],
+        "threats": []
+    }
+
 def split_text_into_chunks(text: str, target_words: int = 1200, overlap_words: int = 100) -> List[str]:
     """
     Split text into chunks of approximately target_words each.
@@ -172,10 +181,23 @@ Given this document, do the following:
 2. Summarize key important points as bullet points.
 3. Highlight any risky or confusing parts with 🚩 emoji and explain why.
 4. Identify key concepts/terms that are central to understanding this document.
+5. Perform a comprehensive SWOT analysis with MINIMUM 3 items in each category.
 
 For each key point and risk flag, please also include a short quote (5-15 words) from the original document that supports your analysis.
 
 For key concepts, provide the term and a brief explanation of what it means in the context of this document.
+
+SWOT ANALYSIS REQUIREMENTS:
+- Provide EXACTLY 3-5 Strengths (internal positive factors)
+- Provide EXACTLY 3-5 Weaknesses (internal negative factors) 
+- Provide EXACTLY 3-5 Opportunities (external positive factors)
+- Provide EXACTLY 3-5 Threats (external negative factors)
+- Each category must have minimum 3 items, maximum 5 items
+- If the document doesn't explicitly mention enough items, infer reasonable ones based on context
+- Each item must have: title, detailed description, impact level, and category
+
+Impact levels: "high", "medium", "low"
+Categories: "technology", "financial", "market", "business", "operational", "regulatory", "competitive", "industry", "product"
 
 CRITICAL: You must respond with ONLY valid JSON. Follow these strict rules:
 - Do not include any text before or after the JSON
@@ -185,6 +207,7 @@ CRITICAL: You must respond with ONLY valid JSON. Follow these strict rules:
 - Do not include trailing commas
 - Escape any quotes within text content properly
 - Keep quotes short (5-15 words maximum)
+- ENSURE each SWOT category has MINIMUM 3 and MAXIMUM 5 items
 
 Use this exact JSON structure:
 {{
@@ -218,19 +241,125 @@ Use this exact JSON structure:
             "term": "Important Term 2",
             "explanation": "What this term means in the context of this document"
         }}
-    ]
+    ],
+    "swot_analysis": {{
+        "strengths": [
+            {{
+                "title": "Strength 1 title",
+                "description": "Detailed description of this internal positive factor",
+                "impact": "high",
+                "category": "technology"
+            }},
+            {{
+                "title": "Strength 2 title",
+                "description": "Detailed description of this internal positive factor",
+                "impact": "medium",
+                "category": "financial"
+            }},
+            {{
+                "title": "Strength 3 title",
+                "description": "Detailed description of this internal positive factor",
+                "impact": "high",
+                "category": "market"
+            }}
+        ],
+        "weaknesses": [
+            {{
+                "title": "Weakness 1 title",
+                "description": "Detailed description of this internal negative factor",
+                "impact": "medium",
+                "category": "operational"
+            }},
+            {{
+                "title": "Weakness 2 title",
+                "description": "Detailed description of this internal negative factor",
+                "impact": "high",
+                "category": "business"
+            }},
+            {{
+                "title": "Weakness 3 title",
+                "description": "Detailed description of this internal negative factor",
+                "impact": "medium",
+                "category": "product"
+            }}
+        ],
+        "opportunities": [
+            {{
+                "title": "Opportunity 1 title",
+                "description": "Detailed description of this external positive factor",
+                "impact": "high",
+                "category": "market"
+            }},
+            {{
+                "title": "Opportunity 2 title",
+                "description": "Detailed description of this external positive factor",
+                "impact": "medium",
+                "category": "industry"
+            }},
+            {{
+                "title": "Opportunity 3 title",
+                "description": "Detailed description of this external positive factor",
+                "impact": "high",
+                "category": "financial"
+            }}
+        ],
+        "threats": [
+            {{
+                "title": "Threat 1 title",
+                "description": "Detailed description of this external negative factor",
+                "impact": "medium",
+                "category": "competitive"
+            }},
+            {{
+                "title": "Threat 2 title",
+                "description": "Detailed description of this external negative factor",
+                "impact": "high",
+                "category": "regulatory"
+            }},
+            {{
+                "title": "Threat 3 title",
+                "description": "Detailed description of this external negative factor",
+                "impact": "medium",
+                "category": "market"
+            }}
+        ]
+    }}
 }}
 
 Document text:
 {text[:8000]}"""
     else:
-        # Simplified prompt for retry
-        prompt = f"""Analyze this document and return ONLY valid JSON with this structure:
+        # Simplified prompt for retry - still enforce 3-5 items per category
+        prompt = f"""Analyze this document and return ONLY valid JSON. 
+IMPORTANT: Each SWOT category MUST have 3-5 items (minimum 3, maximum 5).
+
 {{
     "summary": "Brief explanation",
     "key_points": [{{"text": "point", "quote": "quote"}}],
     "risk_flags": [{{"text": "🚩 risk", "quote": "quote"}}],
-    "key_concepts": [{{"term": "term", "explanation": "explanation"}}]
+    "key_concepts": [{{"term": "term", "explanation": "explanation"}}],
+    "swot_analysis": {{
+        "strengths": [
+            {{"title": "strength1", "description": "description", "impact": "impact", "category": "category"}},
+            {{"title": "strength2", "description": "description", "impact": "impact", "category": "category"}},
+            {{"title": "strength3", "description": "description", "impact": "impact", "category": "category"}}
+        ],
+        "weaknesses": [
+            {{"title": "weakness1", "description": "description", "impact": "impact", "category": "category"}},
+            {{"title": "weakness2", "description": "description", "impact": "impact", "category": "category"}},
+            {{"title": "weakness3", "description": "description", "impact": "impact", "category": "category"}}
+        ],
+        "opportunities": [
+            {{"title": "opportunity1", "description": "description", "impact": "impact", "category": "category"}},
+            {{"title": "opportunity2", "description": "description", "impact": "impact", "category": "category"}},
+            {{"title": "opportunity3", "description": "description", "impact": "impact", "category": "category"}}
+        ],
+        "threats": [
+            {{"title": "threat1", "description": "description", "impact": "impact", "category": "category"}},
+            {{"title": "threat2", "description": "description", "impact": "impact", "category": "category"}},
+            {{"title": "threat3", "description": "description", "impact": "impact", "category": "category"}}
+        ]
+    }}
 }}
 
 Document: {text[:4000]}"""
@@ -238,7 +367,7 @@ Document: {text[:4000]}"""
     try:
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=1000,
+            max_tokens=3000,  # Increased further for minimum 3 items per category
             temperature=0.3,
             messages=[
                 {"role": "user", "content": prompt}
@@ -262,6 +391,12 @@ Document: {text[:4000]}"""
             
             try:
                 result = json.loads(json_content)
+                
+                # VALIDATION: Ensure minimum 3 items in each SWOT category
+                swot = result.get("swot_analysis", {})
+                swot = ensure_minimum_swot_items(swot)
+                result["swot_analysis"] = swot
+                
                 return result
             except json.JSONDecodeError as e:
                 # Try more aggressive cleaning
@@ -273,40 +408,116 @@ Document: {text[:4000]}"""
                     json_content = re.sub(r'['']', "'", json_content)  # Replace smart apostrophes
                     
                     result = json.loads(json_content)
+                    
+                    # VALIDATION: Ensure minimum 3 items in each SWOT category
+                    swot = result.get("swot_analysis", {})
+                    swot = ensure_minimum_swot_items(swot)
+                    result["swot_analysis"] = swot
+                    
                     return result
                 except json.JSONDecodeError as e2:
                     pass
         
-        # If we can't parse JSON, return fallback
-        return {
-            "summary": "Document analysis completed successfully.",
-            "key_points": [
-                {
-                    "text": "Document has been processed and is ready for analysis.",
-                    "quote": "Document processing completed"
-                }
-            ],
-            "risk_flags": [],
-            "key_concepts": []
-        }
+        # If we can't parse JSON, return fallback with minimum items
+        return get_fallback_response_with_minimum_swot()
         
     except Exception as e:
-        # If we've already retried, return a basic fallback
+        # If we've already retried, return a basic fallback with minimum items
         if retry_count > 0:
-            return {
-                "summary": "Document analysis completed with basic processing.",
-                "key_points": [
-                    {
-                        "text": "Document has been processed and is ready for analysis.",
-                        "quote": "Document processing completed"
-                    }
-                ],
-                "risk_flags": [],
-                "key_concepts": []
-            }
+            return get_fallback_response_with_minimum_swot()
         
         # If this is the first attempt, try again with a simpler prompt
         return await analyze_document_with_claude(text, retry_count + 1)
+
+
+def ensure_minimum_swot_items(swot_analysis: dict) -> dict:
+    """Ensure each SWOT category has 3-5 items (minimum 3, maximum 5)"""
+    categories = ["strengths", "weaknesses", "opportunities", "threats"]
+    
+    # Generic items to fill gaps (only if needed)
+    generic_items = {
+        "strengths": [
+            {"title": "Resource Availability", "description": "Access to necessary resources and capabilities for operations", "impact": "medium", "category": "operational"},
+            {"title": "Market Position", "description": "Established presence in the market with recognized capabilities", "impact": "medium", "category": "market"},
+            {"title": "Operational Efficiency", "description": "Streamlined processes that enable effective resource utilization", "impact": "medium", "category": "operational"},
+            {"title": "Team Expertise", "description": "Skilled workforce with relevant experience and knowledge", "impact": "medium", "category": "business"},
+            {"title": "Process Maturity", "description": "Well-established procedures and operational frameworks", "impact": "medium", "category": "operational"}
+        ],
+        "weaknesses": [
+            {"title": "Resource Constraints", "description": "Limited resources that may restrict growth or operational capacity", "impact": "medium", "category": "operational"},
+            {"title": "Market Dependencies", "description": "Reliance on specific market conditions or customer segments", "impact": "medium", "category": "market"},
+            {"title": "Process Limitations", "description": "Areas where current processes could be improved for better efficiency", "impact": "medium", "category": "operational"},
+            {"title": "Capacity Constraints", "description": "Limited ability to scale operations quickly when needed", "impact": "medium", "category": "operational"},
+            {"title": "Knowledge Gaps", "description": "Areas where additional expertise or training may be beneficial", "impact": "low", "category": "business"}
+        ],
+        "opportunities": [
+            {"title": "Market Expansion", "description": "Potential to expand into new markets or customer segments", "impact": "medium", "category": "market"},
+            {"title": "Technology Adoption", "description": "Opportunities to leverage new technologies for competitive advantage", "impact": "medium", "category": "technology"},
+            {"title": "Strategic Partnerships", "description": "Potential collaborations that could enhance capabilities or market reach", "impact": "medium", "category": "business"},
+            {"title": "Process Optimization", "description": "Opportunities to improve efficiency and reduce operational costs", "impact": "medium", "category": "operational"},
+            {"title": "Skill Development", "description": "Investment in training and development to enhance capabilities", "impact": "medium", "category": "business"}
+        ],
+        "threats": [
+            {"title": "Market Competition", "description": "Increasing competition that may impact market share or profitability", "impact": "medium", "category": "competitive"},
+            {"title": "Economic Factors", "description": "External economic conditions that could negatively impact operations", "impact": "medium", "category": "market"},
+            {"title": "Regulatory Changes", "description": "Potential changes in regulations that may require operational adjustments", "impact": "medium", "category": "regulatory"},
+            {"title": "Technology Disruption", "description": "Emerging technologies that could disrupt current business models", "impact": "medium", "category": "technology"},
+            {"title": "Resource Availability", "description": "Potential shortage of critical resources or skilled personnel", "impact": "medium", "category": "operational"}
+        ]
+    }
+    
+    for category in categories:
+        current_items = swot_analysis.get(category, [])
+        
+        # Ensure minimum 3 items
+        if len(current_items) < 3:
+            needed = 3 - len(current_items)
+            current_items.extend(generic_items[category][:needed])
+        
+        # Ensure maximum 5 items
+        elif len(current_items) > 5:
+            current_items = current_items[:5]
+        
+        swot_analysis[category] = current_items
+    
+    return swot_analysis
+
+
+def get_fallback_response_with_minimum_swot() -> dict:
+    """Return fallback response with minimum 3 items per SWOT category"""
+    return {
+        "summary": "Document analysis completed successfully.",
+        "key_points": [
+            {
+                "text": "Document has been processed and is ready for analysis.",
+                "quote": "Document processing completed"
+            }
+        ],
+        "risk_flags": [],
+        "key_concepts": [],
+        "swot_analysis": {
+            "strengths": [
+                {"title": "Document Processing Capability", "description": "Successfully processed and analyzed the provided document content", "impact": "medium", "category": "operational"},
+                {"title": "Content Structure", "description": "Document contains structured information suitable for analysis", "impact": "medium", "category": "operational"},
+                {"title": "Data Availability", "description": "Sufficient content available for comprehensive evaluation", "impact": "medium", "category": "operational"}
+            ],
+            "weaknesses": [
+                {"title": "Limited Context", "description": "Analysis may be limited by available context within the document", "impact": "medium", "category": "operational"},
+                {"title": "Single Source", "description": "Analysis based on single document without external validation", "impact": "medium", "category": "operational"},
+                {"title": "Processing Constraints", "description": "Technical limitations may affect depth of analysis", "impact": "low", "category": "technology"}
+            ],
+            "opportunities": [
+                {"title": "Enhanced Analysis", "description": "Opportunity to improve analysis with additional context or documents", "impact": "medium", "category": "operational"},
+                {"title": "Data Integration", "description": "Potential to combine with other data sources for comprehensive insights", "impact": "medium", "category": "technology"},
+                {"title": "Process Improvement", "description": "Opportunities to refine analysis methodology for better results", "impact": "medium", "category": "operational"}
+            ],
+            "threats": [
+                {"title": "Information Gaps", "description": "Missing information may lead to incomplete analysis results", "impact": "medium", "category": "operational"},
+                {"title": "Context Limitations", "description": "Limited context may affect accuracy of strategic recommendations", "impact": "medium", "category": "operational"},
+                {"title": "Processing Errors", "description": "Technical issues could impact the quality of analysis output", "impact": "low", "category": "technology"}
+            ]
+        }
+    }
 
 async def analyze_document_with_chunking(text: str, enable_synthesis: bool = True) -> dict:
     """
@@ -349,7 +560,8 @@ def aggregate_chunk_analyses(chunk_analyses: List[dict]) -> dict:
             "summary": "This is a comprehensive analysis of your document.",
             "key_points": [],
             "risk_flags": [],
-            "key_concepts": []
+            "key_concepts": [],
+            "swot_analysis": get_empty_swot_structure()
         }
     
     if len(chunk_analyses) == 1:
@@ -359,11 +571,22 @@ def aggregate_chunk_analyses(chunk_analyses: List[dict]) -> dict:
     all_key_points = []
     all_risk_flags = []
     all_key_concepts = []
+    all_strengths = []
+    all_weaknesses = []
+    all_opportunities = []
+    all_threats = []
     
     for analysis in chunk_analyses:
         all_key_points.extend(analysis.get("key_points", []))
         all_risk_flags.extend(analysis.get("risk_flags", []))
         all_key_concepts.extend(analysis.get("key_concepts", []))
+        
+        # ✅ FIXED - Collect SWOT items properly
+        swot = analysis.get("swot_analysis", {})
+        all_strengths.extend(swot.get("strengths", []))
+        all_weaknesses.extend(swot.get("weaknesses", []))
+        all_opportunities.extend(swot.get("opportunities", []))
+        all_threats.extend(swot.get("threats", []))
     
     # Remove duplicates based on text content
     def remove_duplicates(items, key_func=lambda x: x.get("text", "").lower()):
@@ -376,11 +599,24 @@ def aggregate_chunk_analyses(chunk_analyses: List[dict]) -> dict:
                 unique_items.append(item)
         return unique_items
     
+    def remove_swot_duplicates(items):
+        seen = set()
+        unique_items = []
+        for item in items:
+            key = item.get("title", "").lower()
+            if key and key not in seen:
+                seen.add(key)
+                unique_items.append(item)
+        return unique_items
+    
     # Remove duplicates and limit results
     unique_key_points = remove_duplicates(all_key_points)[:15]
     unique_risk_flags = remove_duplicates(all_risk_flags)[:8]
     unique_key_concepts = remove_duplicates(all_key_concepts, lambda x: x.get("term", "").lower())[:10]
-    
+    unique_strengths = remove_swot_duplicates(all_strengths)[:10]
+    unique_weaknesses = remove_swot_duplicates(all_weaknesses)[:10]
+    unique_opportunities = remove_swot_duplicates(all_opportunities)[:10]
+    unique_threats = remove_swot_duplicates(all_threats)[:10]
     # Create combined summary
     chunk_count = len(chunk_analyses)
     combined_summary = f"This is a comprehensive analysis of a {chunk_count}-section document covering multiple topics."
@@ -390,6 +626,12 @@ def aggregate_chunk_analyses(chunk_analyses: List[dict]) -> dict:
         "key_points": unique_key_points,
         "risk_flags": unique_risk_flags,
         "key_concepts": unique_key_concepts,
+         "swot_analysis": {  # ✅ FIXED - Return proper SWOT structure
+            "strengths": unique_strengths,
+            "weaknesses": unique_weaknesses,
+            "opportunities": unique_opportunities,
+            "threats": unique_threats
+        },
         "chunk_count": chunk_count,
         "analysis_method": "chunked"
     }

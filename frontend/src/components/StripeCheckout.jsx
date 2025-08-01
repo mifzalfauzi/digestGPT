@@ -39,11 +39,11 @@ export default function StripeCheckout() {
     {
       id: 'pro',
       name: 'Pro Plan',
-      price: '$6.99',
+      price: '$7.99',
       priceId: import.meta.env.VITE_STRIPE_PRICE_ID_PRO || null, // Will be null if undefined
       icon: <Crown className="h-6 w-6" />,
       features: [
-        'Extra usage*',
+        '3x more usage than Standard Plan',
         'Get insights, risks and summaries from 120 documents',
         'Access to Elva* (powered by Claude 4 Sonnet) for 350 interactions',
         'Usage of 350k tokens per month'
