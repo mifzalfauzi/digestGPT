@@ -5,8 +5,10 @@ import { Progress } from '../ui/progress'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 import { FileText, MessageCircle, Zap, Crown, Star, TrendingUp, AlertTriangle } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 const UsageDashboard = ({ onClose }) => {
+  const navigate = useNavigate()
   const { user, usage } = useAuth()
 
   if (!user || !usage) {
@@ -254,7 +256,7 @@ const UsageDashboard = ({ onClose }) => {
         {/* Actions */}
         <div className="flex gap-3">
           {user.plan === 'free' && (
-            <Button className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700">
+            <Button onClick={() => navigate('/upgrade')} className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700">
               <Star className="h-4 w-4 mr-2" />
               Upgrade Plan
             </Button>

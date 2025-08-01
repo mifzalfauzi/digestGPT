@@ -179,6 +179,41 @@ export default function StripeCheckout() {
     }
   };
 
+  const handleCancelSubscription = async () => {
+    if (!confirm('Are you sure you want to cancel your subscription? It will remain active until the end of your current billing period.')) {
+      return;
+    }
+
+    try {
+      setLoading(prev => ({ ...prev, cancel: true }));
+
+      const response = await fetch('http://localhost:8000/stripe/cancel-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to cancel subscription');
+      }
+
+      const data = await response.json();
+      alert(data.message);
+      
+      // Refresh the page to show updated status
+      window.location.reload();
+
+    } catch (error) {
+      console.error('Cancel error:', error);
+      alert(error.message || 'Failed to cancel subscription. Please try again.');
+    } finally {
+      setLoading(prev => ({ ...prev, cancel: false }));
+    }
+  };
+
   // Check if any price IDs are missing
   const missingPriceIds = plans.filter(plan => !plan.priceId);
 
@@ -236,6 +271,24 @@ export default function StripeCheckout() {
                   Signed in as {user.email}
                 </p>
               </div>
+              {user.plan !== 'free' && (
+                <div className="flex gap-2">
+                  {/* <button
+                    onClick={handleManageSubscription}
+                    disabled={loading.manage}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {loading.manage ? 'Loading...' : 'Manage Billing'}
+                  </button> */}
+                  <button
+                    onClick={handleCancelSubscription}
+                    disabled={loading.cancel}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {loading.cancel ? 'Loading...' : 'Cancel Subscription'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -413,11 +413,14 @@ function Assistant() {
         console.log("Raw risk_flags:", fullDocumentData.risk_flags)
         console.log("Raw key_concepts type:", typeof fullDocumentData.key_concepts)
         console.log("Raw key_concepts:", fullDocumentData.key_concepts)
+        console.log("Raw swot_analysis type:", typeof fullDocumentData.swot_analysis)
+        console.log("Raw swot_analysis:", fullDocumentData.swot_analysis)
 
         // Parse JSON fields safely - FIXED LOGIC
         let keyPoints = []
         let riskFlags = []
         let keyConcepts = []
+        let swotAnalysis = {}
 
         try {
           // key_points is a JSON STRING - needs parsing
@@ -465,6 +468,19 @@ function Assistant() {
           console.error('Error processing key_concepts:', e)
         }
 
+        try {
+          if (fullDocumentData.swot_analysis) {
+            if (typeof fullDocumentData.swot_analysis === 'object' && !Array.isArray(fullDocumentData.swot_analysis)) {
+              // It's already an object - use directly
+              swotAnalysis = fullDocumentData.swot_analysis
+            } else if (typeof fullDocumentData.swot_analysis === 'string') {
+              swotAnalysis = JSON.parse(fullDocumentData.swot_analysis)
+            }
+          }
+        } catch (e) {
+          console.error('Error processing swot_analysis:', e)
+        }
+
         // Also check if the data is nested in analysis object
         if (fullDocumentData.analysis) {
           console.log("Found analysis object:", fullDocumentData.analysis)
@@ -496,6 +512,15 @@ function Assistant() {
             }
             console.log("Used analysis.key_concepts:", keyConcepts)
           }
+
+          if (Object.keys(swotAnalysis).length === 0 && fullDocumentData.analysis.swot_analysis) {
+            if (typeof fullDocumentData.analysis.swot_analysis === 'object' && !Array.isArray(fullDocumentData.analysis.swot_analysis)) {
+              swotAnalysis = fullDocumentData.analysis.swot_analysis
+            } else if (typeof fullDocumentData.analysis.swot_analysis === 'string') {
+              swotAnalysis = JSON.parse(fullDocumentData.analysis.swot_analysis)
+            }
+            console.log("Used analysis.swot_analysis:", swotAnalysis)
+          }
         }
 
         // Final verification
@@ -506,6 +531,12 @@ function Assistant() {
         console.log("riskFlags length:", riskFlags.length)
         console.log("keyConcepts:", keyConcepts)
         console.log("keyConcepts length:", keyConcepts.length)
+        console.log("swotAnalysis:", swotAnalysis)
+        console.log("swotAnalysis keys:", Object.keys(swotAnalysis)) // Changed from .length to Object.keys()
+        console.log("swotAnalysis strengths:", swotAnalysis.strengths?.length || 0)
+        console.log("swotAnalysis weaknesses:", swotAnalysis.weaknesses?.length || 0)
+        console.log("swotAnalysis opportunities:", swotAnalysis.opportunities?.length || 0)
+        console.log("swotAnalysis threats:", swotAnalysis.threats?.length || 0)
         console.log("========================")
 
         // Create a document object for the current session
@@ -527,7 +558,8 @@ function Assistant() {
               summary: fullDocumentData.summary,
               key_points: keyPoints,
               risk_flags: riskFlags,
-              key_concepts: keyConcepts
+              key_concepts: keyConcepts,
+              swot_analysis: swotAnalysis
             },
             // Also include at root level for compatibility
             summary: fullDocumentData.summary,
@@ -535,7 +567,8 @@ function Assistant() {
             risk_flags: riskFlags,
             key_concepts: keyConcepts,
             word_count: fullDocumentData.word_count,
-            analysis_method: fullDocumentData.analysis_method
+            analysis_method: fullDocumentData.analysis_method,
+            swot_analysis: swotAnalysis
           }
         }
 
@@ -1583,14 +1616,14 @@ This business plan effectively balances ambitious growth objectives with compreh
                   <div className="flex items-center gap-2">
                     {/* <Spinner />
                     <p>Signing Out...</p> */}
-                  {/* </div>
+              {/* </div>
                 ) : (
                   <LogOut className="h-4 w-4 group-hover:text-destructive-foreground" />
                 )}
                 <span className="absolute top-full right-0 mt-2 px-2 py-1 text-xs bg-popover text-popover-foreground rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
                   {loading_logout ? 'Signing Out...' : 'Sign Out'}
                 </span>
-              </Button> */} 
+              </Button> */}
 
               {loading_logout && (
                 <Spinner />

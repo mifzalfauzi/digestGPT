@@ -1,19 +1,15 @@
-# Update your stripe_routes.py
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import stripe
 import os
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from database import get_db
 from models import User, UserPlan
 from dependencies import get_current_active_user
-import logging
-import json
 
 # Configure Stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")  # This can be None
 
 router = APIRouter(prefix="/stripe", tags=["stripe"])
 
@@ -90,6 +86,338 @@ async def create_checkout_session(
             detail=f"Failed to create checkout session: {str(e)}"
         )
 
+@router.post("/update-plan-manual")
+async def update_plan_manual(
+    request: ManualUpdateRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Manually update user plan after successful payment (no webhooks)"""
+    try:
+        print(f"🔄 Manual plan update requested by: {current_user.email}")
+        print(f"📋 Session ID: {request.session_id}")
+        
+        # Retrieve the checkout session from Stripe
+        session = stripe.checkout.Session.retrieve(request.session_id)
+        print(f"💳 Session payment status: {session.payment_status}")
+        print(f"🏪 Session customer: {session.customer}")
+        print(f"👤 User customer ID: {current_user.stripe_customer_id}")
+        
+        # Validate session belongs to current user and payment is successful
+        if session.payment_status != 'paid':
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Payment not completed. Status: {session.payment_status}"
+            )
+        
+        if session.customer != current_user.stripe_customer_id:
+            raise HTTPException(
+                status_code=400, 
+                detail="Session does not belong to current user"
+            )
+        
+        # Get subscription details
+        subscription_id = session.subscription
+        if not subscription_id:
+            raise HTTPException(
+                status_code=400, 
+                detail="No subscription found in session"
+            )
+        
+        print(f"🔍 Retrieving subscription: {subscription_id}")
+        subscription = stripe.Subscription.retrieve(subscription_id)
+        
+        # Get price_id safely - handle both object and dict access patterns
+        try:
+            # Try object-style access first (most common)
+            price_id = subscription.items.data[0].price.id
+            print(f"🔍 Found price_id (object): {price_id}")
+        except (AttributeError, IndexError):
+            try:
+                # Fallback to dictionary-style access
+                price_id = subscription['items']['data'][0]['price']['id']
+                print(f"🔍 Found price_id (dict): {price_id}")
+            except (KeyError, IndexError, TypeError) as e:
+                print(f"❌ Error getting price_id: {e}")
+                print(f"🔍 Subscription type: {type(subscription)}")
+                print(f"🔍 Subscription items: {getattr(subscription, 'items', 'No items attr')}")
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Could not extract price information from subscription"
+                )
+        
+        # Store old plan for logging
+        old_plan = current_user.plan.value
+        
+        # Update user plan based on price_id
+        if price_id == os.getenv("STRIPE_PRICE_ID_STANDARD"):
+            current_user.plan = UserPlan.STANDARD
+            print("✅ Setting plan to STANDARD")
+        elif price_id == os.getenv("STRIPE_PRICE_ID_PRO"):
+            current_user.plan = UserPlan.PRO
+            print("✅ Setting plan to PRO")
+        else:
+            print(f"⚠️ Unknown price_id: {price_id}")
+            print(f"🔍 Expected STANDARD: {os.getenv('STRIPE_PRICE_ID_STANDARD')}")
+            print(f"🔍 Expected PRO: {os.getenv('STRIPE_PRICE_ID_PRO')}")
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Unknown price_id: {price_id}. Check your environment variables."
+            )
+        
+        # Get subscription end date safely - handle both object and dict access
+        now = datetime.now(timezone.utc)
+        try:
+            # Try object-style access first
+            current_period_end = subscription.current_period_end
+            subscription_end = datetime.fromtimestamp(current_period_end, timezone.utc)
+            print(f"✅ Subscription ends (object): {subscription_end}")
+        except (AttributeError, TypeError):
+            try:
+                # Fallback to dictionary-style access
+                current_period_end = subscription['current_period_end']
+                subscription_end = datetime.fromtimestamp(current_period_end, timezone.utc)
+                print(f"✅ Subscription ends (dict): {subscription_end}")
+            except (KeyError, TypeError) as e:
+                print(f"⚠️ Could not get current_period_end: {e}")
+                # Fallback: set to 30 days from now (adjust based on your subscription period)
+                subscription_end = now + timedelta(days=30)
+                print(f"🔄 Using fallback end date: {subscription_end}")
+        
+        # Update all subscription info
+        current_user.stripe_subscription_id = subscription_id
+        current_user.subscription_status = "active"
+        current_user.subscription_end_date = subscription_end
+        current_user.last_payment_check = now
+        current_user.updated_at = now
+        
+        # Commit changes
+        db.commit()
+        db.refresh(current_user)
+        
+        print(f"✅ Successfully updated user {current_user.email}")
+        print(f"✅ Plan changed from {old_plan} to {current_user.plan.value}")
+        print(f"✅ Subscription ID: {subscription_id}")
+        print(f"✅ Expires: {subscription_end}")
+        
+        return {
+            "status": "success", 
+            "old_plan": old_plan,
+            "new_plan": current_user.plan.value,
+            "subscription_id": subscription_id,
+            "subscription_end_date": subscription_end.isoformat(),
+            "days_until_expiry": (subscription_end - now).days,
+            "user_email": current_user.email
+        }
+        
+    except stripe.error.StripeError as e:
+        print(f"❌ Stripe error: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        print(f"❌ Error manually updating plan: {str(e)}")
+        import traceback
+        print(f"❌ Full traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Failed to update plan: {str(e)}")
+
+@router.get("/subscription-status")
+async def get_subscription_status(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get current user's subscription status"""
+    try:
+        now = datetime.now(timezone.utc)
+        
+        if not current_user.stripe_customer_id:
+            return {
+                "has_subscription": False,
+                "plan": current_user.plan.value,
+                "status": "no_customer",
+                "subscription_end_date": None,
+                "days_until_expiry": None,
+                "is_expired": False
+            }
+        
+        # Check if we have local subscription data
+        if current_user.subscription_end_date:
+            days_until_expiry = (current_user.subscription_end_date - now).days
+            is_expired = current_user.subscription_end_date < now
+            
+            # If expired, check if we should downgrade
+            if is_expired and current_user.plan != UserPlan.FREE:
+                # Grace period check (optional)
+                GRACE_PERIOD_DAYS = 3
+                days_since_expiry = abs(days_until_expiry)
+                
+                if days_since_expiry > GRACE_PERIOD_DAYS:
+                    # Downgrade to free
+                    old_plan = current_user.plan.value
+                    current_user.plan = UserPlan.FREE
+                    current_user.subscription_status = "expired"
+                    current_user.stripe_subscription_id = None
+                    current_user.subscription_end_date = None
+                    current_user.last_payment_check = now
+                    
+                    db.commit()
+                    
+                    return {
+                        "has_subscription": False,
+                        "plan": current_user.plan.value,
+                        "status": "downgraded_expired",
+                        "old_plan": old_plan,
+                        "days_since_expiry": days_since_expiry,
+                        "is_expired": True
+                    }
+            
+            return {
+                "has_subscription": bool(current_user.stripe_subscription_id),
+                "plan": current_user.plan.value,
+                "status": current_user.subscription_status or "unknown",
+                "subscription_end_date": current_user.subscription_end_date.isoformat(),
+                "days_until_expiry": days_until_expiry,
+                "is_expired": is_expired,
+                "subscription_id": current_user.stripe_subscription_id
+            }
+        else:
+            return {
+                "has_subscription": False,
+                "plan": current_user.plan.value,
+                "status": "no_subscription_data",
+                "subscription_end_date": None,
+                "days_until_expiry": None,
+                "is_expired": False
+            }
+            
+    except Exception as e:
+        print(f"❌ Subscription status error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get subscription status: {str(e)}"
+        )
+
+@router.post("/sync-subscription-status")
+async def sync_subscription_status(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Manually sync subscription status from Stripe (no webhooks)"""
+    try:
+        if not current_user.stripe_customer_id:
+            return {"status": "no_customer", "plan": current_user.plan.value}
+        
+        print(f"🔄 Syncing subscription status for: {current_user.email}")
+        
+        # Get all subscriptions for the customer
+        subscriptions = stripe.Subscription.list(
+            customer=current_user.stripe_customer_id,
+            limit=10
+        )
+        
+        print(f"🔍 Found {len(subscriptions.data)} subscription(s)")
+        
+        now = datetime.now(timezone.utc)
+        active_subscription = None
+        
+        # Find the most recent active subscription
+        for subscription in subscriptions.data:
+            print(f"  - {subscription.id}: {subscription.status}")
+            if subscription.status in ["active", "trialing"]:
+                active_subscription = subscription
+                break
+        
+        if active_subscription:
+            # Update user based on active subscription - handle both object and dict access
+            try:
+                # Try object-style access first
+                price_id = active_subscription.items.data[0].price.id
+                print(f"🔍 Active subscription price_id (object): {price_id}")
+            except (AttributeError, IndexError):
+                try:
+                    # Fallback to dictionary-style access
+                    price_id = active_subscription['items']['data'][0]['price']['id']
+                    print(f"🔍 Active subscription price_id (dict): {price_id}")
+                except (KeyError, IndexError, TypeError):
+                    print("❌ Could not get price_id from active subscription")
+                    raise HTTPException(
+                        status_code=400, 
+                        detail="Could not get subscription details"
+                    )
+            
+            # Get subscription end date safely
+            try:
+                # Try object-style access first
+                subscription_end = datetime.fromtimestamp(active_subscription.current_period_end, timezone.utc)
+            except (AttributeError, TypeError):
+                try:
+                    # Fallback to dictionary-style access
+                    subscription_end = datetime.fromtimestamp(active_subscription['current_period_end'], timezone.utc)
+                except (KeyError, TypeError):
+                    subscription_end = now + timedelta(days=30)
+                    print("⚠️ Using fallback subscription end date")
+            
+            old_plan = current_user.plan.value
+            
+            # Update plan
+            if price_id == os.getenv("STRIPE_PRICE_ID_STANDARD"):
+                current_user.plan = UserPlan.STANDARD
+            elif price_id == os.getenv("STRIPE_PRICE_ID_PRO"):
+                current_user.plan = UserPlan.PRO
+            
+            current_user.stripe_subscription_id = active_subscription.id
+            current_user.subscription_status = active_subscription.status
+            current_user.subscription_end_date = subscription_end
+            current_user.last_payment_check = now
+            current_user.updated_at = now
+            
+            db.commit()
+            
+            print(f"✅ Synced: {old_plan} -> {current_user.plan.value}")
+            
+            return {
+                "status": "synced",
+                "subscription_status": active_subscription.status,
+                "plan": current_user.plan.value,
+                "old_plan": old_plan,
+                "subscription_end_date": subscription_end.isoformat(),
+                "days_until_expiry": (subscription_end - now).days
+            }
+        else:
+            # No active subscription found - downgrade if needed
+            old_plan = current_user.plan.value
+            
+            if current_user.plan != UserPlan.FREE:
+                current_user.plan = UserPlan.FREE
+                current_user.subscription_status = "inactive"
+                current_user.stripe_subscription_id = None
+                current_user.subscription_end_date = None
+                current_user.last_payment_check = now
+                current_user.updated_at = now
+                
+                db.commit()
+                
+                print(f"⬇️ Downgraded: {old_plan} -> FREE")
+                
+                return {
+                    "status": "downgraded_to_free",
+                    "old_plan": old_plan,
+                    "plan": current_user.plan.value
+                }
+            else:
+                return {
+                    "status": "already_free",
+                    "plan": current_user.plan.value
+                }
+            
+    except Exception as e:
+        print(f"❌ Error syncing subscription status: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to sync subscription status: {str(e)}"
+        )
+
 @router.post("/create-portal-session")
 async def create_portal_session(
     request: PortalRequest,
@@ -117,236 +445,86 @@ async def create_portal_session(
             detail=f"Failed to create portal session: {str(e)}"
         )
 
-@router.get("/subscription-status")
-async def get_subscription_status(
-    current_user: User = Depends(get_current_active_user)
-):
-    """Get current user's subscription status"""
-    try:
-        if not current_user.stripe_customer_id:
-            return {
-                "has_subscription": False,
-                "plan": current_user.plan.value,
-                "status": "no_customer"
-            }
-        
-        # Get active subscriptions
-        subscriptions = stripe.Subscription.list(
-            customer=current_user.stripe_customer_id,
-            status="active"
-        )
-        
-        if subscriptions.data:
-            subscription = subscriptions.data[0]
-            return {
-                "has_subscription": True,
-                "subscription_id": subscription.id,
-                "status": subscription.status,
-                "current_period_end": subscription.current_period_end,
-                "plan": current_user.plan.value
-            }
-        else:
-            return {
-                "has_subscription": False,
-                "plan": current_user.plan.value,
-                "status": "no_active_subscription"
-            }
-            
-    except Exception as e:
-        print(f"❌ Subscription status error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get subscription status: {str(e)}"
-        )
-
-@router.post("/webhook")
-async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
-    """Handle Stripe webhooks - gracefully handle missing webhook secret"""
-    payload = await request.body()
-    sig_header = request.headers.get('stripe-signature')
-    
-    try:
-        # If webhook secret is not configured, just log and return success
-        if not STRIPE_WEBHOOK_SECRET:
-            print("⚠️ Webhook received but STRIPE_WEBHOOK_SECRET not configured")
-            print("💡 Payments will work, but plan updates won't be automatic")
-            print("🔧 Set up webhook secret later for automatic plan updates")
-            
-            # Parse the event without verification (for development only)
-            try:
-                event = json.loads(payload)
-                print(f"🔔 Webhook event type: {event.get('type', 'unknown')}")
-            except:
-                print("📦 Could not parse webhook payload")
-            
-            return {"status": "received", "message": "webhook secret not configured"}
-        
-        # If webhook secret is configured, verify the signature
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, STRIPE_WEBHOOK_SECRET
-        )
-        print(f"🔔 Verified webhook: {event['type']}")
-        
-        if event['type'] == 'checkout.session.completed':
-            session = event['data']['object']
-            await handle_successful_payment(session, db)
-            
-        elif event['type'] == 'customer.subscription.updated':
-            subscription = event['data']['object']
-            await handle_subscription_updated(subscription, db)
-            
-        elif event['type'] == 'customer.subscription.deleted':
-            subscription = event['data']['object']
-            await handle_subscription_cancelled(subscription, db)
-            
-        return {"status": "success"}
-        
-    except ValueError as e:
-        print(f"❌ Invalid payload: {e}")
-        raise HTTPException(status_code=400, detail="Invalid payload")
-    except stripe.error.SignatureVerificationError as e:
-        print(f"❌ Invalid signature: {e}")
-        raise HTTPException(status_code=400, detail="Invalid signature")
-    except Exception as e:
-        print(f"❌ Webhook error: {e}")
-        raise HTTPException(status_code=500, detail="Webhook processing failed")
-
-# Manual plan update endpoint for when webhooks aren't configured
-@router.post("/update-plan-manual")
-async def update_plan_manual(
-    request: ManualUpdateRequest,  # Changed: now properly receives the request body
+@router.post("/cancel-subscription")
+async def cancel_subscription(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Manually update user plan after successful payment (for when webhooks aren't set up)"""
+    """Cancel user's subscription (no webhooks - manual update)"""
     try:
-        print(f"🔄 Manual plan update requested by: {current_user.email}")
-        print(f"📋 Session ID: {request.session_id}")
-        print(f"👤 Current user plan: {current_user.plan.value}")
+        if not current_user.stripe_subscription_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No active subscription found"
+            )
         
-        # Retrieve the checkout session from Stripe
-        session = stripe.checkout.Session.retrieve(request.session_id)
-        print(f"💳 Session payment status: {session.payment_status}")
-        print(f"🏪 Session customer: {session.customer}")
-        print(f"👤 User customer ID: {current_user.stripe_customer_id}")
+        # Cancel subscription at period end
+        subscription = stripe.Subscription.modify(
+            current_user.stripe_subscription_id,
+            cancel_at_period_end=True
+        )
         
-        if session.payment_status == 'paid' and session.customer == current_user.stripe_customer_id:
-            # Get subscription details
-            subscription_id = session.subscription
-            subscription = stripe.Subscription.retrieve(subscription_id)
-            price_id = subscription['items']['data'][0]['price']['id']
-            
-            print(f"🔍 Found price_id: {price_id}")
-            print(f"🔍 STRIPE_PRICE_ID_STANDARD: {os.getenv('STRIPE_PRICE_ID_STANDARD')}")
-            print(f"🔍 STRIPE_PRICE_ID_PRO: {os.getenv('STRIPE_PRICE_ID_PRO')}")
-            
-            # Store old plan for logging
-            old_plan = current_user.plan.value
-            
-            # Update user plan based on price_id
-            if price_id == os.getenv("STRIPE_PRICE_ID_STANDARD"):
-                current_user.plan = UserPlan.STANDARD
-                print("✅ Setting plan to STANDARD")
-            elif price_id == os.getenv("STRIPE_PRICE_ID_PRO"):
-                current_user.plan = UserPlan.PRO
-                print("✅ Setting plan to PRO")
-            else:
-                print(f"⚠️ Unknown price_id: {price_id}")
-                raise HTTPException(
-                    status_code=400, 
-                    detail=f"Unknown price_id: {price_id}. Check your environment variables."
-                )
-            
-            # Update subscription info
-            current_user.stripe_subscription_id = subscription_id
-            current_user.subscription_status = "active"
-            
-            # Commit changes
-            db.commit()
-            db.refresh(current_user)  # Refresh to get updated data
-            
-            print(f"✅ Successfully updated user {current_user.email}")
-            print(f"✅ Plan changed from {old_plan} to {current_user.plan.value}")
-            print(f"✅ Subscription ID: {subscription_id}")
-            
-            return {
-                "status": "success", 
-                "old_plan": old_plan,
-                "new_plan": current_user.plan.value,
-                "subscription_id": subscription_id,
-                "user_email": current_user.email
-            }
-        else:
-            error_msg = f"Validation failed - Payment status: {session.payment_status}, Customer match: {session.customer == current_user.stripe_customer_id}"
-            print(f"❌ {error_msg}")
-            raise HTTPException(status_code=400, detail=error_msg)
-            
+        # Update user status locally
+        current_user.subscription_status = "cancel_at_period_end"
+        current_user.last_payment_check = datetime.now(timezone.utc)
+        current_user.updated_at = datetime.now(timezone.utc)
+        
+        db.commit()
+        
+        return {
+            "status": "success",
+            "message": "Subscription will be cancelled at the end of the current period",
+            "subscription_end_date": current_user.subscription_end_date.isoformat() if current_user.subscription_end_date else None,
+            "days_remaining": (current_user.subscription_end_date - datetime.now(timezone.utc)).days if current_user.subscription_end_date else None
+        }
+        
     except stripe.error.StripeError as e:
         print(f"❌ Stripe error: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
     except Exception as e:
-        print(f"❌ Error manually updating plan: {str(e)}")
-        import traceback
-        print(f"❌ Full traceback: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Failed to update plan: {str(e)}")
+        print(f"❌ Error cancelling subscription: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to cancel subscription: {str(e)}")
 
-async def handle_successful_payment(session, db: Session):
-    """Handle successful payment from checkout"""
+@router.get("/subscription-health")
+async def get_subscription_health(
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get comprehensive subscription health status"""
     try:
-        user_id = session['metadata']['user_id']
-        user = db.query(User).filter(User.id == user_id).first()
+        now = datetime.now(timezone.utc)
+        health_status = {
+            "user_id": str(current_user.id),
+            "email": current_user.email,
+            "current_plan": current_user.plan.value,
+            "subscription_status": current_user.subscription_status,
+            "has_stripe_customer": bool(current_user.stripe_customer_id),
+            "has_active_subscription": bool(current_user.stripe_subscription_id),
+            "last_check": current_user.last_payment_check.isoformat() if current_user.last_payment_check else None
+        }
         
-        if user:
-            # Get subscription details
-            subscription_id = session['subscription']
-            subscription = stripe.Subscription.retrieve(subscription_id)
-            price_id = subscription['items']['data'][0]['price']['id']
-            
-            # Update user plan based on price_id
-            if price_id == os.getenv("STRIPE_PRICE_ID_STANDARD"):
-                user.plan = UserPlan.STANDARD
-            elif price_id == os.getenv("STRIPE_PRICE_ID_PRO"):
-                user.plan = UserPlan.PRO
-            
-            user.stripe_subscription_id = subscription_id
-            user.subscription_status = "active"
-            user.updated_at = datetime.utcnow()
-            
-            db.commit()
-            print(f"✅ Updated user {user.email} to {user.plan.value} plan")
-            
-    except Exception as e:
-        print(f"❌ Error handling successful payment: {e}")
-
-async def handle_subscription_updated(subscription, db: Session):
-    """Handle subscription updates"""
-    try:
-        customer_id = subscription['customer']
-        user = db.query(User).filter(User.stripe_customer_id == customer_id).first()
+        if current_user.subscription_end_date:
+            days_until_expiry = (current_user.subscription_end_date - now).days
+            health_status.update({
+                "subscription_end_date": current_user.subscription_end_date.isoformat(),
+                "days_until_expiry": days_until_expiry,
+                "is_expired": days_until_expiry < 0,
+                "expires_soon": 0 <= days_until_expiry <= 7,  # Expires within a week
+                "needs_attention": days_until_expiry <= 3 or current_user.subscription_status in ["past_due", "payment_failed"]
+            })
+        else:
+            health_status.update({
+                "subscription_end_date": None,
+                "days_until_expiry": None,
+                "is_expired": False,
+                "expires_soon": False,
+                "needs_attention": current_user.plan != UserPlan.FREE and not current_user.stripe_subscription_id
+            })
         
-        if user:
-            user.subscription_status = subscription['status']
-            user.updated_at = datetime.utcnow()
-            db.commit()
-            print(f"✅ Updated subscription status for {user.email}: {subscription['status']}")
-            
-    except Exception as e:
-        print(f"❌ Error handling subscription update: {e}")
-
-async def handle_subscription_cancelled(subscription, db: Session):
-    """Handle subscription cancellation"""
-    try:
-        customer_id = subscription['customer']
-        user = db.query(User).filter(User.stripe_customer_id == customer_id).first()
+        return health_status
         
-        if user:
-            user.plan = UserPlan.FREE
-            user.subscription_status = "cancelled"
-            user.stripe_subscription_id = None
-            user.updated_at = datetime.utcnow()
-            
-            db.commit()
-            print(f"✅ Downgraded user {user.email} to free plan")
-            
     except Exception as e:
-        print(f"❌ Error handling subscription cancellation: {e}")
+        print(f"❌ Error getting subscription health: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get subscription health: {str(e)}"
+        )

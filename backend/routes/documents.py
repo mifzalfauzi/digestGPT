@@ -181,6 +181,7 @@ async def upload_and_analyze_document(
         print("Key points:", analysis.get("key_points"))
         print("Risk flags:", analysis.get("risk_flags"))
         print("Key concepts:", analysis.get("key_concepts"))
+        print("SWOT analysis:", analysis.get("swot_analysis"))
         
         # Add position information for highlighting
         for key_point in analysis.get("key_points", []):
@@ -212,6 +213,7 @@ async def upload_and_analyze_document(
             key_points=json.dumps(analysis.get("key_points", [])),
             risk_flags=json.dumps(analysis.get("risk_flags", [])),
             key_concepts=json.dumps(analysis.get("key_concepts", [])),
+            swot_analysis=json.dumps(analysis.get("swot_analysis", [])),
             word_count=word_count,
             analysis_method=analysis.get("analysis_method", "single"),
             file_url=file_url  # Store the file URL for later retrieval
@@ -317,6 +319,7 @@ async def analyze_text_direct(
             key_points=json.dumps(analysis.get("key_points", [])),
             risk_flags=json.dumps(analysis.get("risk_flags", [])),
             key_concepts=json.dumps(analysis.get("key_concepts", [])),
+            swot_analysis=json.dumps(analysis.get("swot_analysis", [])),
             word_count=word_count,
             analysis_method=analysis.get("analysis_method", "single"),
             file_url=None  # Text documents don't have file URLs
@@ -423,8 +426,10 @@ async def get_document(
         print("Key points:", key_points)
         risk_flags = json.loads(document.risk_flags) if document.risk_flags else []
         key_concepts = json.loads(document.key_concepts) if document.key_concepts else []
+        swot_analysis = json.loads(document.swot_analysis) if document.swot_analysis else []
         print("Risk flags:", risk_flags)
         print("Key concepts:", key_concepts)
+        print("SWOT analysis:", swot_analysis)
     except json.JSONDecodeError:
         key_points = []
         risk_flags = []
@@ -444,11 +449,13 @@ async def get_document(
         "key_points": key_points,  # Add parsed data at root level
         "risk_flags": risk_flags,
         "key_concepts": key_concepts,
+        "swot_analysis": swot_analysis,
         "analysis": {
             "summary": document.summary,
             "key_points": key_points,  # Use parsed arrays instead of raw strings
             "risk_flags": risk_flags,
-            "key_concepts": key_concepts
+            "key_concepts": key_concepts,
+            "swot_analysis": swot_analysis
         }
     }
 

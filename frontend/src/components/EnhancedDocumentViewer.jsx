@@ -9,7 +9,7 @@ import HighlightableText from './HighlightableText'
 import MarkdownRenderer from './MarkdownRenderer'
 import DocxViewer from './DocxViewer'
 import mammoth from 'mammoth'
-
+import SWOTAnalysis from './SWOTAnalysis'
 function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, isDemoMode = false, bypassAPI = false }) {
   const [activeHighlight, setActiveHighlight] = useState(null)
   const [highlights, setHighlights] = useState([])
@@ -352,6 +352,16 @@ This business plan effectively balances growth ambitions with comprehensive risk
                 )}
               </TabsContent>
             )}
+
+            <TabsContent value="swot" className="h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter">  
+                  <SWOTAnalysis
+                    swot={results?.swot_analysis}
+                    // concepts={isDemoMode ? results?.key_concepts || [] : bypassAPI ? results?.analysis?.key_concepts || [] : (results?.analysis?.key_concepts || [])}
+                    onExplainConcept={onExplainConcept}
+                    isDemoMode={isDemoMode}
+                    bypassAPI={bypassAPI}
+                  />  
+            </TabsContent>
 
             {/* AI Analysis Summary Tab */}
             <TabsContent value="analysis" className="h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter">

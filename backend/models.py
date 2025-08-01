@@ -41,6 +41,9 @@ class User(Base):
     stripe_customer_id = Column(String, nullable=True, index=True)
     stripe_subscription_id = Column(String, nullable=True, index=True)
     subscription_status = Column(String, nullable=True) # active, inactive, past_due, incomplete, incomplete_expired, trialing, paused, canceled, unpaid
+    subscription_end_date = Column(DateTime(timezone=True), nullable=True)  # When subscription expires
+    last_payment_check = Column(DateTime(timezone=True), nullable=True)     # Last time we checked payment status
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
 # 2. Document table
@@ -56,6 +59,7 @@ class Document(Base):
     summary = Column(Text)
     key_points = Column(Text)
     risk_flags = Column(Text)
+    swot_analysis = Column(Text)
     key_concepts = Column(Text)
     word_count = Column(Integer)
     analysis_method = Column(String)
