@@ -252,8 +252,8 @@ This business plan effectively balances growth ambitions with comprehensive risk
             <TabsList className={`grid w-full ${hasDocumentViewer ? 'grid-cols-5' : 'grid-cols-3'} bg-slate-100 dark:bg-[#000000] dark:text-white p-0.5 sm:p-1 rounded-xl h-auto`}>
               <TabsTrigger value="analysis" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
                 <Brain className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
-                <span className="hidden md:inline">Analysis</span>
-                <span className="md:hidden">AI</span>
+                <span className="hidden md:inline">Overview</span>
+                <span className="md:hidden">Overview</span>
               </TabsTrigger>
               <TabsTrigger value="swot" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
                 <Key className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
@@ -262,13 +262,13 @@ This business plan effectively balances growth ambitions with comprehensive risk
               </TabsTrigger>
               <TabsTrigger value="insights" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
                 <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
-                <span className="hidden md:inline">Outlook</span>
-                <span className="md:hidden">Outlook</span>
+                <span className="hidden md:inline">Analysis</span>
+                <span className="md:hidden">Analysis</span>
               </TabsTrigger>
               {hasDocumentViewer && (
                 <TabsTrigger value="document-viewer" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
                   <FileText className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
-                  <span className="hidden sm:inline">{isPDF ? 'PDF Viewer' : 'DOCX Viewer'}</span>
+                  <span className="hidden sm:inline">{isPDF ? 'PDF' : 'DOCX Viewer'}</span>
                   <span className="sm:hidden">{isPDF ? 'PDF' : 'DOCX'}</span>
                 </TabsTrigger>
               )}

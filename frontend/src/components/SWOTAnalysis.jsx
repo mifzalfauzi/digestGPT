@@ -455,7 +455,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
   const tabConfigs = {
     strengths: {
       label: "",
-      icon: <TrendingUp className="h-4 w-4" />,
+      icon: <p className="text-green-600 font-bold">S</p>,
       color: "text-green-600",
       emptyMessage: isDemoMode
         ? "Demo strengths will appear here"
@@ -465,7 +465,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     },
     weaknesses: {
       label: "",
-      icon: <AlertTriangle className="h-4 w-4" />,
+      icon: <p className="text-red-600 font-bold">W</p>,
       color: "text-red-600",
       emptyMessage: isDemoMode
         ? "Demo weaknesses will appear here"
@@ -475,7 +475,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     },
     opportunities: {
       label: "",
-      icon: <Target className="h-4 w-4" />,
+      icon: <p className="text-blue-600 font-bold">O</p>,
       color: "text-blue-600",
       emptyMessage: isDemoMode
         ? "Demo opportunities will appear here"
@@ -485,7 +485,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     },
     threats: {
       label: "",
-      icon: <Shield className="h-4 w-4" />,
+      icon: <p className="text-orange-600 font-bold">T</p>,
       color: "text-orange-600",
       emptyMessage: isDemoMode
         ? "Demo threats will appear here"
@@ -631,7 +631,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                 <TabsTrigger
                   key={key}
                   value={key}
-                  className="flex items-center gap-2 py-2 px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800"
+                  className="flex items-center gap-2 py-2 px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-black"
                 >
                   <div className={config.color}>{config.icon}</div>
                   <span className="text-xs sm:text-sm">{config.label}</span>
@@ -656,6 +656,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
           </CardContent>
         </Tabs>
       </Card>
+      
     </div>
   )
 }

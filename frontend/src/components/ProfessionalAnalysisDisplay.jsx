@@ -346,7 +346,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       )}
 
       {/* Key Insights Section */}
-      <Card className="border-0 shadow-xl dark:bg-black">
+      <Card className="border shadow-lg">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -372,7 +372,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
             <>
               {/* Current Insight Display */}
               <Card 
-                className={`transition-all duration-300 ${
+                className={`transition-all duration-300 dark:bg-green-900/20 ${
                   highlights.find(h => h.id === currentInsight.id) ? 'cursor-pointer hover:shadow-lg' : ''
                 } ${
                   activeHighlight === currentInsight.id
@@ -529,7 +529,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       </Card>
 
       {/* Risk Assessment Section */}
-      <Card className="border-0 shadow-xl dark:bg-black">
+      <Card className="border shadow-lg">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
