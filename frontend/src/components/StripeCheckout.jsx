@@ -44,7 +44,7 @@ export default function StripeCheckout() {
       icon: <Crown className="h-6 w-6" />,
       features: [
         '3x more usage than Standard Plan',
-        'Get insights, risks and summaries from 120 documents',
+        'Get insights, risks and summaries from 150 documents',
         'Access to Elva* (powered by Claude 4 Sonnet) for 350 interactions',
         'Usage of 350k tokens per month'
       ],

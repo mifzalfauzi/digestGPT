@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
-import { Eye, FileText, Brain, TrendingUp, Clock, Sparkles, Target, AlertTriangle, CheckCircle2, BookOpen, Key, ArrowBigDown } from 'lucide-react'
+import { Button } from './ui/button'
+import { Eye, FileText, Brain, TrendingUp, Clock, Sparkles, Target, AlertTriangle, CheckCircle2, BookOpen, Key, ArrowBigDown, Download } from 'lucide-react'
 import ProfessionalAnalysisDisplay from './ProfessionalAnalysisDisplay'
 import KeyConceptsDisplay from './KeyConceptsDisplay'
 import HighlightableText from './HighlightableText'
@@ -10,6 +11,8 @@ import MarkdownRenderer from './MarkdownRenderer'
 import DocxViewer from './DocxViewer'
 import mammoth from 'mammoth'
 import SWOTAnalysis from './SWOTAnalysis'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
 function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, isDemoMode = false, bypassAPI = false }) {
   const [activeHighlight, setActiveHighlight] = useState(null)
   const [highlights, setHighlights] = useState([])
@@ -17,11 +20,458 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
   const [tabChangeKey, setTabChangeKey] = useState(0)
   const [docxContent, setDocxContent] = useState(null)
   const [docxLoading, setDocxLoading] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
 
   // Handle tab change with animation
   const handleTabChange = (newTab) => {
     setTabChangeKey(prev => prev + 1)
     setActiveTab(newTab)
+  }
+
+  // PDF Export functionality
+  const exportToPDF = async () => {
+    setIsExporting(true)
+
+    try {
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const pageHeight = pdf.internal.pageSize.getHeight()
+      const margin = 20
+      const contentWidth = pageWidth - (margin * 2)
+      let yPosition = 25
+
+      // Color palette for professional styling
+      const colors = {
+        primary: [37, 99, 235],    // Blue
+        success: [34, 197, 94],    // Green
+        warning: [245, 158, 11],   // Amber
+        danger: [239, 68, 68],     // Red
+        text: [31, 41, 55],        // Gray-800
+        textLight: [107, 114, 128], // Gray-500
+        accent: [139, 92, 246],     // Purple
+        white: [255, 255, 255],
+        black: [0, 0, 0]
+      }
+
+      // Helper functions
+      const addTextWithWrap = (text, x, y, maxWidth, lineHeight = 6) => {
+        const lines = pdf.splitTextToSize(text, maxWidth)
+        pdf.text(lines, x, y)
+        return y + (lines.length * lineHeight)
+      }
+
+      // Triangle function for jsPDF
+      const drawTriangle = (x1, y1, x2, y2, x3, y3, style = 'S') => {
+        pdf.lines([[x2 - x1, y2 - y1], [x3 - x2, y3 - y2], [x1 - x3, y1 - y3]], x1, y1, [1, 1], style, true)
+      }
+
+      const addSectionDivider = (y, addPageIfNeeded = true) => {
+        if (addPageIfNeeded && y > pageHeight - 40) {
+          pdf.addPage()
+          y = 25
+        }
+        pdf.setDrawColor(229, 231, 235) // Gray-200
+        pdf.setLineWidth(0.5)
+        pdf.line(margin, y + 5, pageWidth - margin, y + 5)
+        return y + 15
+      }
+
+      const addSectionHeader = (title, y, color = colors.primary, icon = null) => {
+        if (y > pageHeight - 30) {
+          pdf.addPage()
+          y = 25
+        }
+
+        // Reduced left margin for section headers
+        const headerMargin = margin - 5  // 5mm less than main margin
+
+        // Background rectangle for section header
+        pdf.setFillColor(color[0], color[1], color[2])
+        pdf.setDrawColor(color[0], color[1], color[2])
+        pdf.roundedRect(headerMargin, y - 3, contentWidth + 5, 12, 2, 2, 'F')
+
+        // Section title
+        pdf.setTextColor(colors.black[0], colors.black[1], colors.black[2])
+        pdf.setFontSize(14)
+        pdf.setFont('helvetica', 'bold')
+        pdf.text(title, headerMargin + 5, y + 5)
+        pdf.setTextColor(colors.black[0], colors.black[1], colors.black[2])
+
+        // Add line underneath section header
+        const lineY = y + 12
+        pdf.setDrawColor(200, 200, 200) // Light gray line
+        pdf.setLineWidth(0.8)
+        pdf.line(headerMargin, lineY, headerMargin + contentWidth + 5, lineY)
+
+        return y + 25  // Increased spacing to account for the line
+      }
+
+      // HEADER SECTION - Clean and Professional
+      // Document filename at top
+      pdf.setTextColor(colors.black[0], colors.black[1], colors.black[2])
+      pdf.setFontSize(12)
+      pdf.setFont('helvetica', 'normal')
+      const docName = results?.filename || file?.name || 'Sample Business Plan'
+      pdf.text(docName, margin, yPosition)
+      yPosition += 15
+
+      // Main title
+      pdf.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+      pdf.setFontSize(20)
+      pdf.setFont('helvetica', 'bold')
+      const title = `DOCUMENT ANALYSIS`
+      pdf.text(title, margin, yPosition)
+      yPosition += 15
+
+      // Metadata
+      pdf.setTextColor(colors.textLight[0], colors.textLight[1], colors.textLight[2])
+      pdf.setFontSize(10)
+      pdf.setFont('helvetica', 'normal')
+      pdf.text(`Generated: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, margin, yPosition)
+      yPosition += 6
+      pdf.text(`Analyzed by: Elva*`, margin, yPosition)
+
+      if (isDemoMode || bypassAPI) {
+        yPosition += 6
+        pdf.setTextColor(colors.warning[0], colors.warning[1], colors.warning[2])
+        pdf.text(`Mode: ${isDemoMode ? 'Demo' : 'Preview'} - Contains sample data for demonstration`, margin, yPosition)
+      }
+
+      yPosition += 20
+
+      // EXECUTIVE SUMMARY SECTION
+      yPosition = addSectionHeader('EXECUTIVE SUMMARY', yPosition, colors.white)
+
+      // Summary content box
+      pdf.setFillColor(249, 250, 251) // Gray-50
+      pdf.setDrawColor(209, 213, 219) // Gray-300
+      pdf.roundedRect(margin, yPosition, contentWidth, 0, 2, 2, 'D') // Will adjust height after content
+
+      const summaryText = (isDemoMode || bypassAPI)
+        ? 'This comprehensive business plan outlines a strategic expansion initiative with projected 40% revenue growth over 18 months. The AI-powered product development strategy focuses on sustainable operations and market penetration in Southeast Asia, leveraging proprietary technology and strong customer relationships. The analysis reveals strong competitive positioning with innovative AI capabilities, solid financial fundamentals, and a well-defined go-to-market strategy.'
+        : results?.analysis?.summary || 'No summary available'
+
+      pdf.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+      pdf.setFontSize(11)
+      pdf.setFont('helvetica', 'normal')
+      const summaryEndY = addTextWithWrap(summaryText, margin + 5, yPosition + 8, contentWidth - 10, 5.5)
+
+      // Draw the summary box with proper height
+      pdf.setFillColor(249, 250, 251)
+      pdf.setDrawColor(209, 213, 219)
+      pdf.roundedRect(margin, yPosition, contentWidth, summaryEndY - yPosition + 8, 2, 2, 'FD')
+
+      // Re-add the text (it gets covered by the rectangle)
+      pdf.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+      addTextWithWrap(summaryText, margin + 5, yPosition + 8, contentWidth - 10, 5.5)
+
+      yPosition = summaryEndY + 20
+
+      // KEY CONCEPTS SECTION
+      yPosition = addSectionHeader('KEY CONCEPTS', yPosition, colors.white)
+
+      const keyConcepts = (isDemoMode || bypassAPI) ? [
+        {
+          term: 'AI-Powered Analytics',
+          description: 'Advanced artificial intelligence system providing real-time business insights and predictive modeling capabilities for data-driven decision making.'
+        },
+        {
+          term: 'Market Penetration Strategy',
+          description: 'Systematic approach to entering Southeast Asian markets with focus on competitive positioning and customer acquisition.'
+        },
+        {
+          term: 'ESG Compliance',
+          description: 'Environmental, Social, and Governance framework ensuring sustainable business practices and regulatory adherence.'
+        },
+        {
+          term: 'Strategic Partnerships',
+          description: 'Collaborative relationships with Fortune 500 companies to accelerate market entry and reduce competitive pressure.'
+        }
+      ] : results?.analysis?.key_concepts || []
+
+      if (keyConcepts && keyConcepts.length > 0) {
+        keyConcepts.forEach((concept, index) => {
+          if (yPosition > pageHeight - 40) {
+            pdf.addPage()
+            yPosition = 25
+          }
+
+          // Concept term
+          pdf.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2])
+          pdf.setFontSize(12)
+          pdf.setFont('helvetica', 'bold')
+          const termText = typeof concept === 'string' ? concept : concept.term || concept.name || `Concept ${index + 1}`
+          pdf.text(`${index + 1}. ${termText}`, margin, yPosition)
+          yPosition += 8
+
+          // Concept description
+          pdf.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+          pdf.setFontSize(10)
+          pdf.setFont('helvetica', 'normal')
+          const descText = typeof concept === 'string' ? 'Key business concept identified in analysis' : concept.definition || concept.explanation || concept.description || 'Description not available'
+          yPosition = addTextWithWrap(descText, margin + 5, yPosition, contentWidth - 5, 5)
+          yPosition += 10
+        })
+        yPosition += 10
+      }
+
+      // Check if we need a new page for SWOT
+      if (yPosition > pageHeight - 60) {
+        pdf.addPage()
+        yPosition = 25
+      }
+
+      // SWOT ANALYSIS SECTION
+      yPosition = addSectionHeader('SWOT ANALYSIS', yPosition, colors.white)
+
+      const swotData = (isDemoMode || bypassAPI) ? {
+        strengths: [
+          'Strong AI technology capabilities and proprietary algorithms',
+          'Experienced leadership team with proven track record',
+          'Established customer base with 95% retention rate',
+          'Solid financial position with 18-month runway'
+        ],
+        weaknesses: [
+          'Limited presence in target Southeast Asian markets',
+          'Dependency on key technical personnel',
+          'High customer acquisition costs in new markets'
+        ],
+        opportunities: [
+          'Rapidly growing AI market with 200% YoY growth potential',
+          'Untapped Southeast Asian markets',
+          'Strategic partnerships with Fortune 500 companies',
+          'ESG compliance creating competitive advantage'
+        ],
+        threats: [
+          'Supply chain vulnerabilities affecting Q2 delivery',
+          'Regulatory uncertainties in target markets',
+          'Intense competition for AI/ML talent',
+          'Economic uncertainties affecting investment'
+        ]
+      } : results?.analysis?.swot_analysis || results?.swot_analysis || {
+        strengths: [],
+        weaknesses: [],
+        opportunities: [],
+        threats: []
+      }
+
+      // SWOT Matrix Layout (2x2 grid)
+      const swotSections = [
+        { title: 'STRENGTHS', items: swotData.strengths, color: colors.success, bgColor: [240, 253, 244] },
+        { title: 'WEAKNESSES', items: swotData.weaknesses, color: colors.danger, bgColor: [254, 242, 242] },
+        { title: 'OPPORTUNITIES', items: swotData.opportunities, color: colors.primary, bgColor: [239, 246, 255] },
+        { title: 'THREATS', items: swotData.threats, color: colors.warning, bgColor: [255, 251, 235] }
+      ]
+
+      // SWOT sections with proper text wrapping (no truncation)
+      swotSections.forEach(section => {
+        if (yPosition > pageHeight - 40) {
+          pdf.addPage()
+          yPosition = 25
+        }
+
+        // Section header
+        pdf.setFillColor(section.color[0], section.color[1], section.color[2])
+        pdf.setDrawColor(section.color[0], section.color[1], section.color[2])
+        pdf.roundedRect(margin, yPosition - 3, contentWidth, 12, 2, 2, 'F')
+
+        pdf.setTextColor(255, 255, 255)
+        pdf.setFontSize(12)
+        pdf.setFont('helvetica', 'bold')
+        pdf.text(section.title, margin + 5, yPosition + 5)
+
+        yPosition += 15
+
+        // Section content with proper wrapping
+        pdf.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+        pdf.setFontSize(10)
+        pdf.setFont('helvetica', 'normal')
+
+        if (section.items && section.items.length > 0) {
+          section.items.forEach(item => {
+            if (yPosition > pageHeight - 20) {
+              pdf.addPage()
+              yPosition = 25
+            }
+            const itemText = typeof item === 'string' ? item : item.text || item.description || String(item)
+            yPosition = addTextWithWrap(`• ${itemText}`, margin + 5, yPosition, contentWidth - 10, 5)
+            yPosition += 3
+          })
+        } else {
+          pdf.setTextColor(colors.textLight[0], colors.textLight[1], colors.textLight[2])
+          yPosition = addTextWithWrap('• No items identified', margin + 5, yPosition, contentWidth - 10, 5)
+        }
+        yPosition += 10
+      })
+
+      // Check if we need a new page for Analysis section
+      if (yPosition > pageHeight - 60) {
+        pdf.addPage()
+        yPosition = 25
+      }
+
+      // KEY INSIGHTS & ANALYSIS SECTION
+      yPosition = addSectionHeader('KEY INSIGHTS & ANALYSIS', yPosition, colors.white)
+
+      // Key Points Subsection
+      const keyPoints = (isDemoMode || bypassAPI) ? [
+        'Market penetration strategy targets 200% YoY growth in Southeast Asia',
+        'AI-powered analytics platform provides competitive differentiation',
+        'Strong financial position with 18-month operational runway',
+        'Customer retention rate of 95% demonstrates product-market fit',
+        'ESG compliance initiative reduces carbon footprint by 60%',
+        'Strategic partnerships with Fortune 500 companies accelerate growth',
+        'Q3 2024 product launch timeline aligns with market demand',
+        'Operational efficiency improved by 30% through automation'
+      ] : results?.analysis?.key_points || []
+
+      if (keyPoints && keyPoints.length > 0) {
+        // Key Points header
+        pdf.setFillColor(240, 253, 244) // Green-50
+        pdf.setDrawColor(34, 197, 94) // Green-500
+        pdf.roundedRect(margin, yPosition, contentWidth, 10, 2, 2, 'FD')
+
+        pdf.setTextColor(34, 197, 94)
+        pdf.setFontSize(12)
+        pdf.setFont('helvetica', 'bold')
+        pdf.text('Strategic Insights', margin + 5, yPosition + 7)
+
+        yPosition += 18
+
+        // Key points with enhanced formatting
+        keyPoints.forEach((point, index) => {
+          if (yPosition > pageHeight - 25) {
+            pdf.addPage()
+            yPosition = 25
+          }
+
+          // Point number circle
+          pdf.setFillColor(34, 197, 94)
+          pdf.circle(margin + 8, yPosition - 2, 3, 'F')
+
+          pdf.setTextColor(255, 255, 255)
+          pdf.setFontSize(8)
+          pdf.setFont('helvetica', 'bold')
+          const numberText = (index + 1).toString()
+          const textWidth = pdf.getTextWidth(numberText)
+          const circleX = margin + 8
+          const circleY = yPosition - 2
+          const centeredX = circleX - (textWidth / 2)
+          const centeredY = circleY + 1  // Adjust this value to center vertically
+          pdf.text(numberText, centeredX, centeredY)
+          // Point text
+          pdf.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+          pdf.setFontSize(10)
+          pdf.setFont('helvetica', 'normal')
+          const pointText = typeof point === 'string' ? point : point.text || point.description || String(point)
+          yPosition = addTextWithWrap(pointText, margin + 15, yPosition, contentWidth - 25, 5)
+          yPosition += 8
+        })
+        yPosition += 10
+      }
+
+      // Risk Flags Subsection
+      const riskFlags = (isDemoMode || bypassAPI) ? [
+        'Supply chain vulnerabilities may impact Q2 delivery timelines',
+        'Regulatory uncertainties in target markets require monitoring',
+        'High competition for AI/ML talent may affect hiring goals',
+        'Economic uncertainties could impact customer spending patterns'
+      ] : results?.analysis?.risk_flags || []
+
+      if (riskFlags && riskFlags.length > 0) {
+        if (yPosition > pageHeight - 40) {
+          pdf.addPage()
+          yPosition = 25
+        }
+
+        // Risk Flags header
+        pdf.setFillColor(254, 242, 242) // Red-50
+        pdf.setDrawColor(239, 68, 68) // Red-500
+        pdf.roundedRect(margin, yPosition, contentWidth, 10, 2, 2, 'FD')
+
+        pdf.setTextColor(239, 68, 68)
+        pdf.setFontSize(12)
+        pdf.setFont('helvetica', 'bold')
+        pdf.text('Risk Assessment', margin + 5, yPosition + 7)
+
+        yPosition += 18
+
+        // Risk flags with enhanced formatting
+        riskFlags.forEach((risk, index) => {
+          if (yPosition > pageHeight - 25) {
+            pdf.addPage()
+            yPosition = 25
+          }
+
+          // Point number circle
+          pdf.setFillColor(239, 68, 68)
+          pdf.circle(margin + 8, yPosition - 2, 3, 'F')
+
+          pdf.setTextColor(255, 255, 255)
+          pdf.setFontSize(8)
+          pdf.setFont('helvetica', 'bold')
+          const numberText = (index + 1).toString()
+          const textWidth = pdf.getTextWidth(numberText)
+          const circleX = margin + 8
+          const circleY = yPosition - 2
+          const centeredX = circleX - (textWidth / 2)
+          const centeredY = circleY + 1  // Adjust this value to center vertically
+          pdf.text(numberText, centeredX, centeredY)
+          // Point text
+          pdf.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+          pdf.setFontSize(10)
+          pdf.setFont('helvetica', 'normal')
+          const riskText = typeof risk === 'string' ? risk : risk.text || risk.description || String(risk)
+          yPosition = addTextWithWrap(riskText, margin + 15, yPosition, contentWidth - 25, 5)
+          yPosition += 8
+        })
+        yPosition += 10
+      }
+
+      // Enhanced Footer for all pages
+      const pageCount = pdf.internal.getNumberOfPages()
+      for (let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i)
+
+        // Footer background
+        pdf.setFillColor(248, 250, 252) // Gray-50
+        pdf.rect(0, pageHeight - 15, pageWidth, 15, 'F')
+
+        // Footer divider line
+        pdf.setDrawColor(209, 213, 219) // Gray-300
+        pdf.setLineWidth(0.5)
+        pdf.line(0, pageHeight - 15, pageWidth, pageHeight - 15)
+
+        // Footer content
+        pdf.setTextColor(107, 114, 128) // Gray-500
+        pdf.setFontSize(8)
+        pdf.setFont('helvetica', 'normal')
+
+        // Left side - Company info
+        pdf.text('Generated by Elva*', margin, pageHeight - 8)
+
+        // Center - Document info
+        const centerText = `${results?.filename || file?.name || 'Document'} | ${new Date().toLocaleDateString()}`
+        const centerX = pageWidth / 2 - (pdf.getTextWidth(centerText) / 2)
+        pdf.text(centerText, centerX, pageHeight - 8)
+
+        // Right side - Page info
+        const pageText = `Page ${i} of ${pageCount}`
+        pdf.text(pageText, pageWidth - margin - pdf.getTextWidth(pageText), pageHeight - 8)
+      }
+
+      // Save the PDF with timestamp
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-')
+      const baseFileName = (results?.filename || file?.name || 'document').replace(/\.[^/.]+$/, '')
+      const fileName = `${baseFileName}_analysis_report_${timestamp}.pdf`
+      pdf.save(fileName)
+
+    } catch (error) {
+      console.error('Error generating PDF:', error)
+      alert('Failed to generate PDF. Please try again.')
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   // Mock document text for demo mode
@@ -231,16 +681,30 @@ This business plan effectively balances growth ambitions with comprehensive risk
             </div>
           </div>
 
-          {/* RIGHT SIDE (document viewer) */}
-          {/* {hasDocumentViewer && (
-            <div className="flex justify-end">
-              <div className="flex items-center gap-1 bg-white dark:bg-black rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
-                <FileText className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
-                <span className="hidden sm:inline">{isPDF ? 'PDF Viewer' : 'DOCX Viewer'}</span>
-                <span className="sm:hidden">{isPDF ? 'PDF' : 'DOCX'}</span>
-              </div>
-            </div>
-          )} */}
+          {/* RIGHT SIDE - Export Button */}
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportToPDF}
+              disabled={isExporting || (!results?.analysis && !isDemoMode && !bypassAPI)}
+              className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 hover:text-white shadow-lg hover:shadow-xl transition-all duration-200 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm"
+            >
+              {isExporting ? (
+                <>
+                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span className="hidden sm:inline">Exporting...</span>
+                  <span className="sm:hidden">Exporting</span>
+                </>
+              ) : (
+                <>
+                  <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Export PDF</span>
+                  <span className="sm:hidden">PDF</span>
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -353,21 +817,21 @@ This business plan effectively balances growth ambitions with comprehensive risk
               </TabsContent>
             )}
 
-            <TabsContent value="swot" className="h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter">  
-                  <SWOTAnalysis
-                    swot={
-                      isDemoMode || bypassAPI 
-                        ? undefined // Let component use mock data
-                        : results?.analysis?.swot_analysis || results?.swot_analysis || {
-                            strengths: [],
-                            weaknesses: [],
-                            opportunities: [],
-                            threats: []
-                          }
+            <TabsContent value="swot" className="h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter">
+              <SWOTAnalysis
+                swot={
+                  isDemoMode || bypassAPI
+                    ? undefined // Let component use mock data
+                    : results?.analysis?.swot_analysis || results?.swot_analysis || {
+                      strengths: [],
+                      weaknesses: [],
+                      opportunities: [],
+                      threats: []
                     }
-                    isDemoMode={isDemoMode}
-                    bypassAPI={bypassAPI}
-                  />  
+                }
+                isDemoMode={isDemoMode}
+                bypassAPI={bypassAPI}
+              />
             </TabsContent>
 
             {/* AI Analysis Summary Tab */}
@@ -385,9 +849,9 @@ This business plan effectively balances growth ambitions with comprehensive risk
                         </CardTitle>
                         <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
                           Summary by <span className="text-center inline-block font-bold">
-                  Elva
-                  <span className="text-red-500">*</span>
-                </span>
+                            Elva
+                            <span className="text-red-500">*</span>
+                          </span>
                         </p>
                       </div>
                     </div>
