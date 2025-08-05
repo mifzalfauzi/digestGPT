@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useParams, useNavigate } from "react-router-dom"
 import axios from "axios"
 import { useAuth } from "../contexts/AuthContext"
 import ModernSidebar from "./ModernSidebar"
@@ -9,6 +10,7 @@ import ModernChatPanel from "./ModernChatPanel"
 import EnhancedDocumentViewer from "./EnhancedDocumentViewer"
 import UsageDashboard from "./dashboard/UsageDashboard"
 import HistoryDrawer from "./HistoryDrawer"
+import DocumentCache from "../utils/documentCache"
 import { Button } from "./ui/button"
 import { Menu, X, MessageCircle, FileText, Eye, GripVertical, Sparkles, Zap, AlertTriangle, LogOut, TrendingUp } from "lucide-react"
 import { Card, CardContent } from "./ui/card"
@@ -16,6 +18,10 @@ import { Alert, AlertDescription } from "./ui/alert"
 import { Spinner } from "./ui/spinner"
 
 function Assistant() {
+  // URL parameters and navigation
+  const { documentId: urlDocumentId, collectionId: urlCollectionId } = useParams()
+  const navigate = useNavigate()
+  
   // Auth context
   const {
     user,
@@ -28,9 +34,36 @@ function Assistant() {
     isAuthenticated
   } = useAuth()
 
+  // Initialize state from cache or defaults - MUST be defined before state initialization
+  const cachedState = DocumentCache.getCachedAppState()
+  const hasUrlParams = urlDocumentId || urlCollectionId
+  
+  // Determine initial currentView
+  const getInitialCurrentView = () => {
+    if (hasUrlParams) {
+      return "workspace" // Always start with workspace when URL has doc/collection params
+    }
+    // If no URL params, always show upload view regardless of cache
+    return "upload"
+  }
+  
+  // Determine initial activePanel  
+  const getInitialActivePanel = () => {
+    return cachedState?.activePanel || "chat"
+  }
+  
+  // Determine initial selectedDocumentId
+  const getInitialSelectedDocumentId = () => {
+    if (hasUrlParams) {
+      // Always prioritize URL document ID over cached state to prevent mismatch
+      return urlDocumentId || null
+    }
+    return cachedState?.selectedDocumentId || null
+  }
+
   // Multi-document state
   const [documents, setDocuments] = useState([])
-  const [selectedDocumentId, setSelectedDocumentId] = useState(null)
+  const [selectedDocumentId, setSelectedDocumentId] = useState(getInitialSelectedDocumentId())
   const [uploadingDocuments, setUploadingDocuments] = useState([])
 
   // Document history state
@@ -46,7 +79,8 @@ function Assistant() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [inputMode, setInputMode] = useState("file") // 'file' or 'text'
-  const [currentView, setCurrentView] = useState("upload") // 'upload', 'workspace', or 'casual-chat'
+  
+  const [currentView, setCurrentView] = useState(getInitialCurrentView()) // 'upload', 'workspace', or 'casual-chat'
   const [chatSetInputMessage, setChatSetInputMessage] = useState(null)
   const [isDemoMode, setIsDemoMode] = useState(false)
   const [bypassAPI, setBypassAPI] = useState(false)
@@ -61,48 +95,74 @@ function Assistant() {
   // Chat loading history state - shared between chat panel and sidebar
   const [isChatLoadingHistory, setIsChatLoadingHistory] = useState(false)
 
+  // Document switching coordination state
+  const [isDocumentSwitching, setIsDocumentSwitching] = useState(false)
+  const documentSwitchAbortController = useRef(null)
+
   // Change state to historicalCollections
   const [historicalCollections, setHistoricalCollections] = useState([])
   const [selectedHistoricalCollection, setSelectedHistoricalCollection] = useState(null)
   const [selectedHistoricalDocuments, setSelectedHistoricalDocuments] = useState([])
 
-  // Load historical documents when component mounts
+  // Load historical documents when component mounts with caching
   useEffect(() => {
     if (isAuthenticated && user) {
       const loadAllHistoricalData = async () => {
         setIsLoadingHistory(true);
+        
+        // Check for cached data first
+        const cachedDocuments = DocumentCache.getCachedDocuments();
+        const cachedCollections = DocumentCache.getCachedCollections();
+        const isCacheExpired = DocumentCache.isCacheExpired();
+        
+        // Load cached data immediately if available
+        if (cachedDocuments && !isCacheExpired) {
+          console.log('Loading cached documents:', cachedDocuments.length);
+          setHistoricalDocuments(cachedDocuments);
+        }
+        
+        if (cachedCollections && !isCacheExpired) {
+          console.log('Loading cached collections:', cachedCollections.length);
+          setHistoricalCollections(cachedCollections);
+        }
+        
+        // If we have cached data and it's not expired, set loading to false
+        // We'll still fetch fresh data in the background
+        if (cachedDocuments && cachedCollections && !isCacheExpired) {
+          setIsLoadingHistory(false);
+        }
+        
         try {
-          // Load both documents and collections in parallel
+          // Always fetch fresh data (either immediately or in background)
+          console.log('Fetching fresh historical data...');
           const [docsResponse, collectionsResponse] = await Promise.all([
             axios.get('http://localhost:8000/documents/', {
-              // headers: {
-              //   'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}`
-              // },
-              withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
+              withCredentials: true,
               params: {
                 skip: 0,
                 limit: 50
               }
             }),
             axios.get('http://localhost:8000/collections/', {
-              // headers: { 'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}` },
-              withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
+              withCredentials: true,
               params: { skip: 0, limit: 50 }
             })
           ]);
 
-          // Process documents
+          // Process fresh documents
+          let freshDocuments = [];
           if (docsResponse.data?.documents) {
-            setHistoricalDocuments(docsResponse.data.documents);
+            freshDocuments = docsResponse.data.documents;
+            setHistoricalDocuments(freshDocuments);
+            DocumentCache.cacheDocuments(freshDocuments);
           }
 
-          // Process collections with their documents
+          // Process fresh collections with their documents
           if (collectionsResponse.data) {
             const fullCollections = await Promise.all(collectionsResponse.data.map(async (col) => {
               try {
                 const detailRes = await axios.get(`http://localhost:8000/collections/${col.id}`, {
-                  // headers: { 'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}` }
-                  withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
+                  withCredentials: true,
                 });
                 return { ...col, documents: detailRes.data.documents || [] };
               } catch (error) {
@@ -111,14 +171,21 @@ function Assistant() {
               }
             }));
             setHistoricalCollections(fullCollections);
-            console.log('Loaded historical collections with docs:', fullCollections);
+            DocumentCache.cacheCollections(fullCollections);
+            console.log('Fresh historical collections loaded and cached:', fullCollections.length);
           }
         } catch (error) {
           console.error('Error loading historical data:', error);
           if (error.response?.status === 401) {
             logout();
           }
+          // If fresh fetch fails but we have cached data, still show cached data
+          if (!cachedDocuments && !cachedCollections) {
+            // Only show error if we have no cached fallback
+            setIsLoadingHistory(false);
+          }
         } finally {
+          // Always set loading to false when done
           setIsLoadingHistory(false);
         }
       };
@@ -127,23 +194,168 @@ function Assistant() {
     }
   }, [isAuthenticated, user])
 
+  // Track which URL has been processed to prevent infinite loops
+  const processedUrlRef = useRef(null)
 
+  // Clear processed URL when URL parameters change
+  useEffect(() => {
+    processedUrlRef.current = null
+  }, [urlDocumentId, urlCollectionId])
 
-  // Function to load a historical document's full data
-  const loadHistoricalDocument = async (documentId) => {
+  // Handle URL parameters after historical data is loaded
+  useEffect(() => {
+    const handleUrlParameters = async () => {
+      // Only proceed if authenticated and not loading historical data
+      if (!isAuthenticated || isLoadingHistory) return
+      
+      // Skip if no URL parameters
+      if (!urlDocumentId && !urlCollectionId) return
+
+      // Prevent processing if we're already switching documents
+      if (isDocumentSwitching) return
+
+      // Create a unique identifier for this URL state
+      const currentUrlState = `${urlDocumentId || 'none'}-${urlCollectionId || 'none'}`
+      
+      // Skip if we've already processed this URL state
+      if (processedUrlRef.current === currentUrlState) {
+        return
+      }
+
+      try {
+        if (urlDocumentId) {
+          console.log('Loading document from URL:', urlDocumentId)
+          
+          // Check if this document is already selected and processed
+          if (selectedDocumentId === urlDocumentId && processedUrlRef.current) {
+            console.log('Document already selected and processed:', urlDocumentId)
+            return
+          }
+
+          // Mark this URL state as being processed
+          processedUrlRef.current = currentUrlState
+          
+          // Try to load the collection if the document belongs to one
+          const collection = await loadCollectionByDocument(urlDocumentId)
+          
+          if (collection) {
+            // Document is part of a collection - load all collection documents
+            console.log('Document belongs to collection:', collection.name)
+            setSelectedHistoricalCollection(collection)
+            setSelectedHistoricalDocuments(collection.documents || [])
+          } else {
+            // Individual document
+            console.log('Individual document')
+            setSelectedHistoricalCollection(null)
+            setSelectedHistoricalDocuments([])
+          }
+          
+          // Load the document - try historical documents first, then load directly
+          let doc = historicalDocuments.find(d => d.id === urlDocumentId)
+          if (!doc) {
+            console.log('Document not found in historical documents, loading directly')
+            // If not found in historical documents, try loading directly
+            doc = await loadHistoricalDocument(urlDocumentId)
+          }
+          
+          if (doc) {
+            await selectDocument(urlDocumentId, doc)
+            // Set workspace view and chat panel for refresh continuity
+            setCurrentView("workspace")
+            setActivePanel("chat")
+            console.log('Document loaded from URL, setting workspace view')
+          } else {
+            console.error('Document not found:', urlDocumentId)
+          }
+        } else if (urlCollectionId) {
+          console.log('Loading collection from URL:', urlCollectionId)
+          
+          // Load collection and its documents
+          const collection = historicalCollections.find(c => c.id === urlCollectionId)
+          if (collection && collection.documents && collection.documents.length > 0) {
+            setSelectedHistoricalCollection(collection)
+            setSelectedHistoricalDocuments(collection.documents)
+            
+            // Select the first document in the collection
+            const firstDoc = collection.documents[0]
+            await selectDocument(firstDoc.id, firstDoc)
+            // Set workspace view and chat panel for refresh continuity
+            setCurrentView("workspace")
+            setActivePanel("chat")
+            console.log('Collection loaded from URL, setting workspace view')
+          } else {
+            console.error('Collection not found or has no documents:', urlCollectionId)
+          }
+        }
+      } catch (error) {
+        console.error('Error handling URL parameters:', error)
+      }
+    }
+
+    handleUrlParameters()
+  }, [urlDocumentId, urlCollectionId, isAuthenticated, isLoadingHistory, historicalDocuments, historicalCollections, isDocumentSwitching])
+
+  // Function to load a historical document's full data with caching
+  const loadHistoricalDocument = async (documentId, useCache = true) => {
+    if (!isAuthenticated) {
+      console.error('User not authenticated')
+      return null
+    }
+
+    // Check cache first if requested
+    if (useCache) {
+      const cachedDoc = DocumentCache.getCachedDocument(documentId)
+      if (cachedDoc) {
+        console.log('Using cached document:', documentId)
+        // Still fetch fresh data in background to keep cache updated
+        loadHistoricalDocument(documentId, false).catch(console.error)
+        return cachedDoc
+      }
+    }
+
+    try {
+      console.log(`Fetching ${useCache ? 'fresh' : 'background'} document:`, documentId)
+      const response = await axios.get(`http://localhost:8000/documents/${documentId}`, {
+        withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
+        signal: documentSwitchAbortController.current?.signal,
+        timeout: 30000 // 30 second timeout to prevent hanging
+      })
+
+      // Cache the fresh data
+      DocumentCache.cacheDocument(documentId, response.data)
+      return response.data
+    } catch (error) {
+      if (error.name === 'AbortError' || error.code === 'ABORT_ERR') {
+        console.log('Document loading aborted for:', documentId)
+        return null
+      }
+      console.error('Error loading historical document:', error)
+      if (error.response?.status === 401) {
+        logout()
+      }
+      throw error
+    }
+  }
+
+  // Function to load collection by document ID
+  const loadCollectionByDocument = async (documentId) => {
     if (!isAuthenticated) {
       console.error('User not authenticated')
       return null
     }
 
     try {
-      const response = await axios.get(`http://localhost:8000/documents/${documentId}`, {
-        withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
+      const response = await axios.get(`http://localhost:8000/collections/by-document/${documentId}`, {
+        withCredentials: true,
       })
 
       return response.data
     } catch (error) {
-      console.error('Error loading historical document:', error)
+      console.error('Error loading collection by document:', error)
+      if (error.response?.status === 404) {
+        // Document is not part of a collection
+        return null
+      }
       if (error.response?.status === 401) {
         logout()
       }
@@ -238,7 +450,7 @@ function Assistant() {
   const currentDocument = selectedDocument?.filename || (isDemoMode ? "Demo Business Plan.pdf" : bypassAPI ? "Preview Document.pdf" : null)
 
   // Get the current collection ID if the selected document is part of a collection
-  const currentCollectionId = selectedDocument?.collectionId || null
+  const currentCollectionId = urlCollectionId || selectedHistoricalCollection?.id || selectedDocument?.collectionId || null
 
   // Helper function to ensure document has text data
   const ensureDocumentText = async (documentId) => {
@@ -322,7 +534,7 @@ function Assistant() {
 
   // Responsive state
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [activePanel, setActivePanel] = useState("chat") // 'chat' or 'document' for mobile
+  const [activePanel, setActivePanel] = useState(getInitialActivePanel()) // 'chat' or 'document' for mobile
 
   // Sidebar collapse state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -334,6 +546,16 @@ function Assistant() {
   const [collectionName, setCollectionName] = useState("")
   const [collections, setCollections] = useState([])
   const [expandedCollections, setExpandedCollections] = useState(new Set())
+
+  // Persist app state changes - MUST be after all state is defined
+  useEffect(() => {
+    const stateToCache = {
+      currentView,
+      activePanel,
+      selectedDocumentId
+    }
+    DocumentCache.cacheAppState(stateToCache)
+  }, [currentView, activePanel, selectedDocumentId])
 
   // Document management functions
   const generateDocumentId = () => `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -375,11 +597,25 @@ function Assistant() {
 
   // Enhanced selectDocument function to handle both current session and historical documents
   const selectDocument = async (documentId, historicalDocument = null) => {
+    // Prevent concurrent document switches
+    if (isDocumentSwitching) {
+      console.log('Document switch already in progress, ignoring request for:', documentId)
+      return
+    }
+
+    // Cancel any previous document loading
+    if (documentSwitchAbortController.current) {
+      documentSwitchAbortController.current.abort()
+    }
+    documentSwitchAbortController.current = new AbortController()
+
+    setIsDocumentSwitching(true)
     setSelectedDocumentId(documentId)
     setError("")
 
-    // Check if it's a current session document
-    const currentDoc = documents.find(d => d.id === documentId)
+    try {
+      // Check if it's a current session document
+      const currentDoc = documents.find(d => d.id === documentId)
 
     if (currentDoc) {
       // Handle current session document
@@ -402,8 +638,8 @@ function Assistant() {
 
         // Check if document data was loaded successfully
         if (!fullDocumentData) {
-          console.error('Failed to load document data - received null response')
-          setError('Failed to load document. Please try again.')
+          console.log('Document loading was cancelled or failed')
+          // Don't set error if it was just cancelled/aborted
           return
         }
 
@@ -610,6 +846,14 @@ function Assistant() {
       setSidebarOpen(false)
       setActivePanel("chat")
     } // No else branch to preserve current activePanel
+
+    } catch (error) {
+      console.error('Error in selectDocument:', error)
+      setError('Failed to select document. Please try again.')
+    } finally {
+      // Always reset the switching state
+      setIsDocumentSwitching(false)
+    }
   }
 
   const removeDocument = (documentId) => {
@@ -1544,7 +1788,7 @@ This business plan effectively balances ambitious growth objectives with compreh
               documents={documents}
               selectedDocumentId={selectedDocumentId}
               isChatLoadingHistory={isChatLoadingHistory}
-              // isChatLoadingHistory={isChatLoadingHistory}
+              isDocumentSwitching={isDocumentSwitching}
               onSelectDocument={selectDocument}
               onRemoveDocument={removeDocument}
               collections={collections}
@@ -1556,13 +1800,9 @@ This business plan effectively balances ambitious growth objectives with compreh
               selectedHistoricalCollection={selectedHistoricalCollection}
               historicalDocuments={selectedHistoricalDocuments}
               onSelectHistoricalDocument={async (docId, doc, collection = null) => {
-                if (collection) {
-                  setSelectedHistoricalCollection(collection)
-                  setSelectedHistoricalDocuments(collection.documents || [])
-                } else {
-                  setSelectedHistoricalCollection(null)
-                  setSelectedHistoricalDocuments([])
-                }
+                // Always navigate to the specific document URL, regardless of collection
+                // The URL handler will properly set up collection state if the document belongs to one
+                navigate(`/assistant/document/${docId}`)
                 await selectDocument(docId, doc)
               }}
               onClearHistoricalCollection={() => {
@@ -1717,6 +1957,9 @@ This business plan effectively balances ambitious growth objectives with compreh
                     collectionName={collectionName}
                     setCollectionName={setCollectionName}
                     handleCollectionUpload={handleCollectionUpload}
+                    // Analysis state
+                    hasAnalyzingDocuments={hasAnalyzingDocuments}
+                    analyzingCount={analyzingCount}
                   />
                 </div>
 
@@ -1762,6 +2005,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                   onCasualChat={handleCasualChat}
                   documents={documents}
                   isChatLoadingHistory={isChatLoadingHistory}
+                  isDocumentSwitching={isDocumentSwitching}
                   selectedDocumentId={selectedDocumentId}
                   onSelectDocument={selectDocument}
                   onRemoveDocument={removeDocument}
@@ -1775,11 +2019,15 @@ This business plan effectively balances ambitious growth objectives with compreh
                   historicalDocuments={selectedHistoricalDocuments}
                   onSelectHistoricalDocument={async (docId, doc, collection = null) => {
                     if (collection) {
+                      // Document is from a collection - set collection state and navigate to collection URL
                       setSelectedHistoricalCollection(collection)
                       setSelectedHistoricalDocuments(collection.documents || [])
+                      navigate(`/assistant/collection/${collection.id}`)
                     } else {
+                      // Individual document - clear collection state and navigate to individual document URL
                       setSelectedHistoricalCollection(null)
                       setSelectedHistoricalDocuments([])
+                      navigate(`/assistant/document/${docId}`)
                     }
                     await selectDocument(docId, doc)
                   }}
@@ -1812,6 +2060,7 @@ This business plan effectively balances ambitious growth objectives with compreh
               documents={documents}
               selectedDocumentId={selectedDocumentId}
               isChatLoadingHistory={isChatLoadingHistory}
+              isDocumentSwitching={isDocumentSwitching}
               onSelectDocument={selectDocument}
               onRemoveDocument={removeDocument}
               collections={collections}
@@ -1823,13 +2072,9 @@ This business plan effectively balances ambitious growth objectives with compreh
               selectedHistoricalCollection={selectedHistoricalCollection}
               historicalDocuments={selectedHistoricalDocuments}
               onSelectHistoricalDocument={async (docId, doc, collection = null) => {
-                if (collection) {
-                  setSelectedHistoricalCollection(collection)
-                  setSelectedHistoricalDocuments(collection.documents || [])
-                } else {
-                  setSelectedHistoricalCollection(null)
-                  setSelectedHistoricalDocuments([])
-                }
+                // Always navigate to the specific document URL, regardless of collection
+                // The URL handler will properly set up collection state if the document belongs to one
+                navigate(`/assistant/document/${docId}`)
                 await selectDocument(docId, doc)
               }}
               onClearHistoricalCollection={() => {
@@ -1912,11 +2157,15 @@ This business plan effectively balances ambitious growth objectives with compreh
                   historicalDocuments={selectedHistoricalDocuments}
                   onSelectHistoricalDocument={async (docId, doc, collection = null) => {
                     if (collection) {
+                      // Document is from a collection - set collection state and navigate to collection URL
                       setSelectedHistoricalCollection(collection)
                       setSelectedHistoricalDocuments(collection.documents || [])
+                      navigate(`/assistant/collection/${collection.id}`)
                     } else {
+                      // Individual document - clear collection state and navigate to individual document URL
                       setSelectedHistoricalCollection(null)
                       setSelectedHistoricalDocuments([])
+                      navigate(`/assistant/document/${docId}`)
                     }
                     await selectDocument(docId, doc)
                   }}
@@ -1949,6 +2198,7 @@ This business plan effectively balances ambitious growth objectives with compreh
               documents={documents}
               selectedDocumentId={selectedDocumentId}
               isChatLoadingHistory={isChatLoadingHistory}
+              isDocumentSwitching={isDocumentSwitching}
               onSelectDocument={selectDocument}
               onRemoveDocument={removeDocument}
               collections={collections}
@@ -1960,13 +2210,9 @@ This business plan effectively balances ambitious growth objectives with compreh
               selectedHistoricalCollection={selectedHistoricalCollection}
               historicalDocuments={selectedHistoricalDocuments}
               onSelectHistoricalDocument={async (docId, doc, collection = null) => {
-                if (collection) {
-                  setSelectedHistoricalCollection(collection)
-                  setSelectedHistoricalDocuments(collection.documents || [])
-                } else {
-                  setSelectedHistoricalCollection(null)
-                  setSelectedHistoricalDocuments([])
-                }
+                // Always navigate to the specific document URL, regardless of collection
+                // The URL handler will properly set up collection state if the document belongs to one
+                navigate(`/assistant/document/${docId}`)
                 await selectDocument(docId, doc)
               }}
               onClearHistoricalCollection={() => {
@@ -2066,7 +2312,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                       <div className="space-y-3">
                         <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Processing Document</h3>
                         <p className="text-lg text-gray-600 dark:text-gray-400">
-                          Analysis is in progress...
+                          Setting up environment...
                         </p>
 
                       </div>
@@ -2089,7 +2335,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                   </div>
                 ) : documentId ? (
                   <ModernChatPanel
-                    documentId={documentId}
+                    documentId={selectedDocumentId}
                     filename={enhancedResults?.filename || "Demo Document"}
                     onSetInputMessage={setChatSetInputMessage}
                     isDemoMode={isDemoMode}
@@ -2111,7 +2357,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                       <div className="space-y-3">
                         <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Processing Document</h3>
                         <p className="text-lg text-gray-600 dark:text-gray-400">
-                          Analysis in progress...
+                        Setting up environment...
                         </p>
 
                       </div>
@@ -2159,7 +2405,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                       <div className="space-y-4">
                         <h3 className="text-3xl font-bold text-gray-900 dark:text-white">Processing Document</h3>
                         <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed">
-                          Analysis is in progress...
+                          Setting up environment...
                         </p>
 
                       </div>
@@ -2182,7 +2428,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                   </div>
                 ) : documentId ? (
                   <ModernChatPanel
-                    documentId={documentId}
+                    documentId={selectedDocumentId}
                     filename={enhancedResults?.filename || "Demo Document"}
                     onSetInputMessage={setChatSetInputMessage}
                     isDemoMode={isDemoMode}
@@ -2206,7 +2452,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                       <div className="space-y-4">
                         <h3 className="text-3xl font-bold text-gray-900 dark:text-white">Processing Document</h3>
                         <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed">
-                          Analysis is in progress...
+                          Setting up environment...
                         </p>
                         {/* <div className="flex items-center justify-center gap-3 text-blue-600 dark:text-blue-400">
                           <Zap className="h-6 w-6" />
@@ -2359,15 +2605,9 @@ This business plan effectively balances ambitious growth objectives with compreh
         currentCollectionId={currentCollectionId}
         isLoadingHistory={isLoadingHistory}
         onSelectHistoricalDocument={async (docId, doc, collection = null) => {
-          if (collection) {
-            // Document is from a collection - set collection state
-            setSelectedHistoricalCollection(collection)
-            setSelectedHistoricalDocuments(collection.documents || [])
-          } else {
-            // Individual document - clear collection state
-            setSelectedHistoricalCollection(null)
-            setSelectedHistoricalDocuments([])
-          }
+          // Always navigate to the specific document URL, regardless of collection
+          // The URL handler will properly set up collection state if the document belongs to one
+          navigate(`/assistant/document/${docId}`)
           await selectDocument(docId, doc)
           setIsHistoryDrawerOpen(false)
         }}

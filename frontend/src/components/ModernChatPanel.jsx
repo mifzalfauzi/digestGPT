@@ -188,27 +188,26 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
         return
       }
 
+      // Store the current documentId to validate response
+      const currentDocumentId = documentId
+
       // Show loading state immediately and don't clear messages yet
       setIsLoadingHistory(true)
-      console.log('Loading chat history')
+      console.log('Loading chat history for document:', currentDocumentId)
 
       try {
-        // const token = localStorage.getItem('auth_token')
-        // if (!token) {
-        //   setMessages([])
-        //   setIsLoadingHistory(false)
-        //   return
-        // }
-
         const response = await axios.get(
-          `http://localhost:8000/chat/history/${documentId}`,
+          `http://localhost:8000/chat/history/${currentDocumentId}`,
           {
-            // headers: {
-            //   'Authorization': `Bearer ${token}`  
-            // }
             withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
           }
         )
+
+        // Validate that the response is for the current document
+        if (currentDocumentId !== documentId) {
+          console.log('Chat history response for outdated document, ignoring:', currentDocumentId, 'current:', documentId)
+          return
+        }
 
         if (response.data?.chat_history && response.data.chat_history.length > 0) {
           // Convert backend chat history to component message format

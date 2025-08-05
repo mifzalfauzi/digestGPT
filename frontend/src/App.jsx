@@ -69,6 +69,16 @@ function AppContent() {
             <Assistant />
           </ProtectedRoute>
         } />
+        <Route path="/assistant/document/:documentId" element={
+          <ProtectedRoute>
+            <Assistant />
+          </ProtectedRoute>
+        } />
+        <Route path="/assistant/collection/:collectionId" element={
+          <ProtectedRoute>
+            <Assistant />
+          </ProtectedRoute>
+        } />
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <Dashboard />

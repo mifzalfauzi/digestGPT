@@ -224,4 +224,71 @@ async def delete_collection(
     db.delete(collection)
     db.commit()
     
-    return {"message": "Collection deleted successfully"} 
+    return {"message": "Collection deleted successfully"}
+
+@router.get("/by-document/{document_id}", response_model=CollectionWithDocuments)
+async def get_collection_by_document(
+    document_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get collection that contains a specific document"""
+    
+    # Get document to find its collection
+    document = (
+        db.query(Document)
+        .filter(Document.id == document_id, Document.user_id == current_user.id)
+        .first()
+    )
+    
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+    
+    if not document.collection_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document is not part of a collection"
+        )
+        
+    # Get collection with its documents
+    collection = (
+        db.query(Collection)
+        .filter(Collection.id == document.collection_id, Collection.user_id == current_user.id)
+        .first()
+    )
+    
+    if not collection:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Collection not found"
+        )
+    
+    # Get all documents in this collection
+    documents = (
+        db.query(Document)
+        .filter(Document.collection_id == collection.id, Document.user_id == current_user.id)
+        .order_by(Document.uploaded_at.desc())
+        .all()
+    )
+    
+    document_list = []
+    for doc in documents:
+        document_list.append({
+            "id": doc.id,
+            "filename": doc.filename,
+            "filesize": doc.filesize,
+            "word_count": doc.word_count,
+            "summary": doc.summary[:200] + "..." if doc.summary and len(doc.summary) > 200 else doc.summary,
+            "uploaded_at": doc.uploaded_at.isoformat()
+        })
+    
+    return CollectionWithDocuments(
+        id=collection.id,
+        name=collection.name,
+        description=collection.description,
+        created_at=collection.created_at.isoformat(),
+        documents=document_list
+    ) 

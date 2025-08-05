@@ -29,6 +29,9 @@ const ModernUploadInterface = forwardRef(({
   collectionName,
   setCollectionName,
   handleCollectionUpload,
+  // Analysis state
+  hasAnalyzingDocuments = false,
+  analyzingCount = 0,
   // File input reset function
   onFileInputReset
 }, ref) => {
@@ -361,14 +364,16 @@ const ModernUploadInterface = forwardRef(({
                 <div className="relative group">
                   <div 
                     className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 touch-manipulation ${
-                      dragActive 
-                        ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-900/30 scale-[1.02] shadow-lg' 
-                        : 'border-slate-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 group-hover:bg-blue-50/30 dark:group-hover:bg-blue-900/10'
+                      loading || hasAnalyzingDocuments 
+                        ? 'border-gray-300 bg-gray-50/50 dark:bg-gray-800/50 opacity-60 cursor-not-allowed'
+                        : dragActive 
+                          ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-900/30 scale-[1.02] shadow-lg' 
+                          : 'border-slate-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 group-hover:bg-blue-50/30 dark:group-hover:bg-blue-900/10'
                     }`}
-                    onDragEnter={handleDragEnter}
-                    onDragLeave={handleDragLeave}
-                    onDragOver={handleDrag}
-                    onDrop={handleDrop}
+                    onDragEnter={loading || hasAnalyzingDocuments ? undefined : handleDragEnter}
+                    onDragLeave={loading || hasAnalyzingDocuments ? undefined : handleDragLeave}
+                    onDragOver={loading || hasAnalyzingDocuments ? undefined : handleDrag}
+                    onDrop={loading || hasAnalyzingDocuments ? undefined : handleDrop}
                   >
                     <Input
                       ref={fileInputRef}
@@ -377,8 +382,9 @@ const ModernUploadInterface = forwardRef(({
                       accept=".pdf"
                       onChange={handleFileChangeWithModal}
                       className="hidden"
+                      disabled={loading || hasAnalyzingDocuments}
                     />
-                    <label htmlFor="file-input" className="cursor-pointer block">
+                    <label htmlFor="file-input" className={`block ${loading || hasAnalyzingDocuments ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                       {file || stagedFiles.length > 0 ? (
                         <div className="space-y-4">
                           {/* Header with file count */}
@@ -514,6 +520,7 @@ const ModernUploadInterface = forwardRef(({
                     onChange={(e) => setCollectionName(e.target.value)}
                     placeholder="e.g., Marketing Plan Docs, Research Project A"
                     className="bg-white dark:bg-gray-700 border-slate-200 dark:border-gray-600 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-gray-400"
+                    disabled={loading || hasAnalyzingDocuments}
                   />
                   <p className="text-xs text-slate-500 dark:text-gray-400">
                     Give your collection a descriptive name
@@ -524,14 +531,16 @@ const ModernUploadInterface = forwardRef(({
                 <div className="relative group">
                   <div 
                     className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 touch-manipulation ${
-                      dragActive 
-                        ? 'border-purple-500 bg-purple-50/70 dark:bg-purple-900/30 scale-[1.02] shadow-lg' 
-                        : 'border-purple-300 dark:border-purple-600 hover:border-purple-400 dark:hover:border-purple-500 group-hover:bg-purple-50/30 dark:group-hover:bg-purple-900/10'
+                      loading || hasAnalyzingDocuments 
+                        ? 'border-gray-300 bg-gray-50/50 dark:bg-gray-800/50 opacity-60 cursor-not-allowed'
+                        : dragActive 
+                          ? 'border-purple-500 bg-purple-50/70 dark:bg-purple-900/30 scale-[1.02] shadow-lg' 
+                          : 'border-purple-300 dark:border-purple-600 hover:border-purple-400 dark:hover:border-purple-500 group-hover:bg-purple-50/30 dark:group-hover:bg-purple-900/10'
                     }`}
-                    onDragEnter={handleDragEnter}
-                    onDragLeave={handleDragLeave}
-                    onDragOver={handleDrag}
-                    onDrop={handleDrop}
+                    onDragEnter={loading || hasAnalyzingDocuments ? undefined : handleDragEnter}
+                    onDragLeave={loading || hasAnalyzingDocuments ? undefined : handleDragLeave}
+                    onDragOver={loading || hasAnalyzingDocuments ? undefined : handleDrag}
+                    onDrop={loading || hasAnalyzingDocuments ? undefined : handleDrop}
                   >
                     <Input
                       ref={collectionInputRef}
@@ -541,8 +550,9 @@ const ModernUploadInterface = forwardRef(({
                       multiple
                       onChange={handleFileChangeWithModal}
                       className="hidden"
+                      disabled={loading || hasAnalyzingDocuments}
                     />
-                    <label htmlFor="collection-input" className="cursor-pointer block">
+                    <label htmlFor="collection-input" className={`block ${loading || hasAnalyzingDocuments ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                       {stagedFiles.length > 0 ? (
                         <div className="space-y-4">
                           {/* Header with file count and clear button */}
@@ -654,6 +664,7 @@ const ModernUploadInterface = forwardRef(({
                     onChange={(e) => setTextInput(e.target.value)}
                     placeholder="Paste your document text here for instant analysis."
                     className="min-h-[200px] text-sm bg-white dark:bg-gray-700 border-slate-200 dark:border-gray-600 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-gray-400 rounded-xl resize-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
+                    disabled={loading || hasAnalyzingDocuments}
                   />
                   <div className="flex items-center justify-between text-xs text-slate-500 dark:text-gray-400">
                     <span>Maximum 50,000 characters</span>
@@ -668,16 +679,23 @@ const ModernUploadInterface = forwardRef(({
               <div className="mt-6 pt-4 border-slate-200/50 dark:border-gray-700/50">
                 <Button 
                   type="submit" 
-                  disabled={loading || 
+                  disabled={loading || hasAnalyzingDocuments ||
                     (inputMode === 'file' && !file && stagedFiles.length === 0) || 
                     (inputMode === 'collection' && (stagedFiles.length === 0 || !collectionName?.trim())) || 
                     (inputMode === 'text' && !textInput.trim())}
                   className="w-full h-12 dark:bg-white dark:hover:bg-[#1f1f1f] dark:hover:text-white text-black text-base font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 touch-manipulation"
                 >
-                  {loading ? (
+                  {loading || hasAnalyzingDocuments ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      <span>Analyzing Document...</span>
+                      <span>
+                        {loading && !hasAnalyzingDocuments
+                          ? 'Loading Document...'
+                          : hasAnalyzingDocuments 
+                            ? `Analyzing ${analyzingCount} Document${analyzingCount > 1 ? 's' : ''}...`
+                            : 'Analyzing Document...'
+                        }
+                      </span>
                       <span className="ml-2 px-2 py-1 bg-white/20 rounded text-xs">
                         Please wait
                       </span>

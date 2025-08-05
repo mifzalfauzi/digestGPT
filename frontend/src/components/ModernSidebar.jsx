@@ -40,7 +40,8 @@ function ModernSidebar({
   onSelectHistoricalDocument = () => { },
   onClearHistoricalCollection = () => { },
   // Chat loading state
-  isChatLoadingHistory = false
+  isChatLoadingHistory = false,
+  isDocumentSwitching = false
 }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isUsageDashboardOpen, setIsUsageDashboardOpen] = useState(false)
@@ -50,6 +51,9 @@ function ModernSidebar({
   const { user, usage, getUsagePercentages, logout, loading_logout } = useAuth()
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const dropdownRef = useRef(null)
+
+  // Combined loading state for document switching
+  const isDocumentLoadingOrSwitching = isChatLoadingHistory || isDocumentSwitching
 
   const planIcons = {
     free: <Zap className="h-4 w-4" />,
@@ -78,13 +82,13 @@ function ModernSidebar({
   }, [])
 
   useEffect(() => {
-    if (isChatLoadingHistory) {
+    if (isDocumentLoadingOrSwitching) {
       setShowLoadingOverlay(true)
     } else {
       const timeout = setTimeout(() => setShowLoadingOverlay(false), 1800) // 1100ms delay
       return () => clearTimeout(timeout)
     }
-  }, [isChatLoadingHistory])
+  }, [isDocumentLoadingOrSwitching])
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -363,9 +367,9 @@ function ModernSidebar({
         {/* Active Document/Collection Section - Responsive */}
         {(selectedDocumentId || selectedHistoricalCollection) && (
           <div
-            className={`space-y-2 relative ${isChatLoadingHistory ? 'pointer-events-none' : ''}`}
+            className={`space-y-2 relative ${isDocumentLoadingOrSwitching ? 'pointer-events-none' : ''}`}
             onClickCapture={(e) => {
-              if (isChatLoadingHistory) {
+              if (isDocumentLoadingOrSwitching) {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
@@ -428,9 +432,9 @@ function ModernSidebar({
                         {/* Collection Documents - Always Visible on Mobile */}
                         {isExpanded && !collapsed && (
                           <div
-                            className={`ml-2 sm:ml-4 space-y-1 relative ${isChatLoadingHistory ? 'pointer-events-none select-none' : ''}`}
+                            className={`ml-2 sm:ml-4 space-y-1 relative ${isDocumentLoadingOrSwitching ? 'pointer-events-none select-none' : ''}`}
                             onClickCapture={(e) => {
-                              if (isChatLoadingHistory) {
+                              if (isDocumentLoadingOrSwitching) {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 e.stopImmediatePropagation();
@@ -438,7 +442,7 @@ function ModernSidebar({
                                 return false;
                               }
                             }}
-                            style={isChatLoadingHistory ? { pointerEvents: 'none !important' } : {}}
+                            style={isDocumentLoadingOrSwitching ? { pointerEvents: 'none !important' } : {}}
                           >
                             {/* Loading overlay for documents during chat history loading */}
                             {showLoadingOverlay && (
@@ -458,7 +462,7 @@ function ModernSidebar({
                                 key={doc.id}
                                 onClick={(e) => {
                                   // Immediate check and block if loading
-                                  if (isChatLoadingHistory) {
+                                  if (isDocumentLoadingOrSwitching) {
                                     e.preventDefault()
                                     e.stopPropagation()
                                     e.stopImmediatePropagation()
@@ -476,19 +480,19 @@ function ModernSidebar({
                                     setTimeout(() => onClose(), 200)
                                   }
                                 }}
-                                className={`p-2 sm:p-2.5 rounded-lg transition-all duration-200 group touch-manipulation select-none ${isChatLoadingHistory
+                                className={`p-2 sm:p-2.5 rounded-lg transition-all duration-200 group touch-manipulation select-none ${isDocumentLoadingOrSwitching
                                   ? 'cursor-not-allowed opacity-20 bg-gray-200 dark:bg-gray-700/70 pointer-events-none'
                                   : 'cursor-pointer'
-                                  } ${selectedDocumentId === doc.id && !isChatLoadingHistory
+                                  } ${selectedDocumentId === doc.id && !isDocumentLoadingOrSwitching
                                     ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700 shadow-sm'
-                                    : isChatLoadingHistory
+                                    : isDocumentLoadingOrSwitching
                                       ? 'border border-gray-400 dark:border-gray-500'
                                       : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent active:bg-blue-50 dark:active:bg-blue-900/20 active:scale-[0.98]'
                                   }`}
                                 style={{
                                   minHeight: '44px',
-                                  pointerEvents: isChatLoadingHistory ? 'none !important' : 'auto',
-                                  userSelect: isChatLoadingHistory ? 'none' : 'auto'
+                                  pointerEvents: isDocumentLoadingOrSwitching ? 'none !important' : 'auto',
+                                  userSelect: isDocumentLoadingOrSwitching ? 'none' : 'auto'
                                 }} // Ensure minimum touch target size and disable pointer events when loading
                               >
                                 <div className="flex items-start gap-2 sm:gap-3">
@@ -654,9 +658,9 @@ function ModernSidebar({
                         {/* Collection Documents - Always Visible, Mobile Responsive */}
                         {isExpanded && !collapsed && (
                           <div
-                            className={`ml-2 sm:ml-4 space-y-1 relative ${isChatLoadingHistory ? 'pointer-events-none select-none' : ''}`}
+                            className={`ml-2 sm:ml-4 space-y-1 relative ${isDocumentLoadingOrSwitching ? 'pointer-events-none select-none' : ''}`}
                             onClickCapture={(e) => {
-                              if (isChatLoadingHistory) {
+                              if (isDocumentLoadingOrSwitching) {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 e.stopImmediatePropagation();
@@ -664,10 +668,10 @@ function ModernSidebar({
                                 return false;
                               }
                             }}
-                            style={isChatLoadingHistory ? { pointerEvents: 'none !important' } : {}}
+                            style={isDocumentLoadingOrSwitching ? { pointerEvents: 'none !important' } : {}}
                           >
                             {/* Loading overlay for documents during chat history loading */}
-                            {isChatLoadingHistory && (
+                            {isDocumentLoadingOrSwitching && (
                               <div className="absolute inset-0 bg-white/70 dark:bg-gray-900/70 z-50 rounded-lg flex items-center justify-center" style={{ pointerEvents: 'auto !important' }}>
                                 <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-800 rounded-full shadow-lg border">
                                   <div className="flex space-x-1">
@@ -684,7 +688,7 @@ function ModernSidebar({
                                 key={doc.id}
                                 onClick={(e) => {
                                   // Immediate check and block if loading
-                                  if (isChatLoadingHistory) {
+                                  if (isDocumentLoadingOrSwitching) {
                                     e.preventDefault()
                                     e.stopPropagation()
                                     e.stopImmediatePropagation()
@@ -702,19 +706,19 @@ function ModernSidebar({
                                     setTimeout(() => onClose(), 200)
                                   }
                                 }}
-                                className={`p-2 sm:p-2.5 rounded-lg transition-all duration-200 group touch-manipulation select-none ${isChatLoadingHistory
+                                className={`p-2 sm:p-2.5 rounded-lg transition-all duration-200 group touch-manipulation select-none ${isDocumentLoadingOrSwitching
                                   ? 'cursor-not-allowed opacity-20 bg-gray-200 dark:bg-gray-700/70 pointer-events-none'
                                   : 'cursor-pointer'
-                                  } ${selectedDocumentId === doc.id && !isChatLoadingHistory
+                                  } ${selectedDocumentId === doc.id && !isDocumentLoadingOrSwitching
                                     ? 'bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 border border-blue-200 dark:border-blue-700 shadow-sm'
-                                    : isChatLoadingHistory
+                                    : isDocumentLoadingOrSwitching
                                       ? 'border border-gray-400 dark:border-gray-500'
                                       : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent active:bg-blue-50 dark:active:bg-blue-900/20 active:scale-[0.98]'
                                   }`}
                                 style={{
                                   minHeight: '44px',
-                                  pointerEvents: isChatLoadingHistory ? 'none !important' : 'auto',
-                                  userSelect: isChatLoadingHistory ? 'none' : 'auto'
+                                  pointerEvents: isDocumentLoadingOrSwitching ? 'none !important' : 'auto',
+                                  userSelect: isDocumentLoadingOrSwitching ? 'none' : 'auto'
                                 }} // Ensure minimum touch target size and disable pointer events when loading
                               >
                                 <div className="flex items-start gap-2 sm:gap-3">
