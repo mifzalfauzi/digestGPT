@@ -38,6 +38,10 @@ class User(Base):
     verification_token = Column(String, nullable=True)
     verification_token_expires_at = Column(DateTime, nullable=True)
     
+    # Timezone support
+    timezone = Column(String, nullable=True, default='UTC')  # User's timezone (e.g., 'America/New_York')
+    last_ip_address = Column(String, nullable=True)  # For timezone detection
+    
     stripe_customer_id = Column(String, nullable=True, index=True)
     stripe_subscription_id = Column(String, nullable=True, index=True)
     subscription_status = Column(String, nullable=True) # active, inactive, past_due, incomplete, incomplete_expired, trialing, paused, canceled, unpaid

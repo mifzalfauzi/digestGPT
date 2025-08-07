@@ -26,6 +26,7 @@ from routes.usage import router as usage_router
 from routes.collections import router as collections_router
 from routes.stripe_routes import router as stripe_router
 from middleware.auth_middleware import AutoTokenRefreshMiddleware
+from middleware.timezone_middleware import TimezoneMiddleware
 from auth_helpers import get_current_user_with_auto_refresh
 
 # Load environment variables
@@ -73,6 +74,9 @@ app.add_middleware(
 
 print("🔧 Adding SimpleTestMiddleware...")
 app.add_middleware(SimpleTestMiddleware)
+
+print("🔧 Adding TimezoneMiddleware...")
+app.add_middleware(TimezoneMiddleware)
 
 print("🔧 Adding AutoTokenRefreshMiddleware...")
 try:

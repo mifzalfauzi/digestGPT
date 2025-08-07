@@ -2,13 +2,16 @@
 import React, { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { useAuth } from '../contexts/AuthContext';
-import { Crown, Star, Zap, Check, Loader2, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Crown, Star, Zap, Check, Loader2, CheckCircle, ArrowLeft, X, AlertTriangle } from 'lucide-react';
 import { Separator } from './ui/separator';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 export default function StripeCheckout() {
   const [loading, setLoading] = useState({});
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelConfirmText, setCancelConfirmText] = useState('');
+  const [cancelEmailText, setCancelEmailText] = useState('');
   const { user } = useAuth();
 
   // Debug environment variables
@@ -180,7 +183,18 @@ export default function StripeCheckout() {
   };
 
   const handleCancelSubscription = async () => {
-    if (!confirm('Are you sure you want to cancel your subscription? It will remain active until the end of your current billing period.')) {
+    setShowCancelModal(true);
+  };
+
+  const confirmCancelSubscription = async () => {
+    // Validate confirmation inputs
+    if (cancelConfirmText !== 'cancel-subscription') {
+      alert('Please type "cancel-subscription" exactly to confirm.');
+      return;
+    }
+
+    if (cancelEmailText !== user?.email) {
+      alert('Please enter your email address exactly as it appears in your account.');
       return;
     }
 
@@ -203,7 +217,10 @@ export default function StripeCheckout() {
       const data = await response.json();
       alert(data.message);
       
-      // Refresh the page to show updated status
+      // Close modal and refresh page
+      setShowCancelModal(false);
+      setCancelConfirmText('');
+      setCancelEmailText('');
       window.location.reload();
 
     } catch (error) {
@@ -212,6 +229,12 @@ export default function StripeCheckout() {
     } finally {
       setLoading(prev => ({ ...prev, cancel: false }));
     }
+  };
+
+  const closeCancelModal = () => {
+    setShowCancelModal(false);
+    setCancelConfirmText('');
+    setCancelEmailText('');
   };
 
   // Check if any price IDs are missing
@@ -228,6 +251,102 @@ export default function StripeCheckout() {
           <span className="font-medium">Back</span>
         </button>
       </div>
+
+      {/* Cancel Subscription Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 relative">
+            {/* Close Button */}
+            <button
+              onClick={closeCancelModal}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Modal Header */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex-shrink-0 p-2 bg-red-100 dark:bg-red-900 rounded-full">
+                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Cancel Subscription
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  This action cannot be undone
+                </p>
+              </div>
+            </div>
+
+            {/* Warning Text */}
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <p className="text-sm text-red-800 dark:text-red-200 mb-2">
+                <strong>Warning:</strong> Canceling your subscription will:
+              </p>
+              <ul className="text-sm text-red-700 dark:text-red-300 space-y-1 ml-4">
+                <li>• Remove access to premium features at the end of your billing period</li>
+                <li>• Revert your account to the free plan</li>
+                <li>• Stop all recurring payments</li>
+              </ul>
+            </div>
+
+            {/* Confirmation Inputs */}
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Type <code className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">cancel-subscription</code> to confirm:
+                </label>
+                <input
+                  type="text"
+                  value={cancelConfirmText}
+                  onChange={(e) => setCancelConfirmText(e.target.value)}
+                  placeholder=""
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Enter your email address (<code className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">{user?.email}</code>):
+                </label>
+                <input
+                  type="email"
+                  value={cancelEmailText}
+                  onChange={(e) => setCancelEmailText(e.target.value)}
+                  placeholder={user?.email}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={closeCancelModal}
+                className="flex-1 px-4 py-2 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Keep Subscription
+              </button>
+              <button
+                onClick={confirmCancelSubscription}
+                disabled={loading.cancel || cancelConfirmText !== 'cancel-subscription' || cancelEmailText !== user?.email}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              >
+                {loading.cancel ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Canceling...
+                  </>
+                ) : (
+                  'Cancel Subscription'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto px-4">
         
         {/* Header */}

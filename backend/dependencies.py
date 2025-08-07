@@ -270,4 +270,37 @@ def get_user_limits_info(user: User, db: Session) -> dict:
                 "remaining": max(0, limits["token_limit"] - usage.tokens_used)
             }
         }
-    } 
+    }
+
+def get_current_user_optional(request: Request, db: Session) -> Optional[User]:
+    """Get current user without raising exception if not authenticated"""
+    try:
+        # Try to get token from request
+        token = None
+        
+        # Check Authorization header
+        authorization = request.headers.get("Authorization")
+        if authorization and authorization.startswith("Bearer "):
+            token = authorization.replace("Bearer ", "")
+        
+        # Check cookies
+        if not token:
+            token = get_access_token_from_cookie(request)
+        
+        if not token:
+            return None
+            
+        # Verify the token
+        payload = verify_token(token)
+        if payload is None:
+            return None
+        
+        user_id = payload.get("sub")
+        if not user_id:
+            return None
+            
+        user = db.query(User).filter(User.id == user_id).first()
+        return user
+        
+    except Exception:
+        return None 

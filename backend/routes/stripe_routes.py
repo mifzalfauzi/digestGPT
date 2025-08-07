@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import stripe
@@ -7,6 +8,9 @@ from datetime import datetime, timedelta, timezone
 from database import get_db
 from models import User, UserPlan
 from dependencies import get_current_active_user
+from email_service import email_service
+from invoice_generator import invoice_generator
+from timezone_service import timezone_service
 
 # Configure Stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
@@ -97,6 +101,28 @@ async def update_plan_manual(
         print(f"🔄 Manual plan update requested by: {current_user.email}")
         print(f"📋 Session ID: {request.session_id}")
         
+        # Check if this session has already been processed to prevent duplicate emails
+        session_processed_key = f"processed_session_{request.session_id}"
+        
+        # Simple in-memory check (for production, use Redis or database)
+        if not hasattr(update_plan_manual, 'processed_sessions'):
+            update_plan_manual.processed_sessions = set()
+        
+        if request.session_id in update_plan_manual.processed_sessions:
+            print(f"⚠️ Session {request.session_id} already processed, skipping email")
+            # Return success but don't send email again - include subscription_end_date
+            return {
+                "status": "already_processed",
+                "message": "Session already processed",
+                "new_plan": current_user.plan.value,
+                "user_email": current_user.email,
+                "subscription_end_date": current_user.subscription_end_date.isoformat() if current_user.subscription_end_date else None,
+                "skip_email": True
+            }
+        
+        # Mark session as being processed
+        update_plan_manual.processed_sessions.add(request.session_id)
+        
         # Retrieve the checkout session from Stripe
         session = stripe.checkout.Session.retrieve(request.session_id)
         print(f"💳 Session payment status: {session.payment_status}")
@@ -150,11 +176,18 @@ async def update_plan_manual(
         old_plan = current_user.plan.value
         
         # Update user plan based on price_id
+        plan_name = ""
+        amount = ""
+        
         if price_id == os.getenv("STRIPE_PRICE_ID_STANDARD"):
             current_user.plan = UserPlan.STANDARD
+            plan_name = "Standard"
+            amount = "$3.99"
             print("✅ Setting plan to STANDARD")
         elif price_id == os.getenv("STRIPE_PRICE_ID_PRO"):
             current_user.plan = UserPlan.PRO
+            plan_name = "Pro"
+            amount = "$7.99"
             print("✅ Setting plan to PRO")
         else:
             print(f"⚠️ Unknown price_id: {price_id}")
@@ -171,18 +204,22 @@ async def update_plan_manual(
             # Try object-style access first
             current_period_end = subscription.current_period_end
             subscription_end = datetime.fromtimestamp(current_period_end, timezone.utc)
-            print(f"✅ Subscription ends (object): {subscription_end}")
+            subscription_start = datetime.fromtimestamp(subscription.current_period_start, timezone.utc)
+            print(f"✅ Subscription period (object): {subscription_start} to {subscription_end}")
         except (AttributeError, TypeError):
             try:
                 # Fallback to dictionary-style access
                 current_period_end = subscription['current_period_end']
+                current_period_start = subscription['current_period_start']
                 subscription_end = datetime.fromtimestamp(current_period_end, timezone.utc)
-                print(f"✅ Subscription ends (dict): {subscription_end}")
+                subscription_start = datetime.fromtimestamp(current_period_start, timezone.utc)
+                print(f"✅ Subscription period (dict): {subscription_start} to {subscription_end}")
             except (KeyError, TypeError) as e:
-                print(f"⚠️ Could not get current_period_end: {e}")
-                # Fallback: set to 30 days from now (adjust based on your subscription period)
+                print(f"⚠️ Could not get subscription period: {e}")
+                # Fallback: set to 30 days from now
+                subscription_start = now
                 subscription_end = now + timedelta(days=30)
-                print(f"🔄 Using fallback end date: {subscription_end}")
+                print(f"🔄 Using fallback period: {subscription_start} to {subscription_end}")
         
         # Update all subscription info
         current_user.stripe_subscription_id = subscription_id
@@ -200,6 +237,78 @@ async def update_plan_manual(
         print(f"✅ Subscription ID: {subscription_id}")
         print(f"✅ Expires: {subscription_end}")
         
+        # Generate consistent invoice ID first
+        now = datetime.now(timezone.utc)
+        invoice_id = f"INV-{now.strftime('%Y%m%d')}-{subscription_id[:8].upper()}"
+        
+        # Generate invoice PDF
+        print("📄 Generating invoice PDF...")
+        try:
+            # Get user timezone for invoice generation
+            user_timezone = current_user.timezone or 'UTC'
+            
+            invoice_result = invoice_generator.generate_invoice(
+                user_name=current_user.name or current_user.email,
+                user_email=current_user.email,
+                plan_name=plan_name,
+                amount=amount,
+                stripe_subscription_id=subscription_id,
+                stripe_payment_intent_id=getattr(session, 'payment_intent', None),
+                subscription_start_date=subscription_start,
+                subscription_end_date=subscription_end,
+                custom_invoice_id=invoice_id,
+                user_timezone=user_timezone
+            )
+            
+            if invoice_result and invoice_result[0]:
+                invoice_path, generated_invoice_id, invoice_filename = invoice_result
+                print(f"✅ Invoice generated: {invoice_path}")
+            else:
+                print("⚠️ Invoice generation failed")
+                invoice_path = None
+                invoice_filename = None
+                
+        except Exception as e:
+            print(f"❌ Error generating invoice: {e}")
+            invoice_path = None
+            invoice_filename = None
+        
+        # Send payment success email (only once!)
+        print("📧 Sending payment confirmation email...")
+        try:
+            # Create invoice download URL if invoice was generated
+            invoice_download_url = None
+            if invoice_filename:
+                invoice_download_url = f"http://localhost:8000/stripe/download-invoice/{invoice_filename}"
+            
+            # Format date in user's timezone
+            user_timezone = current_user.timezone or 'UTC'
+            formatted_end_date = timezone_service.format_user_datetime(
+                user_timezone=user_timezone,
+                utc_datetime=subscription_end,
+                format_string='%B %d, %Y'
+            )
+            
+            email_sent = email_service.send_payment_success_email(
+                user_email=current_user.email,
+                user_name=current_user.name or current_user.email,
+                plan_name=plan_name,
+                amount=amount,
+                invoice_id=invoice_id,
+                subscription_end_date=formatted_end_date,
+                invoice_download_url=invoice_download_url,
+                invoice_pdf_path=invoice_path,
+                user_timezone=user_timezone
+            )
+            
+            if email_sent:
+                print(f"✅ Payment confirmation email sent to {current_user.email}")
+            else:
+                print(f"⚠️ Failed to send confirmation email to {current_user.email}")
+                
+        except Exception as e:
+            print(f"❌ Error sending email: {e}")
+        
         return {
             "status": "success", 
             "old_plan": old_plan,
@@ -207,11 +316,37 @@ async def update_plan_manual(
             "subscription_id": subscription_id,
             "subscription_end_date": subscription_end.isoformat(),
             "days_until_expiry": (subscription_end - now).days,
-            "user_email": current_user.email
+            "user_email": current_user.email,
+            "invoice_generated": invoice_filename is not None,
+            "invoice_filename": invoice_filename,
+            "email_sent": True,  # Simplified for now
+            "invoice_data": invoice_generator.get_invoice_data(
+                user_name=current_user.name or current_user.email,
+                user_email=current_user.email,
+                plan_name=plan_name,
+                amount=amount,
+                subscription_id=subscription_id,
+                subscription_start_date=subscription_start.strftime('%B %d, %Y'),
+                subscription_end_date=subscription_end.strftime('%B %d, %Y')
+            )
         }
         
     except stripe.error.StripeError as e:
         print(f"❌ Stripe error: {str(e)}")
+        
+        # Send payment failure email
+        try:
+            email_service.send_payment_failure_email(
+                user_email=current_user.email,
+                user_name=current_user.name or current_user.email,
+                plan_name="Subscription",
+                amount="N/A",
+                error_message=str(e)
+            )
+            print(f"📧 Payment failure email sent to {current_user.email}")
+        except Exception as email_error:
+            print(f"❌ Error sending failure email: {email_error}")
+        
         raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
     except HTTPException:
         # Re-raise HTTP exceptions as-is
@@ -220,6 +355,20 @@ async def update_plan_manual(
         print(f"❌ Error manually updating plan: {str(e)}")
         import traceback
         print(f"❌ Full traceback: {traceback.format_exc()}")
+        
+        # Send payment failure email for unexpected errors
+        try:
+            email_service.send_payment_failure_email(
+                user_email=current_user.email,
+                user_name=current_user.name or current_user.email,
+                plan_name="Subscription",
+                amount="N/A",
+                error_message="Unexpected error during payment processing"
+            )
+            print(f"📧 Payment failure email sent to {current_user.email}")
+        except Exception as email_error:
+            print(f"❌ Error sending failure email: {email_error}")
+        
         raise HTTPException(status_code=500, detail=f"Failed to update plan: {str(e)}")
 
 @router.get("/subscription-status")
@@ -452,11 +601,60 @@ async def cancel_subscription(
 ):
     """Cancel user's subscription (no webhooks - manual update)"""
     try:
-        if not current_user.stripe_subscription_id:
+        print(f"🚫 Cancel subscription request from user: {current_user.email}")
+        print(f"📋 Current user plan: {current_user.plan.value}")
+        print(f"🔍 Stripe customer ID: {current_user.stripe_customer_id}")
+        print(f"🔍 Stripe subscription ID: {current_user.stripe_subscription_id}")
+        
+        # If user has a paid plan but no Stripe IDs, suggest syncing first
+        if current_user.plan != UserPlan.FREE and not current_user.stripe_customer_id:
+            print("⚠️ User has paid plan but no Stripe customer ID")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No active subscription found"
+                detail="No Stripe customer found. Please try syncing your subscription first by contacting support."
             )
+        
+        if not current_user.stripe_subscription_id:
+            print("❌ No stripe_subscription_id found")
+            
+            # If they have a customer ID, try to find their subscription
+            if current_user.stripe_customer_id:
+                print("🔍 Attempting to find subscription for existing customer...")
+                try:
+                    subscriptions = stripe.Subscription.list(
+                        customer=current_user.stripe_customer_id,
+                        status='active',
+                        limit=1
+                    )
+                    
+                    if subscriptions.data:
+                        subscription = subscriptions.data[0]
+                        print(f"✅ Found active subscription: {subscription.id}")
+                        
+                        # Update the user's subscription ID
+                        current_user.stripe_subscription_id = subscription.id
+                        current_user.subscription_status = subscription.status
+                        db.commit()
+                        
+                        print("✅ Updated user with found subscription ID")
+                    else:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="No active subscription found in Stripe"
+                        )
+                except stripe.error.StripeError as e:
+                    print(f"❌ Error finding subscription: {e}")
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Could not locate your subscription. Please contact support."
+                    )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="No active subscription found"
+                )
+        
+        print(f"📡 Calling Stripe to cancel subscription: {current_user.stripe_subscription_id}")
         
         # Cancel subscription at period end
         subscription = stripe.Subscription.modify(
@@ -464,12 +662,17 @@ async def cancel_subscription(
             cancel_at_period_end=True
         )
         
+        print(f"✅ Stripe subscription modified successfully")
+        print(f"📋 New subscription status: {subscription.status}")
+        print(f"📋 Cancel at period end: {subscription.cancel_at_period_end}")
+        
         # Update user status locally
         current_user.subscription_status = "cancel_at_period_end"
         current_user.last_payment_check = datetime.now(timezone.utc)
         current_user.updated_at = datetime.now(timezone.utc)
         
         db.commit()
+        print(f"✅ Database updated successfully")
         
         return {
             "status": "success",
@@ -478,12 +681,26 @@ async def cancel_subscription(
             "days_remaining": (current_user.subscription_end_date - datetime.now(timezone.utc)).days if current_user.subscription_end_date else None
         }
         
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except stripe.error.StripeError as e:
-        print(f"❌ Stripe error: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
+        print(f"❌ Stripe error cancelling subscription: {str(e)}")
+        print(f"❌ Stripe error type: {type(e).__name__}")
+        print(f"❌ Stripe error code: {getattr(e, 'code', 'N/A')}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail=f"Stripe error: {str(e)}"
+        )
     except Exception as e:
-        print(f"❌ Error cancelling subscription: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to cancel subscription: {str(e)}")
+        print(f"❌ Unexpected error cancelling subscription: {str(e)}")
+        print(f"❌ Error type: {type(e).__name__}")
+        import traceback
+        print(f"❌ Full traceback: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Failed to cancel subscription: {str(e)}"
+        )
 
 @router.get("/subscription-health")
 async def get_subscription_health(
@@ -527,4 +744,238 @@ async def get_subscription_health(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get subscription health: {str(e)}"
+        )
+
+@router.post("/fix-missing-stripe-data")
+async def fix_missing_stripe_data(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Fix users who have paid plans but missing Stripe customer/subscription data"""
+    try:
+        print(f"🔧 Fixing missing Stripe data for user: {current_user.email}")
+        print(f"📋 Current plan: {current_user.plan.value}")
+        print(f"🔍 Stripe customer ID: {current_user.stripe_customer_id}")
+        print(f"🔍 Stripe subscription ID: {current_user.stripe_subscription_id}")
+        
+        if current_user.plan == UserPlan.FREE:
+            return {"status": "no_action_needed", "message": "User is on free plan"}
+        
+        # First, try to find a Stripe customer by email
+        if not current_user.stripe_customer_id:
+            print("🔍 Searching for Stripe customer by email...")
+            try:
+                customers = stripe.Customer.list(email=current_user.email, limit=10)
+                
+                if customers.data:
+                    customer = customers.data[0]  # Take the first match
+                    print(f"✅ Found Stripe customer: {customer.id}")
+                    
+                    current_user.stripe_customer_id = customer.id
+                    db.commit()
+                    print("✅ Updated user with found customer ID")
+                else:
+                    print("⚠️ No Stripe customer found by email")
+                    # For now, just downgrade them to free
+                    old_plan = current_user.plan.value
+                    current_user.plan = UserPlan.FREE
+                    current_user.subscription_status = None
+                    current_user.stripe_subscription_id = None
+                    current_user.subscription_end_date = None
+                    db.commit()
+                    
+                    return {
+                        "status": "downgraded_to_free",
+                        "message": f"No Stripe customer found. Downgraded from {old_plan} to free",
+                        "old_plan": old_plan,
+                        "new_plan": "free"
+                    }
+                    
+            except stripe.error.StripeError as e:
+                print(f"❌ Error searching for customer: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Error searching for Stripe customer: {str(e)}"
+                )
+        
+        # Now try to find an active subscription
+        if not current_user.stripe_subscription_id and current_user.stripe_customer_id:
+            print("🔍 Searching for active subscription...")
+            try:
+                subscriptions = stripe.Subscription.list(
+                    customer=current_user.stripe_customer_id,
+                    status='active',
+                    limit=10
+                )
+                
+                if subscriptions.data:
+                    subscription = subscriptions.data[0]
+                    print(f"✅ Found active subscription: {subscription.id}")
+                    
+                    # Get subscription details
+                    price_id = subscription.items.data[0].price.id
+                    subscription_end = datetime.fromtimestamp(subscription.current_period_end, timezone.utc)
+                    
+                    # Update user with subscription data
+                    current_user.stripe_subscription_id = subscription.id
+                    current_user.subscription_status = subscription.status
+                    current_user.subscription_end_date = subscription_end
+                    current_user.last_payment_check = datetime.now(timezone.utc)
+                    
+                    # Verify the plan matches the price
+                    old_plan = current_user.plan.value
+                    if price_id == os.getenv("STRIPE_PRICE_ID_STANDARD"):
+                        current_user.plan = UserPlan.STANDARD
+                    elif price_id == os.getenv("STRIPE_PRICE_ID_PRO"):
+                        current_user.plan = UserPlan.PRO
+                    
+                    db.commit()
+                    
+                    print(f"✅ Fixed user subscription data")
+                    
+                    return {
+                        "status": "fixed",
+                        "message": "Successfully synced Stripe data",
+                        "customer_id": current_user.stripe_customer_id,
+                        "subscription_id": current_user.stripe_subscription_id,
+                        "old_plan": old_plan,
+                        "current_plan": current_user.plan.value,
+                        "subscription_end_date": subscription_end.isoformat(),
+                        "days_until_expiry": (subscription_end - datetime.now(timezone.utc)).days
+                    }
+                else:
+                    print("⚠️ No active subscription found")
+                    # Downgrade to free
+                    old_plan = current_user.plan.value
+                    current_user.plan = UserPlan.FREE
+                    current_user.subscription_status = "no_active_subscription"
+                    current_user.stripe_subscription_id = None
+                    current_user.subscription_end_date = None
+                    db.commit()
+                    
+                    return {
+                        "status": "downgraded_to_free",
+                        "message": f"No active subscription found. Downgraded from {old_plan} to free",
+                        "old_plan": old_plan,
+                        "new_plan": "free"
+                    }
+                    
+            except stripe.error.StripeError as e:
+                print(f"❌ Error searching for subscription: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Error searching for subscription: {str(e)}"
+                )
+        
+        return {
+            "status": "already_synced",
+            "message": "User already has complete Stripe data",
+            "customer_id": current_user.stripe_customer_id,
+            "subscription_id": current_user.stripe_subscription_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error fixing Stripe data: {str(e)}")
+        import traceback
+        print(f"❌ Full traceback: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fix Stripe data: {str(e)}"
+        )
+
+@router.get("/download-invoice/{invoice_filename}")
+async def download_invoice(
+    invoice_filename: str,
+    current_user: User = Depends(get_current_active_user)
+):
+    """Download invoice PDF"""
+    try:
+        # Security: Only allow downloading invoices for the current user
+        # In a production system, you'd want to store invoice-user relationships in the database
+        
+        invoice_path = os.path.join(invoice_generator.invoices_dir, invoice_filename)
+        
+        if not os.path.exists(invoice_path):
+            raise HTTPException(status_code=404, detail="Invoice not found")
+        
+        # Additional security check - make sure filename is safe
+        if not invoice_filename.startswith('invoice_') or not invoice_filename.endswith('.pdf'):
+            raise HTTPException(status_code=400, detail="Invalid invoice filename")
+        
+        return FileResponse(
+            path=invoice_path,
+            filename=invoice_filename,
+            media_type='application/pdf'
+        )
+        
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Invoice file not found")
+    except Exception as e:
+        print(f"❌ Error downloading invoice: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to download invoice"
+        )
+
+@router.get("/invoice-data/{session_id}")
+async def get_invoice_data(
+    session_id: str,
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get invoice data for display"""
+    try:
+        # Retrieve the checkout session from Stripe
+        session = stripe.checkout.Session.retrieve(session_id)
+        
+        if session.customer != current_user.stripe_customer_id:
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        if session.payment_status != 'paid':
+            raise HTTPException(status_code=400, detail="Payment not completed")
+        
+        # Get subscription details
+        subscription_id = session.subscription
+        if subscription_id:
+            subscription = stripe.Subscription.retrieve(subscription_id)
+            price_id = subscription.items.data[0].price.id
+            
+            # Determine plan and amount
+            plan_name = ""
+            amount = ""
+            
+            if price_id == os.getenv("STRIPE_PRICE_ID_STANDARD"):
+                plan_name = "Standard"
+                amount = "$3.99"
+            elif price_id == os.getenv("STRIPE_PRICE_ID_PRO"):
+                plan_name = "Pro"
+                amount = "$7.99"
+            
+            subscription_start = datetime.fromtimestamp(subscription.current_period_start, timezone.utc)
+            subscription_end = datetime.fromtimestamp(subscription.current_period_end, timezone.utc)
+            
+            invoice_data = invoice_generator.get_invoice_data(
+                user_name=current_user.name or current_user.email,
+                user_email=current_user.email,
+                plan_name=plan_name,
+                amount=amount,
+                subscription_id=subscription_id,
+                subscription_start_date=subscription_start.strftime('%B %d, %Y'),
+                subscription_end_date=subscription_end.strftime('%B %d, %Y'),
+                payment_intent_id=getattr(session, 'payment_intent', None)
+            )
+            
+            return invoice_data
+        else:
+            raise HTTPException(status_code=400, detail="No subscription found")
+            
+    except stripe.error.StripeError as e:
+        print(f"❌ Stripe error: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Stripe error: {str(e)}")
+    except Exception as e:
+        print(f"❌ Error getting invoice data: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get invoice data"
         )
