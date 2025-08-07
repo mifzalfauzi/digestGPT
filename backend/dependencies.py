@@ -174,15 +174,17 @@ async def check_document_limit(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> User:
-    """Check if user can upload more documents"""
-    usage = get_or_create_usage(current_user.id, db)
-    limits = PLAN_LIMITS[current_user.plan]
-    
-    if usage.docs_used >= limits["doc_limit"]:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Document limit exceeded. Your {current_user.plan.value} plan allows {limits['doc_limit']} documents per month."
-        )
+    """Check if user can upload more documents (Free tier has document limits, others only token limits)"""
+    # Free tier has document limits, Standard/Pro only have token limits
+    if current_user.plan == UserPlan.FREE:
+        usage = get_or_create_usage(current_user.id, db)
+        limits = PLAN_LIMITS[current_user.plan]
+        
+        if usage.docs_used >= limits["doc_limit"]:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Document limit exceeded. Your {current_user.plan.value} plan allows {limits['doc_limit']} document per month."
+            )
     
     return current_user
 
@@ -190,15 +192,17 @@ async def check_chat_limit(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> User:
-    """Check if user can send more chat messages"""
-    usage = get_or_create_usage(current_user.id, db)
-    limits = PLAN_LIMITS[current_user.plan]
-    
-    if usage.chats_used >= limits["chat_limit"]:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Chat limit exceeded. Your {current_user.plan.value} plan allows {limits['chat_limit']} chats per month."
-        )
+    """Check if user can send more chat messages (Free tier has chat limits, others only token limits)"""
+    # Free tier has chat limits, Standard/Pro only have token limits
+    if current_user.plan == UserPlan.FREE:
+        usage = get_or_create_usage(current_user.id, db)
+        limits = PLAN_LIMITS[current_user.plan]
+        
+        if usage.chats_used >= limits["chat_limit"]:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Chat limit exceeded. Your {current_user.plan.value} plan allows {limits['chat_limit']} chats per month."
+            )
     
     return current_user
 

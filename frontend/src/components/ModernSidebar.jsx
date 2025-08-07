@@ -10,7 +10,7 @@ import UsageDashboard from './dashboard/UsageDashboard'
 import { Separator } from './ui/separator'
 import { Spinner } from './ui/spinner'
 import { getInitials } from '../contexts/UserContext'
-
+import UsageWarningBanner from './UsageWarningBanner'
 function ModernSidebar({
   onNewDocument,
   currentDocument,
@@ -347,6 +347,10 @@ function ModernSidebar({
             View Usage
           </Button>
         </Card>
+
+        {/* <div className="absolute top-0 left-0 right-0 z-10 p-4 pt-16 sm:pt-4 lg:pt-4">
+              <UsageWarningBanner />
+            </div> */}
       </div>
     ) : (
       <div className="flex justify-center">
@@ -796,6 +800,13 @@ function ModernSidebar({
       </div>
 
 
+{/* Usage Warning Banner */}
+{!collapsed && (
+        <div className="px-2 sm:px-3 pb-2">
+          <UsageWarningBanner />
+        </div>
+      )}
+
 
       {/* <Separator className="" /> */}
 
@@ -912,6 +923,8 @@ function ModernSidebar({
           </div>
         )}
       </div>
+
+      
 
       {/* Simplified Footer - Status Info Only */}
       {!collapsed && (

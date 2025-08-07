@@ -10,6 +10,7 @@ import ModernChatPanel from "./ModernChatPanel"
 import EnhancedDocumentViewer from "./EnhancedDocumentViewer"
 import UsageDashboard from "./dashboard/UsageDashboard"
 import HistoryDrawer from "./HistoryDrawer"
+import UsageWarningBanner from "./UsageWarningBanner"
 import DocumentCache from "../utils/documentCache"
 import { Button } from "./ui/button"
 import { Menu, X, MessageCircle, FileText, Eye, GripVertical, Sparkles, Zap, AlertTriangle, LogOut, TrendingUp } from "lucide-react"
@@ -1933,6 +1934,8 @@ This business plan effectively balances ambitious growth objectives with compreh
                   </Button> */}
                 </div>
 
+                
+
                 {/* Upload Interface */}
                 <div className={`w-full ${isInitialLoad ? 'animate-slide-in-up' : ''}`}>
                   <ModernUploadInterface
@@ -1962,6 +1965,11 @@ This business plan effectively balances ambitious growth objectives with compreh
                     analyzingCount={analyzingCount}
                   />
                 </div>
+
+                {/* Usage Warning Banner */}
+                {/* <div className="w-full mt-4">
+                  <UsageWarningBanner />
+                </div> */}
 
                 {/* Quick Start Options */}
                 {/* <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-xl max-w-2xl mx-auto">
@@ -2292,6 +2300,11 @@ This business plan effectively balances ambitious growth objectives with compreh
             className={`transition-all duration-300 ${sidebarCollapsed ? "lg:ml-20" : "lg:ml-80"
               } pt-12 sm:pt-14 lg:pt-0 h-full workspace-container ${isInitialLoad ? 'animate-fade-in-scale' : ''}`}
           >
+            {/* Usage Warning Banner - Top of workspace */}
+            {/* <div className="absolute top-0 left-0 right-0 z-10 p-4 pt-16 sm:pt-4 lg:pt-4">
+              <UsageWarningBanner />
+            </div> */}
+
             {/* Mobile/Tablet: Full-width panels with switching */}
             <div className="lg:hidden h-full">
               {/* Chat Panel - Mobile/Tablet */}

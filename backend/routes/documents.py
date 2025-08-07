@@ -13,6 +13,7 @@ from models import User, Document
 from dependencies import (
     get_current_active_user, 
     check_document_limit,
+    check_token_limit,
     increment_document_usage,
     increment_token_usage,
     estimate_tokens
@@ -174,6 +175,9 @@ async def upload_and_analyze_document(
         # Estimate tokens for usage tracking
         estimated_tokens = estimate_tokens(text)
         
+        # Check if user has enough tokens before analysis
+        await check_token_limit(current_user, db, estimated_tokens)
+        
         # Analyze document with chunking if needed
         analysis = await analyze_document_with_chunking(text)
         print("Analysis result:", analysis)
@@ -285,6 +289,9 @@ async def analyze_text_direct(
         
         # Estimate tokens for usage tracking
         estimated_tokens = estimate_tokens(text)
+        
+        # Check if user has enough tokens before analysis
+        await check_token_limit(current_user, db, estimated_tokens)
         
         # Analyze with chunking if needed
         analysis = await analyze_document_with_chunking(text)

@@ -16,6 +16,7 @@ from models import User, Document, ChatHistory
 from dependencies import (
     get_current_active_user,
     check_chat_limit,
+    check_token_limit,
     get_user_limits_info,
     increment_chat_usage,
     increment_token_usage,
@@ -433,6 +434,12 @@ async def chat_with_document(
             .all()
         )
 
+        # Estimate tokens for the user message (AI response tokens will be estimated after)
+        estimated_input_tokens = estimate_tokens(chat_request.message + (document.document_text or "")[:2000])  # Sample of document for estimation
+        
+        # Check if user has enough tokens before making AI call
+        await check_token_limit(current_user, db, estimated_input_tokens)
+        
         # Get AI response using enhanced chunking approach
         ai_response = await chat_about_document(
             document, chat_request.message, chat_history

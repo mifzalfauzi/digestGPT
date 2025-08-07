@@ -408,11 +408,27 @@ export const AuthProvider = ({ children }) => {
   }
 
   const canUploadDocument = () => {
-    return user?.usage?.documents?.used < user?.usage?.documents?.limit
+    // Free tier: check both document and token limits
+    // Standard/Pro: only check token limits
+    if (user?.plan === 'free') {
+      const hasDocumentLimit = user?.usage?.documents?.used < user?.usage?.documents?.limit
+      const hasTokens = canUseTokens(0)
+      return hasDocumentLimit && hasTokens
+    }
+    // For Standard/Pro plans, only token limits apply
+    return canUseTokens(0)
   }
 
   const canSendChat = () => {
-    return user?.usage?.chats?.used < user?.usage?.chats?.limit
+    // Free tier: check both chat and token limits  
+    // Standard/Pro: only check token limits
+    if (user?.plan === 'free') {
+      const hasChatLimit = user?.usage?.chats?.used < user?.usage?.chats?.limit
+      const hasTokens = canUseTokens(0)
+      return hasChatLimit && hasTokens
+    }
+    // For Standard/Pro plans, only token limits apply
+    return canUseTokens(0)
   }
 
   const canUseTokens = (estimatedTokens = 0) => {

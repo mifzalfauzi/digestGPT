@@ -1,4 +1,5 @@
 import React, { useState, useRef, forwardRef, useImperativeHandle, useEffect } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Textarea } from './ui/textarea'
@@ -35,6 +36,7 @@ const ModernUploadInterface = forwardRef(({
   // File input reset function
   onFileInputReset
 }, ref) => {
+  const { canUploadDocument, getUsagePercentages } = useAuth()
   const [dragActive, setDragActive] = useState(false)
   const [showErrorModal, setShowErrorModal] = useState(false)
   const [modalError, setModalError] = useState('')
@@ -382,9 +384,9 @@ const ModernUploadInterface = forwardRef(({
                       accept=".pdf"
                       onChange={handleFileChangeWithModal}
                       className="hidden"
-                      disabled={loading || hasAnalyzingDocuments}
+                      disabled={loading || hasAnalyzingDocuments || !canUploadDocument()}
                     />
-                    <label htmlFor="file-input" className={`block ${loading || hasAnalyzingDocuments ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                    <label htmlFor="file-input" className={`block ${loading || hasAnalyzingDocuments || !canUploadDocument() ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                       {file || stagedFiles.length > 0 ? (
                         <div className="space-y-4">
                           {/* Header with file count */}
@@ -520,7 +522,7 @@ const ModernUploadInterface = forwardRef(({
                     onChange={(e) => setCollectionName(e.target.value)}
                     placeholder="e.g., Marketing Plan Docs, Research Project A"
                     className="bg-white dark:bg-gray-700 border-slate-200 dark:border-gray-600 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-gray-400"
-                    disabled={loading || hasAnalyzingDocuments}
+                    disabled={loading || hasAnalyzingDocuments || !canUploadDocument()}
                   />
                   <p className="text-xs text-slate-500 dark:text-gray-400">
                     Give your collection a descriptive name
@@ -550,9 +552,9 @@ const ModernUploadInterface = forwardRef(({
                       multiple
                       onChange={handleFileChangeWithModal}
                       className="hidden"
-                      disabled={loading || hasAnalyzingDocuments}
+                      disabled={loading || hasAnalyzingDocuments || !canUploadDocument()}
                     />
-                    <label htmlFor="collection-input" className={`block ${loading || hasAnalyzingDocuments ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                    <label htmlFor="collection-input" className={`block ${loading || hasAnalyzingDocuments || !canUploadDocument() ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                       {stagedFiles.length > 0 ? (
                         <div className="space-y-4">
                           {/* Header with file count and clear button */}
@@ -664,7 +666,7 @@ const ModernUploadInterface = forwardRef(({
                     onChange={(e) => setTextInput(e.target.value)}
                     placeholder="Paste your document text here for instant analysis."
                     className="min-h-[200px] text-sm bg-white dark:bg-gray-700 border-slate-200 dark:border-gray-600 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-gray-400 rounded-xl resize-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
-                    disabled={loading || hasAnalyzingDocuments}
+                    disabled={loading || hasAnalyzingDocuments || !canUploadDocument()}
                   />
                   <div className="flex items-center justify-between text-xs text-slate-500 dark:text-gray-400">
                     <span>Maximum 50,000 characters</span>
@@ -679,7 +681,7 @@ const ModernUploadInterface = forwardRef(({
               <div className="mt-6 pt-4 border-slate-200/50 dark:border-gray-700/50">
                 <Button 
                   type="submit" 
-                  disabled={loading || hasAnalyzingDocuments ||
+                  disabled={loading || hasAnalyzingDocuments || !canUploadDocument() ||
                     (inputMode === 'file' && !file && stagedFiles.length === 0) || 
                     (inputMode === 'collection' && (stagedFiles.length === 0 || !collectionName?.trim())) || 
                     (inputMode === 'text' && !textInput.trim())}
@@ -699,6 +701,11 @@ const ModernUploadInterface = forwardRef(({
                       <span className="ml-2 px-2 py-1 bg-white/20 rounded text-xs">
                         Please wait
                       </span>
+                    </>
+                  ) : !canUploadDocument() ? (
+                    <>
+                      <Shield className="h-4 w-4 mr-2" />
+                      <span>Usage Limit Reached</span>
                     </>
                   ) : (
                     <>
