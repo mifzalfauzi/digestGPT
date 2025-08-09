@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { X, FileText, FolderOpen, MessageCircle, Clock, ChevronRight, ChevronDown } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { X, FileText, FolderOpen, MessageCircle, Clock, ChevronRight, ChevronDown, MoreVertical, Trash2, Loader2 } from 'lucide-react'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
 import { Card } from './ui/card'
@@ -16,9 +16,41 @@ function HistoryDrawer({
   isLoadingCollections = false,
   onSelectHistoricalDocument = () => { },
   onSelectCollection = () => { },
+  onDeleteDocument = () => { },
+  onDeleteCollection = () => { },
+  onRefreshData = () => { },
 }) {
   const [activeTab, setActiveTab] = useState('documents') // 'documents', 'collections'
   const [expandedCollections, setExpandedCollections] = useState(new Set())
+  const [showDropdown, setShowDropdown] = useState(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const dropdownRef = useRef(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // If clicking on a three-dot button, don't close
+      if (event.target.closest('button')?.querySelector('.lucide-more-vertical')) {
+        return
+      }
+      
+      // If clicking on the dropdown itself, don't close
+      if (event.target.closest('[data-dropdown]')) {
+        return
+      }
+      
+      // Close dropdown
+      setShowDropdown(null)
+    }
+
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }
+  }, [showDropdown])
 
   // Show all documents and collections in history (don't filter out active ones)
   const filteredDocuments = historicalDocuments
@@ -54,6 +86,28 @@ function HistoryDrawer({
     onSelectHistoricalDocument(docId, doc, collection);
     onClose(); // Close the drawer after selecting a document
   };
+
+  // Handle delete confirmation
+  const handleDeleteConfirm = async () => {
+    if (showDeleteModal && !isDeleting) {
+      setIsDeleting(true)
+      try {
+        if (showDeleteModal.type === 'document') {
+          await onDeleteDocument(showDeleteModal.id)
+        } else if (showDeleteModal.type === 'collection') {
+          await onDeleteCollection(showDeleteModal.id)
+        }
+        // Refresh data after successful deletion
+        await onRefreshData()
+        setShowDeleteModal(null)
+        setShowDropdown(null)
+      } catch (error) {
+        console.error('Error during delete:', error)
+      } finally {
+        setIsDeleting(false)
+      }
+    }
+  }
 
   // Format date helper
   const formatDate = (dateString) => {
@@ -227,21 +281,50 @@ function HistoryDrawer({
                                     <span className="text-xs text-gray-400 dark:text-gray-500">•</span>
                                   </div>
                                 </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleCollectionExpansion(collection.id);
-                                  }}
-                                  className="h-6 w-6 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
-                                >
-                                  {isExpanded ? (
-                                    <ChevronDown className="h-4 w-4 text-gray-400" />
-                                  ) : (
-                                    <ChevronRight className="h-4 w-4 text-gray-400" />
-                                  )}
-                                </Button>
+                                <div className="flex items-center gap-1">
+                                  <div className="relative">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowDropdown(showDropdown === `collection-${collection.id}` ? null : `collection-${collection.id}`);
+                                      }}
+                                      className="h-6 w-6 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                    >
+                                      <MoreVertical className="h-3 w-3 text-gray-400" />
+                                    </Button>
+                                    {showDropdown === `collection-${collection.id}` && (
+                                      <div data-dropdown className="absolute right-0 top-6 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg py-1 min-w-[120px]">
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowDeleteModal({ type: 'collection', id: collection.id, name: collection.name });
+                                          }}
+                                          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                          Delete
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleCollectionExpansion(collection.id);
+                                    }}
+                                    className="h-6 w-6 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                  >
+                                    {isExpanded ? (
+                                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                                    ) : (
+                                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                                    )}
+                                  </Button>
+                                </div>
                               </div>
                             </Card>
 
@@ -268,7 +351,36 @@ function HistoryDrawer({
                                           </p>
                                         )}
                                       </div>
-                                      <ChevronRight className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                                      <div className="flex items-center gap-1">
+                                        <div className="relative">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setShowDropdown(showDropdown === `collection-doc-${doc.id}` ? null : `collection-doc-${doc.id}`);
+                                            }}
+                                            className="h-4 w-4 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                          >
+                                            <MoreVertical className="h-2 w-2 text-gray-400" />
+                                          </Button>
+                                          {showDropdown === `collection-doc-${doc.id}` && (
+                                            <div data-dropdown className="absolute right-0 top-4 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg py-1 min-w-[120px]">
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setShowDeleteModal({ type: 'document', id: doc.id, name: doc.filename });
+                                                }}
+                                                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                              >
+                                                <Trash2 className="h-3 w-3" />
+                                                Delete
+                                              </button>
+                                            </div>
+                                          )}
+                                        </div>
+                                        <ChevronRight className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                                      </div>
                                     </div>
                                   </Card>
                                 ))}
@@ -355,7 +467,36 @@ function HistoryDrawer({
                                 )}
                               </div>
                             </div>
-                            <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                            <div className="flex items-center gap-1">
+                              <div className="relative">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowDropdown(showDropdown === `document-${doc.id}` ? null : `document-${doc.id}`);
+                                  }}
+                                  className="h-6 w-6 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                >
+                                  <MoreVertical className="h-3 w-3 text-gray-400" />
+                                </Button>
+                                {showDropdown === `document-${doc.id}` && (
+                                 <div data-dropdown className="absolute right-0 top-6 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg py-1 min-w-[120px]">
+                                 <button
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     setShowDeleteModal({ type: 'document', id: doc.id, name: doc.filename });
+                                   }}
+                                   className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-400 transition-all duration-150 ease-in-out rounded-sm gap-1"
+                                 >
+                                   <Trash2 className="h-3 w-3" />
+                                   Delete
+                                 </button>
+                               </div>
+                                )}
+                              </div>
+                              <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                            </div>
                           </div>
                         </Card>
                       ))}
@@ -393,6 +534,48 @@ function HistoryDrawer({
             )} */}
           </div>
         </div>
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteModal && (
+          <>
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[80]" onClick={() => setShowDeleteModal(null)} />
+            <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-lg shadow-xl z-[90] p-6 w-80">
+              <div className="text-center">
+                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20 mb-4">
+                  <Trash2 className="h-6 w-6 text-red-600 dark:text-red-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  Delete {showDeleteModal.type === 'collection' ? 'Collection' : 'Document'}
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                  Are you sure you want to delete "{showDeleteModal.name}"? 
+                  {showDeleteModal.type === 'collection' 
+                    ? ' Documents in this collection will be preserved but uncollected.' 
+                    : ' This action cannot be undone.'}
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowDeleteModal(null)}
+                    className="px-4 py-2"
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Cancel'}
+                    
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleDeleteConfirm}
+                    disabled={isDeleting}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700"
+                  >
+                    {isDeleting ? 'Deleting...' : 'Delete'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </>
   )

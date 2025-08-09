@@ -192,18 +192,22 @@ async def update_collection(
         document_count=document_count
     )
 
-@router.delete("/{collection_id}")
+@router.post("/delete")
 async def delete_collection(
-    collection_id: uuid.UUID,
+    collection_id: str,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Delete a collection and optionally its documents"""
+    try:
+        collection_uuid = uuid.UUID(collection_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid collection ID format")
     
     # Get collection
     collection = (
         db.query(Collection)
-        .filter(Collection.id == collection_id, Collection.user_id == current_user.id)
+        .filter(Collection.id == collection_uuid, Collection.user_id == current_user.id)
         .first()
     )
     
@@ -216,7 +220,7 @@ async def delete_collection(
     # Remove collection_id from all documents in this collection
     # (This keeps the documents but removes them from the collection)
     db.query(Document).filter(
-        Document.collection_id == collection_id,
+        Document.collection_id == collection_uuid,
         Document.user_id == current_user.id
     ).update({"collection_id": None})
     

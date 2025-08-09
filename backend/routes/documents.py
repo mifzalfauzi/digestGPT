@@ -9,7 +9,7 @@ from database import supabase
 import uuid
 
 from database import get_db
-from models import User, Document
+from models import User, Document, ChatHistory, Collection
 from dependencies import (
     get_current_active_user, 
     check_document_limit,
@@ -508,28 +508,213 @@ async def get_document(
         }
     }
 
-@router.delete("/{document_id}")
+@router.post("/delete")
 async def delete_document(
-    document_id: uuid.UUID,
+    document_id: str,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Delete a document"""
-    # Get document
+    """
+    Delete a document:
+    1. Delete from Supabase storage (exact match using file_url)
+    2. Delete related chat history
+    3. Delete document record from DB
+    """
+
+    try:
+        # Validate UUID format
+        document_uuid = uuid.UUID(document_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid document ID format")
+
+    # Fetch document from DB
     document = (
         db.query(Document)
-        .filter(Document.id == document_id, Document.user_id == current_user.id)
+        .filter(Document.id == document_uuid, Document.user_id == current_user.id)
         .first()
     )
-    
+
     if not document:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document not found"
-        )
-    
-    # Delete document
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    bucket_name = "documents-uploaded-digestifile"
+
+    # Extract storage key from file_url
+    try:
+        storage_key = document.file_url.split(f"/{bucket_name}/", 1)[1]
+    except IndexError:
+        raise HTTPException(status_code=500, detail="Invalid file URL format stored in DB")
+
+    print(f"Deleting file from bucket: {storage_key}")
+
+    # Delete from Supabase storage
+    try:
+        response = supabase.storage.from_(bucket_name).remove([storage_key])
+        print(f"Supabase storage delete response: {response}")
+    except Exception as e:
+        print(f"Error deleting file from Supabase storage: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete file from storage")
+
+    # Delete related chat messages
+    chat_deleted = db.query(ChatHistory).filter(
+        ChatHistory.document_id == document_uuid,
+        ChatHistory.user_id == current_user.id
+    ).delete(synchronize_session=False)
+    print(f"Deleted {chat_deleted} chat messages for document {document_uuid}")
+
+    # Delete document record
     db.delete(document)
     db.commit()
+    print(f"Deleted document {document_uuid} from the database")
+
+    return {"message": "Document deleted successfully"}
+
     
-    return {"message": "Document deleted successfully"} 
+    
+@router.post("/delete-all")
+async def delete_all_user_data(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Delete ALL user data: documents, chat history, and collections"""
+    try:
+        deletion_summary = {
+            "documents_deleted": 0,
+            "chat_history_deleted": 0,
+            "collections_deleted": 0,
+            "storage_files_deleted": 0,
+            "storage_errors": []
+        }
+        
+        print(f"Starting complete data deletion for user: {current_user.id}")
+        
+        # Step 1: Get all user documents first (to get file URLs for storage deletion)
+        user_documents = db.query(Document).filter(
+            Document.user_id == current_user.id
+        ).all()
+        
+        deletion_summary["documents_deleted"] = len(user_documents)
+        print(f"Found {len(user_documents)} documents to delete")
+        
+        # Step 2: Delete files from Supabase storage
+        storage_files_to_delete = []
+        for document in user_documents:
+            if document.file_url:
+                # Use document ID as storage filename
+                storage_filename = str(document.id)
+                storage_files_to_delete.append(storage_filename)
+        
+        if storage_files_to_delete:
+            try:
+                print(f"Deleting {len(storage_files_to_delete)} files from storage")
+                response = supabase.storage.from_("documents-uploaded-digestifile").remove(storage_files_to_delete)
+                
+                if isinstance(response, list):
+                    for file_result in response:
+                        if isinstance(file_result, dict) and 'error' in file_result and file_result['error']:
+                            deletion_summary["storage_errors"].append(file_result['error'])
+                        else:
+                            deletion_summary["storage_files_deleted"] += 1
+                else:
+                    deletion_summary["storage_files_deleted"] = len(storage_files_to_delete)
+                    
+                print(f"Storage deletion response: {response}")
+                
+            except Exception as storage_error:
+                print(f"Storage deletion failed: {storage_error}")
+                deletion_summary["storage_errors"].append(str(storage_error))
+        
+        # Step 3: Delete all chat history for the user
+        chat_deleted = db.query(ChatHistory).filter(
+            ChatHistory.user_id == current_user.id
+        ).delete(synchronize_session=False)
+        
+        deletion_summary["chat_history_deleted"] = chat_deleted
+        print(f"Deleted {chat_deleted} chat history records")
+        
+        # Step 4: Delete all collections for the user
+        collections_deleted = db.query(Collection).filter(
+            Collection.user_id == current_user.id
+        ).delete(synchronize_session=False)
+        
+        deletion_summary["collections_deleted"] = collections_deleted
+        print(f"Deleted {collections_deleted} collections")
+        
+        # Step 5: Delete all documents for the user
+        documents_deleted = db.query(Document).filter(
+            Document.user_id == current_user.id
+        ).delete(synchronize_session=False)
+        
+        print(f"Deleted {documents_deleted} documents from database")
+        
+        # Commit all deletions
+        db.commit()
+        
+        # Build response message
+        message = f"Successfully deleted all user data: {deletion_summary['documents_deleted']} documents, {deletion_summary['chat_history_deleted']} chat messages, {deletion_summary['collections_deleted']} collections"
+        
+        if deletion_summary["storage_files_deleted"] > 0:
+            message += f", {deletion_summary['storage_files_deleted']} files from storage"
+        
+        if deletion_summary["storage_errors"]:
+            message += f" (with {len(deletion_summary['storage_errors'])} storage errors)"
+        
+        return {
+            "message": message,
+            "summary": deletion_summary
+        }
+        
+    except Exception as error:
+        db.rollback()
+        print(f"Complete deletion failed: {error}")
+        import traceback
+        print("Full traceback:", traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete all user data: {str(error)}"
+        )
+        
+@router.get("/deletion-preview")
+async def get_deletion_preview(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get a preview of what would be deleted"""
+    try:
+        # Count documents
+        documents_count = db.query(Document).filter(
+            Document.user_id == current_user.id
+        ).count()
+        
+        # Count chat history
+        chat_count = db.query(ChatHistory).filter(
+            ChatHistory.user_id == current_user.id
+        ).count()
+        
+        # Count collections
+        collections_count = db.query(Collection).filter(
+            Collection.user_id == current_user.id
+        ).count()
+        
+        # Count storage files (documents with file_url)
+        storage_files_count = db.query(Document).filter(
+            Document.user_id == current_user.id,
+            Document.file_url.isnot(None)
+        ).count()
+        
+        return {
+            "preview": {
+                "documents_to_delete": documents_count,
+                "chat_messages_to_delete": chat_count,
+                "collections_to_delete": collections_count,
+                "storage_files_to_delete": storage_files_count
+            },
+            "warning": "This action cannot be undone. All data will be permanently deleted."
+        }
+        
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get deletion preview: {str(error)}"
+        )
+  

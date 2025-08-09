@@ -168,6 +168,17 @@ class DocumentCache {
     return localStorage.getItem(cacheKey) !== null
   }
 
+  // Remove cached document when deleted
+  static removeCachedDocument(documentId) {
+    try {
+      const cacheKey = `digestgpt_doc_${documentId}`
+      localStorage.removeItem(cacheKey)
+      console.log(`Removed cached document: ${documentId}`)
+    } catch (error) {
+      console.warn(`Failed to remove cached document ${documentId}:`, error)
+    }
+  }
+
   // Get cache info for debugging
   static getCacheInfo() {
     const documents = this.getCachedDocuments()

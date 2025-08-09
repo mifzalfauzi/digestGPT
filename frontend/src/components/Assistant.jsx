@@ -260,13 +260,26 @@ function Assistant() {
           }
           
           if (doc) {
-            await selectDocument(urlDocumentId, doc)
-            // Set workspace view and chat panel for refresh continuity
-            setCurrentView("workspace")
-            setActivePanel("chat")
-            console.log('Document loaded from URL, setting workspace view')
+            if (doc.deleted) {
+              // Document was deleted, show error message
+              setError("This document has been deleted and is no longer available.")
+              setCurrentView("upload") // Navigate back to upload view
+              console.log('Document was deleted:', urlDocumentId)
+              // Clear URL parameters to prevent re-triggering
+              window.history.replaceState({}, document.title, window.location.pathname)
+            } else {
+              await selectDocument(urlDocumentId, doc)
+              // Set workspace view and chat panel for refresh continuity
+              setCurrentView("workspace")
+              setActivePanel("chat")
+              console.log('Document loaded from URL, setting workspace view')
+            }
           } else {
             console.error('Document not found:', urlDocumentId)
+            setError("Document not found or unavailable.")
+            setCurrentView("upload")
+            // Clear URL parameters to prevent re-triggering
+            window.history.replaceState({}, document.title, window.location.pathname)
           }
         } else if (urlCollectionId) {
           console.log('Loading collection from URL:', urlCollectionId)
@@ -326,13 +339,16 @@ function Assistant() {
       DocumentCache.cacheDocument(documentId, response.data)
       return response.data
     } catch (error) {
-      if (error.name === 'AbortError' || error.code === 'ABORT_ERR') {
+      if (error.name === 'AbortError' || error.code === 'ABORT_ERR' || error.code === 'ERR_CANCELED') {
         console.log('Document loading aborted for:', documentId)
         return null
       }
       console.error('Error loading historical document:', error)
       if (error.response?.status === 401) {
         logout()
+      } else if (error.response?.status === 404) {
+        // Document was deleted
+        return { deleted: true, id: documentId }
       }
       throw error
     }
@@ -641,6 +657,16 @@ function Assistant() {
         if (!fullDocumentData) {
           console.log('Document loading was cancelled or failed')
           // Don't set error if it was just cancelled/aborted
+          return
+        }
+
+        // Check if document was deleted
+        if (fullDocumentData.deleted) {
+          console.log('Document was deleted:', documentId)
+          setError("This document has been deleted and is no longer available.")
+          setCurrentView("upload")
+          setIsDocumentSwitching(false)
+          setLoading(false)
           return
         }
 
@@ -1767,6 +1793,17 @@ This business plan effectively balances ambitious growth objectives with compreh
     }
   };
 
+  const handleDocumentDeleted = (documentId) => {
+    console.log('Document deleted detected:', documentId)
+    // Clear the cached document
+    DocumentCache.removeCachedDocument(documentId)
+    setError("This document has been deleted and is no longer available.")
+    setCurrentView("upload")
+    setSelectedDocumentId(null)
+    // Clear URL to prevent re-triggering
+    window.history.replaceState({}, document.title, window.location.pathname)
+  }
+
   return (
     <div className="h-screen dark:bg-[#121212] overflow-hidden">
       {currentView === "upload" ? (
@@ -2355,6 +2392,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                     bypassAPI={bypassAPI}
                     casualMode={false}
                     onLoadingHistoryChange={setIsChatLoadingHistory}
+                    onDocumentDeleted={handleDocumentDeleted}
                   />
                 ) : (
                   <div className="h-full flex items-center justify-center bg-white dark:bg-background p-6">
@@ -2448,6 +2486,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                     bypassAPI={bypassAPI}
                     casualMode={false}
                     onLoadingHistoryChange={setIsChatLoadingHistory}
+                    onDocumentDeleted={handleDocumentDeleted}
                   />
                 ) : (
                   <div className="h-full flex items-center justify-center bg-white dark:bg-background p-12">
@@ -2625,6 +2664,50 @@ This business plan effectively balances ambitious growth objectives with compreh
           setIsHistoryDrawerOpen(false)
         }}
         onSelectCollection={selectCollectionFromHistory}
+        onDeleteDocument={async (documentId) => {
+          try {
+            await axios.post(`http://localhost:8000/documents/delete?document_id=${documentId}`, {}, {
+              headers: {  
+                'Content-Type': 'application/json',
+              },
+              withCredentials: true
+            });
+            // Clear the cached document
+            DocumentCache.removeCachedDocument(documentId)
+            await refreshHistoricalDocuments();
+            if (selectedDocumentId === documentId) {
+              setSelectedDocumentId(null);
+              setCurrentView("upload");
+            }
+          } catch (error) {
+            console.error('Error deleting document:', error);
+            setError('Failed to delete document');
+          }
+        }}
+        
+        onDeleteCollection={async (collectionId) => {
+          try {
+            await axios.post(`http://localhost:8000/collections/delete?collection_id=${collectionId}`, {}, {
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              withCredentials: true
+            });
+            await refreshHistoricalDocuments();
+            if (currentCollectionId === collectionId) {
+              setSelectedHistoricalCollection(null);
+              if (urlCollectionId === collectionId) {
+                navigate('/assistant');
+              }
+            }
+          } catch (error) {
+            console.error('Error deleting collection:', error);
+            setError('Failed to delete collection');
+          }
+        }}
+        onRefreshData={async () => {
+          await refreshHistoricalDocuments()
+        }}
       />
 
       {/* Error Alert for Usage Limits */}

@@ -237,9 +237,10 @@ async def update_plan_manual(
         print(f"✅ Subscription ID: {subscription_id}")
         print(f"✅ Expires: {subscription_end}")
         
-        # Generate consistent invoice ID first
+        # Generate unique invoice ID
         now = datetime.now(timezone.utc)
-        invoice_id = f"INV-{now.strftime('%Y%m%d')}-{subscription_id[:8].upper()}"
+        import uuid
+        invoice_id = f"INV-{now.strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
         
         # Generate invoice PDF
         print("📄 Generating invoice PDF...")
@@ -320,15 +321,21 @@ async def update_plan_manual(
             "invoice_generated": invoice_filename is not None,
             "invoice_filename": invoice_filename,
             "email_sent": True,  # Simplified for now
-            "invoice_data": invoice_generator.get_invoice_data(
-                user_name=current_user.name or current_user.email,
-                user_email=current_user.email,
-                plan_name=plan_name,
-                amount=amount,
-                subscription_id=subscription_id,
-                subscription_start_date=subscription_start.strftime('%B %d, %Y'),
-                subscription_end_date=subscription_end.strftime('%B %d, %Y')
-            )
+            "invoice_data": {
+                "invoice_id": invoice_id,
+                "invoice_date": now.strftime('%B %d, %Y'),
+                "user_name": current_user.name or current_user.email,
+                "user_email": current_user.email,
+                "plan_name": plan_name,
+                "amount": amount,
+                "company_name": "DocuChat",
+                "company_address": "123 AI Street, Tech City, TC 12345, United States",
+                "status": "PAID",
+                "payment_method": "Credit Card",
+                "subscription_id": subscription_id,
+                "subscription_start_date": subscription_start.strftime('%B %d, %Y'),
+                "subscription_end_date": subscription_end.strftime('%B %d, %Y')
+            }
         }
         
     except stripe.error.StripeError as e:
@@ -955,16 +962,25 @@ async def get_invoice_data(
             subscription_start = datetime.fromtimestamp(subscription.current_period_start, timezone.utc)
             subscription_end = datetime.fromtimestamp(subscription.current_period_end, timezone.utc)
             
-            invoice_data = invoice_generator.get_invoice_data(
-                user_name=current_user.name or current_user.email,
-                user_email=current_user.email,
-                plan_name=plan_name,
-                amount=amount,
-                subscription_id=subscription_id,
-                subscription_start_date=subscription_start.strftime('%B %d, %Y'),
-                subscription_end_date=subscription_end.strftime('%B %d, %Y'),
-                payment_intent_id=getattr(session, 'payment_intent', None)
-            )
+            # For this endpoint, we can't guarantee the same invoice ID 
+            # since it's a separate call. Return a notice to use the one from email.
+            now = datetime.now(timezone.utc)
+            
+            invoice_data = {
+                "invoice_id": "See email for invoice ID",
+                "invoice_date": now.strftime('%B %d, %Y'),
+                "user_name": current_user.name or current_user.email,
+                "user_email": current_user.email,
+                "plan_name": plan_name,
+                "amount": amount,
+                "company_name": "DocuChat", 
+                "company_address": "123 AI Street, Tech City, TC 12345, United States",
+                "status": "PAID",
+                "payment_method": "Credit Card",
+                "subscription_id": subscription_id,
+                "subscription_start_date": subscription_start.strftime('%B %d, %Y'),
+                "subscription_end_date": subscription_end.strftime('%B %d, %Y')
+            }
             
             return invoice_data
         else:

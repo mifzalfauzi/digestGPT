@@ -10,7 +10,7 @@ import { MessageCircle, Send, Bot, User, AlertCircle, Trash2, Sparkles, Brain, Z
 import MessageFormatter from './MessageFormatter'
 import TypewriterText from './TypewriterText'
 
-function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode = false, bypassAPI = false, casualMode = false, isDisabled = false, analyzingStatus = null, onLoadingHistoryChange }) {
+function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode = false, bypassAPI = false, casualMode = false, isDisabled = false, analyzingStatus = null, onLoadingHistoryChange, onDocumentDeleted }) {
   // Auth context
   const {
     canSendChat,
@@ -419,6 +419,12 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
         return
       } else if (error.response?.status === 403) {
         errorContent = "Access forbidden. Please check your permissions."
+      } else if (error.response?.status === 404) {
+        errorContent = "This document has been deleted and is no longer available."
+        // Notify parent component about document deletion
+        if (onDocumentDeleted) {
+          onDocumentDeleted(documentId)
+        }
       } else if (error.response?.status === 429) {
         errorContent = error.response.data?.detail || "You've reached your usage limit. Please upgrade your plan."
       } else if (casualMode || isDemoMode || bypassAPI) {
