@@ -9,6 +9,31 @@ from database import get_db
 from models import User, Collection, Document
 from dependencies import get_current_active_user
 
+# Helper function to check and delete empty collections
+def check_and_delete_empty_collection(db: Session, collection_id: uuid.UUID, user_id: uuid.UUID):
+    """Check if a collection is empty and delete it if so"""
+    remaining_documents_count = db.query(Document).filter(
+        Document.collection_id == collection_id,
+        Document.user_id == user_id
+    ).count()
+    
+    print(f"Collection {collection_id} has {remaining_documents_count} remaining documents")
+    
+    if remaining_documents_count == 0:
+        # Delete the empty collection
+        collection_to_delete = db.query(Collection).filter(
+            Collection.id == collection_id,
+            Collection.user_id == user_id
+        ).first()
+        
+        if collection_to_delete:
+            db.delete(collection_to_delete)
+            db.commit()
+            print(f"Deleted empty collection {collection_id}")
+            return True
+    
+    return False
+
 router = APIRouter(prefix="/collections", tags=["collections"])
 
 # Pydantic models

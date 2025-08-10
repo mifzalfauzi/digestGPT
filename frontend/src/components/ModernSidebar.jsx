@@ -32,6 +32,7 @@ function ModernSidebar({
   expandedCollections = new Set(),
   onToggleCollectionExpansion = () => { },
   onRemoveCollection = () => { },
+  onRefreshCollection = () => { }, // Add refresh callback
   // History drawer
   onOpenHistory = () => { },
   // Historical document selection

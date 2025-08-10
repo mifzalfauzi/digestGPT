@@ -18,6 +18,7 @@ from dependencies import (
     increment_token_usage,
     estimate_tokens
 )
+from routes.collections import check_and_delete_empty_collection
 
 # Import document processing functions from utility module
 from document_utils import (
@@ -555,6 +556,9 @@ async def delete_document(
         print(f"Error deleting file from Supabase storage: {e}")
         raise HTTPException(status_code=500, detail="Failed to delete file from storage")
 
+    # Store collection_id before deletion to check if collection becomes empty
+    collection_id = document.collection_id
+
     # Delete related chat messages
     chat_deleted = db.query(ChatHistory).filter(
         ChatHistory.document_id == document_uuid,
@@ -566,6 +570,12 @@ async def delete_document(
     db.delete(document)
     db.commit()
     print(f"Deleted document {document_uuid} from the database")
+
+    # Check if the collection becomes empty and delete it if so
+    if collection_id:
+        collection_was_deleted = check_and_delete_empty_collection(db, collection_id, current_user.id)
+        if collection_was_deleted:
+            return {"message": "Document deleted successfully. Empty collection was also removed."}
 
     return {"message": "Document deleted successfully"}
 

@@ -179,6 +179,54 @@ class DocumentCache {
     }
   }
 
+  // Update cached documents list when a document is deleted
+  static removeDocumentFromCache(documentId) {
+    try {
+      // Remove individual document cache
+      this.removeCachedDocument(documentId)
+      
+      // Update the documents list cache
+      const cachedDocuments = this.getCachedDocuments()
+      if (cachedDocuments) {
+        const updatedDocuments = cachedDocuments.filter(doc => doc.id !== documentId)
+        this.cacheDocuments(updatedDocuments)
+        console.log(`Updated cached documents list, removed document: ${documentId}`)
+      }
+      
+      // Update the collections cache to remove the document from any collections
+      const cachedCollections = this.getCachedCollections()
+      if (cachedCollections) {
+        const updatedCollections = cachedCollections.map(collection => ({
+          ...collection,
+          documents: (collection.documents || []).filter(doc => doc.id !== documentId),
+          document_count: Math.max(0, (collection.document_count || 0) - 1)
+        }))
+        this.cacheCollections(updatedCollections)
+        console.log(`Updated cached collections, removed document: ${documentId}`)
+      }
+      
+      this.updateCacheTimestamp()
+    } catch (error) {
+      console.warn(`Failed to remove document from cache: ${documentId}:`, error)
+    }
+  }
+
+  // Update cached collections list when a collection is deleted
+  static removeCollectionFromCache(collectionId) {
+    try {
+      const cachedCollections = this.getCachedCollections()
+      if (cachedCollections) {
+        const updatedCollections = cachedCollections.filter(collection => collection.id !== collectionId)
+        this.cacheCollections(updatedCollections)
+        console.log(`Removed collection from cache: ${collectionId}`)
+      }
+      
+      this.updateCacheTimestamp()
+    } catch (error) {
+      console.warn(`Failed to remove collection from cache: ${collectionId}:`, error)
+    }
+  }
+
   // Get cache info for debugging
   static getCacheInfo() {
     const documents = this.getCachedDocuments()

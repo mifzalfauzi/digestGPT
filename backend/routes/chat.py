@@ -78,7 +78,7 @@ class CasualChatResponse(BaseModel):
 
 # Pydantic models
 class ChatRequest(BaseModel):
-    document_id: uuid.UUID
+    document_id: Optional[uuid.UUID] = None
     message: str
 
 
@@ -404,6 +404,13 @@ async def chat_with_document(
         f"Chat request received: document_id={chat_request.document_id}, message='{chat_request.message[:50]}...'"
     )
     print(f"Document ID type: {type(chat_request.document_id)}")
+    
+    # Validate that document_id is provided
+    if not chat_request.document_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="document_id is required for document chat"
+        )
     
     # Get the document
     document = (

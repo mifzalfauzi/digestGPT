@@ -327,6 +327,12 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
       return
     }
 
+    // Check if document is selected (only for production mode)
+    if (!casualMode && !isDemoMode && !bypassAPI && !documentId) {
+      setChatError("Please select a document to chat about")
+      return
+    }
+
     // Check chat limits (only for production mode)
     if (!casualMode && !isDemoMode && !bypassAPI && !canSendChat()) {
       setChatError("You've reached your chat limit. Please upgrade your plan to continue chatting.")
@@ -377,6 +383,10 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
         mockResponseIndex++
       } else {
         // Production mode: make actual API call with document ID and auth
+        if (!documentId) {
+          throw new Error('No document selected for chat')
+        }
+        
         const response = await axios.post('http://localhost:8000/chat', {
           document_id: documentId,
           message: userMessage
@@ -919,13 +929,13 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                   handleSendMessage(e)
                 }
               }}
-              placeholder={isDisabled ? "Documents are being analyzed..." : isLoadingHistory ? "Loading chat history..." : (casualMode ? "Ask anything" : "Enter question here to inquire on the document.")}
+              placeholder={isDisabled ? "Documents are being analyzed..." : isLoadingHistory ? "Loading chat history..." : (casualMode ? "Ask anything" : !documentId ? "Please select a document to chat about" : "Enter question here to inquire on the document.")}
               className="min-h-[40px] sm:min-h-[44px] lg:min-h-[48px] max-h-[80px] sm:max-h-[100px] resize-none bg-white dark:bg-[#2f2f2f] dark:border-gray-400 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-gray-400 rounded-xl pr-10 sm:pr-12 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm"
               disabled={isLoading || isDisabled || isLoadingHistory}
             />
             <Button
               type="submit"
-              disabled={!inputMessage || !inputMessage.trim() || isLoading || isDisabled || isLoadingHistory}
+              disabled={!inputMessage || !inputMessage.trim() || isLoading || isDisabled || isLoadingHistory || (!casualMode && !isDemoMode && !bypassAPI && !documentId)}
               className="absolute right-1 sm:right-1.5 bottom-1 sm:bottom-1.5 h-6 w-6 sm:h-7 sm:w-7 p-0 bg-[#121212] hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
             >
               <Send className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white" />

@@ -19,6 +19,7 @@ function HistoryDrawer({
   onDeleteDocument = () => { },
   onDeleteCollection = () => { },
   onRefreshData = () => { },
+  onRefreshActiveCollection = () => { }, // Add callback to refresh active collection
 }) {
   const [activeTab, setActiveTab] = useState('documents') // 'documents', 'collections'
   const [expandedCollections, setExpandedCollections] = useState(new Set())
@@ -93,7 +94,20 @@ function HistoryDrawer({
       setIsDeleting(true)
       try {
         if (showDeleteModal.type === 'document') {
+          // Check if the document being deleted belongs to the current active collection
+          // First check if collectionId was provided directly (from collection view)
+          const belongsToCollectionId = showDeleteModal.collectionId || 
+            findCollectionForDocument(showDeleteModal.id)?.id
+          
+          const isInActiveCollection = belongsToCollectionId && belongsToCollectionId === currentCollectionId
+          
           await onDeleteDocument(showDeleteModal.id)
+          
+          // If document was in the active collection, refresh the active collection in sidebar
+          if (isInActiveCollection) {
+            console.log('Deleted document from active collection, refreshing sidebar...')
+            await onRefreshActiveCollection()
+          }
         } else if (showDeleteModal.type === 'collection') {
           await onDeleteCollection(showDeleteModal.id)
         }
@@ -369,7 +383,12 @@ function HistoryDrawer({
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
-                                                  setShowDeleteModal({ type: 'document', id: doc.id, name: doc.filename });
+                                                  setShowDeleteModal({ 
+                                                    type: 'document', 
+                                                    id: doc.id, 
+                                                    name: doc.filename,
+                                                    collectionId: collection.id // Store collection ID for reference
+                                                  });
                                                 }}
                                                 className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                                               >
@@ -454,7 +473,8 @@ function HistoryDrawer({
                                   {doc.summary}
                                 </p>
                               )}
-                              <div className="flex items-center gap-2 mt-2">
+                              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                
                                 {doc.word_count && (
                                   <Badge variant="outline" className="text-xs px-1.5 py-0.5 bg-[#121212] dark:bg-[#1f1f1f]">
                                     {doc.word_count} words
@@ -465,6 +485,21 @@ function HistoryDrawer({
                                     {doc.analysis_method}
                                   </Badge>
                                 )}
+                                {(() => {
+                                  const belongsToCollection = findCollectionForDocument(doc.id);
+                                  if (belongsToCollection) {
+                                    return (
+                                      <Badge 
+                                        variant="secondary" 
+                                        className="text-xs px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700"
+                                      >
+                                        <FolderOpen className="h-2.5 w-2.5 mr-1" />
+                                        {belongsToCollection.name}
+                                      </Badge>
+                                    );
+                                  }
+                                  return null;
+                                })()}
                               </div>
                             </div>
                             <div className="flex items-center gap-1">

@@ -883,12 +883,22 @@ function Assistant() {
     }
   }
 
-  const removeDocument = (documentId) => {
+  const removeDocument = async (documentId) => {
+    // Check if the document belongs to a collection before removing it
+    const documentToRemove = documents.find(doc => doc.id === documentId)
+    const isInCollection = documentToRemove?.collectionId
+    
     setDocuments(prev => prev.filter(doc => doc.id !== documentId))
     if (selectedDocumentId === documentId) {
       // Select another document if available, or clear selection
       const remainingDocs = documents.filter(doc => doc.id !== documentId)
       setSelectedDocumentId(remainingDocs.length > 0 ? remainingDocs[0].id : null)
+    }
+    
+    // If the removed document was part of a collection, refresh the sidebar to show updated collection state
+    if (isInCollection) {
+      console.log('Document was part of collection, refreshing collection data...')
+      await refreshHistoricalDocuments()
     }
   }
 
@@ -1834,6 +1844,7 @@ This business plan effectively balances ambitious growth objectives with compreh
               expandedCollections={expandedCollections}
               onToggleCollectionExpansion={toggleCollectionExpansion}
               onRemoveCollection={removeCollection}
+              onRefreshCollection={refreshHistoricalDocuments}
               onOpenHistory={() => setIsHistoryDrawerOpen(true)}
               selectedHistoricalCollection={selectedHistoricalCollection}
               historicalDocuments={selectedHistoricalDocuments}
@@ -2059,6 +2070,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                   expandedCollections={expandedCollections}
                   onToggleCollectionExpansion={toggleCollectionExpansion}
                   onRemoveCollection={removeCollection}
+                  onRefreshCollection={refreshHistoricalDocuments}
                   onOpenHistory={() => setIsHistoryDrawerOpen(true)}
                   selectedHistoricalCollection={selectedHistoricalCollection}
                   historicalDocuments={selectedHistoricalDocuments}
@@ -2113,6 +2125,7 @@ This business plan effectively balances ambitious growth objectives with compreh
               expandedCollections={expandedCollections}
               onToggleCollectionExpansion={toggleCollectionExpansion}
               onRemoveCollection={removeCollection}
+              onRefreshCollection={refreshHistoricalDocuments}
               onOpenHistory={() => setIsHistoryDrawerOpen(true)}
               selectedHistoricalCollection={selectedHistoricalCollection}
               historicalDocuments={selectedHistoricalDocuments}
@@ -2197,6 +2210,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                   expandedCollections={expandedCollections}
                   onToggleCollectionExpansion={toggleCollectionExpansion}
                   onRemoveCollection={removeCollection}
+                  onRefreshCollection={refreshHistoricalDocuments}
                   onOpenHistory={() => setIsHistoryDrawerOpen(true)}
                   selectedHistoricalCollection={selectedHistoricalCollection}
                   historicalDocuments={selectedHistoricalDocuments}
@@ -2251,6 +2265,7 @@ This business plan effectively balances ambitious growth objectives with compreh
               expandedCollections={expandedCollections}
               onToggleCollectionExpansion={toggleCollectionExpansion}
               onRemoveCollection={removeCollection}
+              onRefreshCollection={refreshHistoricalDocuments}
               onOpenHistory={() => setIsHistoryDrawerOpen(true)}
               selectedHistoricalCollection={selectedHistoricalCollection}
               historicalDocuments={selectedHistoricalDocuments}
@@ -2585,6 +2600,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                   expandedCollections={expandedCollections}
                   onToggleCollectionExpansion={toggleCollectionExpansion}
                   onRemoveCollection={removeCollection}
+                  onRefreshCollection={refreshHistoricalDocuments}
                   onOpenHistory={() => setIsHistoryDrawerOpen(true)}
                   selectedHistoricalCollection={selectedHistoricalCollection}
                   historicalDocuments={selectedHistoricalDocuments}
@@ -2672,9 +2688,38 @@ This business plan effectively balances ambitious growth objectives with compreh
               },
               withCredentials: true
             });
-            // Clear the cached document
-            DocumentCache.removeCachedDocument(documentId)
+            
+            // Clear the cached document and update caches immediately
+            DocumentCache.removeDocumentFromCache(documentId)
+            
+            // Update state immediately from cache to provide instant feedback
+            const updatedDocuments = DocumentCache.getCachedDocuments() || []
+            const updatedCollections = DocumentCache.getCachedCollections() || []
+            
+            setHistoricalDocuments(prev => {
+              console.log('Updating historical documents after deletion:', updatedDocuments.length, 'documents')
+              return updatedDocuments
+            })
+            setHistoricalCollections(prev => {
+              console.log('Updating historical collections after deletion:', updatedCollections.length, 'collections')
+              return updatedCollections
+            })
+            
+            // Update selectedHistoricalDocuments if currently viewing a collection
+            if (selectedHistoricalCollection) {
+              const updatedCollection = updatedCollections.find(c => c.id === selectedHistoricalCollection.id)
+              if (updatedCollection) {
+                setSelectedHistoricalDocuments(prevDocs => {
+                  const newDocs = updatedCollection.documents || []
+                  console.log('Updating selected historical documents:', newDocs.length, 'documents')
+                  return newDocs
+                })
+              }
+            }
+            
+            // Then refresh from server to ensure data consistency
             await refreshHistoricalDocuments();
+            
             if (selectedDocumentId === documentId) {
               setSelectedDocumentId(null);
               setCurrentView("upload");
@@ -2693,9 +2738,23 @@ This business plan effectively balances ambitious growth objectives with compreh
               },
               withCredentials: true
             });
+            
+            // Clear the cached collection and update caches immediately
+            DocumentCache.removeCollectionFromCache(collectionId)
+            
+            // Update state immediately from cache to provide instant feedback
+            const updatedCollections = DocumentCache.getCachedCollections() || []
+            setHistoricalCollections(prev => {
+              console.log('Updating historical collections after collection deletion:', updatedCollections.length, 'collections')
+              return updatedCollections
+            })
+            
+            // Then refresh from server to ensure data consistency
             await refreshHistoricalDocuments();
+            
             if (currentCollectionId === collectionId) {
               setSelectedHistoricalCollection(null);
+              setSelectedHistoricalDocuments([])
               if (urlCollectionId === collectionId) {
                 navigate('/assistant');
               }
@@ -2706,6 +2765,35 @@ This business plan effectively balances ambitious growth objectives with compreh
           }
         }}
         onRefreshData={async () => {
+          await refreshHistoricalDocuments()
+        }}
+        onRefreshActiveCollection={async () => {
+          // Update state immediately from cache to provide instant feedback
+          const updatedDocuments = DocumentCache.getCachedDocuments() || []
+          const updatedCollections = DocumentCache.getCachedCollections() || []
+          
+          setHistoricalDocuments(prev => {
+            console.log('Refreshing historical documents from cache:', updatedDocuments.length, 'documents')
+            return updatedDocuments
+          })
+          setHistoricalCollections(prev => {
+            console.log('Refreshing historical collections from cache:', updatedCollections.length, 'collections') 
+            return updatedCollections
+          })
+          
+          // If we have an active collection, update the selected historical documents immediately
+          if (currentCollectionId && selectedHistoricalCollection) {
+            const updatedCollection = updatedCollections.find(c => c.id === currentCollectionId)
+            if (updatedCollection) {
+              setSelectedHistoricalDocuments(prevDocs => {
+                const newDocs = updatedCollection.documents || []
+                console.log('Refreshing active collection documents:', newDocs.length, 'documents')
+                return newDocs
+              })
+            }
+          }
+          
+          // Then refresh from server to ensure data consistency
           await refreshHistoricalDocuments()
         }}
       />
