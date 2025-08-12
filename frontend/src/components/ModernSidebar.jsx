@@ -416,11 +416,9 @@ function ModernSidebar({
                                   </p>
                                   <div className="flex items-center gap-1">
                                     <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 text-xs px-1.5 py-0.5">
-                                      {collectionDocuments.length} docs
+                                      {collectionDocuments.length} {collectionDocuments.length === 1 ? 'doc' : 'docs'}
                                     </Badge>
-                                    <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200 text-xs px-1.5 py-0.5">
-                                      History
-                                    </Badge>
+                
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-1.5 mt-1">

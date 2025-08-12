@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
@@ -29,7 +29,7 @@ import {
 import HighlightableText from './HighlightableText'
 import MarkdownRenderer from './MarkdownRenderer'
 
-function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighlight, showSummary = true }) {
+function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighlight, onActiveHighlightChange, showSummary = true }) {
   const [insights, setInsights] = useState([])
   const [risks, setRisks] = useState([])
   const [summary, setSummary] = useState('')
@@ -39,6 +39,18 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   const [currentRiskIndex, setCurrentRiskIndex] = useState(0)
   const [copiedItem, setCopiedItem] = useState(null)
   const [feedbackGiven, setFeedbackGiven] = useState({})
+  const selectedFrom = useMemo(() => {
+    if (!activeHighlight) return null
+    if (activeHighlight.startsWith('insight-')) {
+      const idx = parseInt(activeHighlight.split('-')[1], 10)
+      return { type: 'insight', index: isNaN(idx) ? null : idx }
+    }
+    if (activeHighlight.startsWith('risk-')) {
+      const idx = parseInt(activeHighlight.split('-')[1], 10)
+      return { type: 'risk', index: isNaN(idx) ? null : idx }
+    }
+    return null
+  }, [activeHighlight])
 
   useEffect(() => {
     console.log('ProfessionalAnalysisDisplay - Full results:', results)
@@ -118,6 +130,24 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     setCurrentInsightIndex(0)
     setCurrentRiskIndex(0)
   }, [results])
+
+  // Sync displayed item when a highlight is selected externally (from extractive text)
+  useEffect(() => {
+    if (!activeHighlight) return
+    if (activeHighlight.startsWith('insight-')) {
+      const idx = parseInt(activeHighlight.split('-')[1], 10)
+      if (!isNaN(idx)) {
+        const bounded = Math.min(Math.max(0, idx), Math.max(insights.length - 1, 0))
+        setCurrentInsightIndex(bounded)
+      }
+    } else if (activeHighlight.startsWith('risk-')) {
+      const idx = parseInt(activeHighlight.split('-')[1], 10)
+      if (!isNaN(idx)) {
+        const bounded = Math.min(Math.max(0, idx), Math.max(risks.length - 1, 0))
+        setCurrentRiskIndex(bounded)
+      }
+    }
+  }, [activeHighlight, insights.length, risks.length])
 
   const getInsightCategory = (text) => {
     const lower = text.toLowerCase()
@@ -275,6 +305,22 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
 
   return (
     <div className="space-y-6 p-4 sm:p-4 h-full overflow-y-auto">
+      {/* Selection banner when coming from extractive text */}
+      {selectedFrom && selectedFrom.index !== null && (
+        <div className="flex items-center justify-between p-2 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 text-xs">
+          <span>
+            Selected from Extractive Text: {selectedFrom.type === 'insight' ? 'Insight' : 'Risk'} #{selectedFrom.index + 1}
+          </span>
+          {onActiveHighlightChange && (
+            <button
+              className="underline hover:opacity-80"
+              onClick={() => onActiveHighlightChange(null)}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      )}
       {/* Executive Summary - Only show if showSummary is true */}
       {showSummary && (
         <Card className="border-0 shadow-xl dark:bg-black">

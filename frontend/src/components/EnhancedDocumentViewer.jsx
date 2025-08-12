@@ -616,6 +616,9 @@ This business plan effectively balances growth ambitions with comprehensive risk
 
   const handleHighlightClick = (id) => {
     setActiveHighlight(activeHighlight === id ? null : id)
+    if (activeTab === 'document') {
+      setActiveTab('insights')
+    }
   }
 
   const handleShowInDocument = (id) => {
@@ -949,6 +952,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                 onHighlightClick={handleShowInDocument}
                 activeHighlight={activeHighlight}
                 showSummary={false}
+                onActiveHighlightChange={(newId) => setActiveHighlight(newId)}
               />
             </TabsContent>
 
