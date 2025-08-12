@@ -11,6 +11,7 @@ import {
   TrendingUp
 } from 'lucide-react'
 import MarkdownRenderer from './MarkdownRenderer'
+import { Separator } from './ui/separator'
 
 function ExecutiveSummary({ results }) {
   const summary = results?.analysis?.summary || ''
@@ -80,6 +81,8 @@ function ExecutiveSummary({ results }) {
         </CardContent>
       </Card>
 
+      
+
       {/* Analysis Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Insights Overview */}
@@ -116,6 +119,8 @@ function ExecutiveSummary({ results }) {
             </div>
           </CardContent>
         </Card>
+
+        <Separator className="my-4" />
 
         {/* Risks Overview */}
         <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50/50 to-orange-50/50 dark:from-red-950/20 dark:to-orange-950/20">

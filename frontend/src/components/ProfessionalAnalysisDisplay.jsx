@@ -528,6 +528,8 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
         </CardContent>
       </Card>
 
+      <Separator className="my-4" />
+
       {/* Risk Assessment Section */}
       <Card className="border-0 shadow-lg">
         <CardHeader>

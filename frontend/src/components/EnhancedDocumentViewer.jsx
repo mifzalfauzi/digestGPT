@@ -3,6 +3,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
+import { Separator } from './ui/separator'
 import { Eye, FileText, Brain, TrendingUp, Clock, Sparkles, Target, AlertTriangle, CheckCircle2, BookOpen, Key, ArrowBigDown, Download } from 'lucide-react'
 import ProfessionalAnalysisDisplay from './ProfessionalAnalysisDisplay'
 import KeyConceptsDisplay from './KeyConceptsDisplay'
@@ -688,7 +689,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
               size="sm"
               onClick={exportToPDF}
               disabled={isExporting || (!results?.analysis && !isDemoMode && !bypassAPI)}
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 hover:text-white shadow-lg hover:shadow-xl transition-all duration-200 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm"
+              className="flex items-center gap-2 border bg-black hover:bg-blue-600 text-white hover:text-white shadow-lg hover:shadow-xl transition-all duration-200 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm"
             >
               {isExporting ? (
                 <>
@@ -836,7 +837,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
 
             {/* AI Analysis Summary Tab */}
             <TabsContent value="analysis" className="h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter">
-              <Card className="border-0 shadow-lg">
+              <Card className="border-0 shadow-lg dark:bg-black">
                 <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <div className="flex items-center gap-2">
@@ -927,6 +928,8 @@ This business plan effectively balances growth ambitions with comprehensive risk
                   </div>
                 </CardContent>
               </Card>
+
+              <Separator className="my-4" />  
 
               {/* Key Concepts Section */}
               <div className="mt-3 sm:mt-4">

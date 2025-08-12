@@ -26,6 +26,8 @@ import {
   Check,
   BookOpen,
 } from "lucide-react"
+import { Separator } from "./ui/separator"
+
 
 export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = false }) {
   const [currentPage, setCurrentPage] = useState({
@@ -498,7 +500,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
   return (
     <div className="max-w-6xl mx-auto space-y-4">
       {/* Professional Header Card - Following exact styling */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border-0 shadow-lg dark:bg-black">
         <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -581,8 +583,10 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
         </CardContent>
       </Card>
 
+      <Separator className="my-4" />
+
       {/* SWOT Tabs */}
-      <Card>
+      <Card className="dark:bg-black shadow-lg">
         <Tabs defaultValue="strengths" className="w-full">
           <CardHeader className="pb-3">
           <div className="flex items-center gap-2 mb-2">
