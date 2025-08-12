@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Badge } from "./ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
@@ -36,11 +36,49 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     opportunities: 0,
     threats: 0,
   })
-
+  const [activeSwotTab, setActiveSwotTab] = useState('strengths')
   const [copiedItems, setCopiedItems] = useState(new Set())
   const [itemRatings, setItemRatings] = useState({})
+  
+  // Simple persistence using ref
+  const persistedState = useRef({
+    currentPage: {
+      strengths: 0,
+      weaknesses: 0,
+      opportunities: 0,
+      threats: 0,
+    },
+    activeSwotTab: 'strengths',
+    copiedItems: new Set(),
+    itemRatings: {},
+    isInitialized: false
+  })
 
   const ITEMS_PER_PAGE = 3
+  
+  // Load persisted state on mount only once
+  useEffect(() => {
+    if (!persistedState.current.isInitialized) {
+      setCurrentPage(persistedState.current.currentPage)
+      setActiveSwotTab(persistedState.current.activeSwotTab)
+      setCopiedItems(persistedState.current.copiedItems)
+      setItemRatings(persistedState.current.itemRatings)
+      persistedState.current.isInitialized = true
+    }
+  }, [])
+  
+  // Persist state changes
+  useEffect(() => {
+    if (persistedState.current.isInitialized) {
+      persistedState.current = {
+        ...persistedState.current,
+        currentPage,
+        activeSwotTab,
+        copiedItems,
+        itemRatings
+      }
+    }
+  }, [currentPage, activeSwotTab, copiedItems, itemRatings])
 
   // Enhanced mock SWOT data
   const mockSWOTData = {
@@ -236,22 +274,22 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     return Math.ceil(items.length / ITEMS_PER_PAGE)
   }
 
-  const nextPage = (category, items) => {
+  const nextPage = useCallback((category, items) => {
     const totalPages = getTotalPages(items)
     setCurrentPage(prev => ({
       ...prev,
       [category]: prev[category] < totalPages - 1 ? prev[category] + 1 : prev[category]
     }))
-  }
+  }, [])
 
-  const prevPage = (category) => {
+  const prevPage = useCallback((category) => {
     setCurrentPage(prev => ({
       ...prev,
       [category]: prev[category] > 0 ? prev[category] - 1 : prev[category]
     }))
-  }
+  }, [])
 
-  const copyToClipboard = async (item, category) => {
+  const copyToClipboard = useCallback(async (item, category) => {
     const text = `${item.title}\n\n${item.description}\n\nImpact: ${item.impact}\nCategory: ${item.category}`
     
     try {
@@ -270,22 +308,22 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     } catch (err) {
       console.error('Failed to copy text: ', err)
     }
-  }
+  }, [])
 
-  const rateItem = (item, category, rating) => {
+  const rateItem = useCallback((item, category, rating) => {
     const itemId = `${category}-${item.title}`
     setItemRatings(prev => ({
       ...prev,
       [itemId]: rating
     }))
-  }
+  }, [])
 
-  const goToPage = (category, page) => {
+  const goToPage = useCallback((category, page) => {
     setCurrentPage(prev => ({
       ...prev,
       [category]: page
     }))
-  }
+  }, [])
 
   const SWOTItem = ({ item, index, category }) => {
     const itemId = `${category}-${item.title}`
@@ -587,7 +625,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
 
       {/* SWOT Tabs */}
       <Card className="dark:bg-black shadow-lg">
-        <Tabs defaultValue="strengths" className="w-full">
+        <Tabs value={activeSwotTab} onValueChange={setActiveSwotTab} className="w-full">
           <CardHeader className="pb-3">
           <div className="flex items-center gap-2 mb-2">
             <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
@@ -623,13 +661,16 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
 
           <CardContent>
             {Object.entries(tabConfigs).map(([key, config]) => (
-              <TabsContent key={key} value={key} className="mt-0">
+              <div
+                key={key}
+                className={`mt-0 ${activeSwotTab === key ? 'block' : 'hidden'}`}
+              >
                 <TabContent
                   items={swotData[key] || []}
                   category={key}
                   emptyMessage={config.emptyMessage}
                 />
-              </TabsContent>
+              </div>
             ))}
           </CardContent>
         </Tabs>

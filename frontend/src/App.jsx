@@ -2,6 +2,7 @@ import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from './components/ThemeProvider'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { TabStateProvider } from './contexts/TabStateContext'
 import AuthNavigationHandler from './components/AuthNavigationHandler'
 import LandingPage from './components/LandingPage'
 import Assistant from './components/Assistant'
@@ -156,7 +157,9 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <AppContent />
+        <TabStateProvider>
+          <AppContent />
+        </TabStateProvider>
       </AuthProvider>
     </ThemeProvider>
   )

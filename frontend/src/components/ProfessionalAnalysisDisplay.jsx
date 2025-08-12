@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
@@ -39,6 +39,16 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   const [currentRiskIndex, setCurrentRiskIndex] = useState(0)
   const [copiedItem, setCopiedItem] = useState(null)
   const [feedbackGiven, setFeedbackGiven] = useState({})
+  
+  // Simple persistence using ref to avoid re-render loops
+  const persistedState = useRef({
+    currentInsightIndex: 0,
+    currentRiskIndex: 0,
+    copiedItem: null,
+    feedbackGiven: {},
+    isInitialized: false,
+    lastResultsId: null
+  })
   const selectedFrom = useMemo(() => {
     if (!activeHighlight) return null
     if (activeHighlight.startsWith('insight-')) {
@@ -126,10 +136,19 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     ]
     setHighlights(newHighlights)
 
-    // Reset pagination indices when new data arrives
-    setCurrentInsightIndex(0)
-    setCurrentRiskIndex(0)
   }, [results])
+  
+  // Separate useEffect for initialization to avoid conflicts
+  useEffect(() => {
+    if (!persistedState.current.isInitialized) {
+      // First time initialization - use persisted state if available
+      setCurrentInsightIndex(persistedState.current.currentInsightIndex || 0)
+      setCurrentRiskIndex(persistedState.current.currentRiskIndex || 0)
+      if (persistedState.current.copiedItem) setCopiedItem(persistedState.current.copiedItem)
+      if (persistedState.current.feedbackGiven) setFeedbackGiven(persistedState.current.feedbackGiven)
+      persistedState.current.isInitialized = true
+    }
+  }, []) // Run only once on mount
 
   // Sync displayed item when a highlight is selected externally (from extractive text)
   useEffect(() => {
@@ -278,6 +297,17 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     }
   }
 
+  // Persist state changes
+  useEffect(() => {
+    persistedState.current = {
+      ...persistedState.current,
+      currentInsightIndex,
+      currentRiskIndex,
+      copiedItem,
+      feedbackGiven
+    }
+  }, [currentInsightIndex, currentRiskIndex, copiedItem, feedbackGiven])
+  
   // Get current items for display
   const currentInsight = insights[currentInsightIndex]
   const currentRisk = risks[currentRiskIndex]
@@ -306,7 +336,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   return (
     <div className="space-y-6 p-4 sm:p-4 h-full overflow-y-auto">
       {/* Selection banner when coming from extractive text */}
-      {selectedFrom && selectedFrom.index !== null && (
+      {/* {selectedFrom && selectedFrom.index !== null && (
         <div className="flex items-center justify-between p-2 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 text-xs">
           <span>
             Selected from Extractive Text: {selectedFrom.type === 'insight' ? 'Insight' : 'Risk'} #{selectedFrom.index + 1}
@@ -320,7 +350,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
             </button>
           )}
         </div>
-      )}
+      )} */}
       {/* Executive Summary - Only show if showSummary is true */}
       {showSummary && (
         <Card className="border-0 shadow-xl dark:bg-black">

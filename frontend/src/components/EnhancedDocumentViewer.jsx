@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
@@ -17,17 +17,68 @@ import html2canvas from 'html2canvas'
 function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, isDemoMode = false, bypassAPI = false }) {
   const [activeHighlight, setActiveHighlight] = useState(null)
   const [highlights, setHighlights] = useState([])
-  const [activeTab, setActiveTab] = useState('analysis') // Initialize with default tab
+  const [activeTab, setActiveTab] = useState('analysis')
   const [tabChangeKey, setTabChangeKey] = useState(0)
   const [docxContent, setDocxContent] = useState(null)
   const [docxLoading, setDocxLoading] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  
+  // Tab state storage for persistence
+  const tabStateRef = useRef({})
+  const tabContentRefs = useRef({})
 
-  // Handle tab change with animation
-  const handleTabChange = (newTab) => {
+  // Save current tab state
+  const saveCurrentTabState = useCallback(() => {
+    if (!activeTab || !tabContentRefs.current[activeTab]) return
+    
+    const tabElement = tabContentRefs.current[activeTab]
+    const scrollPosition = tabElement ? tabElement.scrollTop : 0
+    
+    tabStateRef.current[activeTab] = {
+      scrollPosition,
+      activeHighlight,
+      highlights: [...highlights],
+      timestamp: Date.now()
+    }
+  }, [activeTab, activeHighlight, highlights])
+  
+  // Restore tab state
+  const restoreTabState = useCallback((tabId) => {
+    const savedState = tabStateRef.current[tabId]
+    if (!savedState) return
+    
+    // Only restore if we have recent state (within last 5 minutes)
+    if (Date.now() - savedState.timestamp < 300000) {
+      if (savedState.activeHighlight !== undefined) {
+        setActiveHighlight(savedState.activeHighlight)
+      }
+      if (savedState.highlights && Array.isArray(savedState.highlights)) {
+        setHighlights(savedState.highlights)
+      }
+      
+      // Restore scroll position
+      setTimeout(() => {
+        const tabElement = tabContentRefs.current[tabId]
+        if (tabElement && savedState.scrollPosition !== undefined) {
+          tabElement.scrollTop = savedState.scrollPosition
+        }
+      }, 100)
+    }
+  }, [])
+  
+  // Handle tab change with persistence
+  const handleTabChange = useCallback((newTab) => {
+    // Save current state before switching
+    saveCurrentTabState()
+    
     setTabChangeKey(prev => prev + 1)
     setActiveTab(newTab)
-  }
+    
+    // Restore new tab state after a short delay
+    setTimeout(() => {
+      restoreTabState(newTab)
+    }, 50)
+  }, [saveCurrentTabState, restoreTabState])
 
   // PDF Export functionality
   const exportToPDF = async () => {
@@ -559,16 +610,23 @@ This business plan effectively balances growth ambitions with comprehensive risk
 
   // Set default tab based on document availability
   useEffect(() => {
-    if (!activeTab) {
+    if (activeTab === 'analysis' || !activeTab) { // Only set if still on default
       if (hasDocumentViewer) {
         setActiveTab("document-viewer")
       } else if (isDemoMode || bypassAPI) {
         setActiveTab("analysis")
       } else {
-        setActiveTab("document")
+        setActiveTab("analysis")
       }
     }
-  }, [hasDocumentViewer, activeTab, isDemoMode, bypassAPI])
+  }, [hasDocumentViewer, isDemoMode, bypassAPI])
+  
+  // Save state when component unmounts
+  useEffect(() => {
+    return () => {
+      saveCurrentTabState()
+    }
+  }, [saveCurrentTabState])
 
   // Generate highlights from analysis results
   useEffect(() => {
@@ -749,9 +807,16 @@ This business plan effectively balances growth ambitions with comprehensive risk
           </div>
 
           <div className="flex-1 overflow-hidden dark:bg-[#121212]">
+            {/* Render all tabs but only show the active one */}
+            
             {/* Document Viewer Tab (PDF or DOCX) */}
             {hasDocumentViewer && (
-              <TabsContent value="document-viewer" className="h-full mt-1 sm:mt-2 px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter">
+              <div 
+                className={`h-full mt-1 sm:mt-2 px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter ${
+                  activeTab === 'document-viewer' ? 'block' : 'hidden'
+                }`}
+                ref={el => tabContentRefs.current['document-viewer'] = el}
+              >
                 {isPDF ? (
                   <Card className="h-full border-0 shadow-xl">
                     <CardContent className="p-0 h-full">
@@ -818,10 +883,16 @@ This business plan effectively balances growth ambitions with comprehensive risk
                     }}
                   />
                 )}
-              </TabsContent>
+              </div>
             )}
 
-            <TabsContent value="swot" className="h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter">
+            {/* SWOT Tab */}
+            <div 
+              className={`h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter ${
+                activeTab === 'swot' ? 'block' : 'hidden'
+              }`}
+              ref={el => tabContentRefs.current['swot'] = el}
+            >
               <SWOTAnalysis
                 swot={
                   isDemoMode || bypassAPI
@@ -836,10 +907,15 @@ This business plan effectively balances growth ambitions with comprehensive risk
                 isDemoMode={isDemoMode}
                 bypassAPI={bypassAPI}
               />
-            </TabsContent>
+            </div>
 
             {/* AI Analysis Summary Tab */}
-            <TabsContent value="analysis" className="h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter">
+            <div 
+              className={`h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter ${
+                activeTab === 'analysis' ? 'block' : 'hidden'
+              }`}
+              ref={el => tabContentRefs.current['analysis'] = el}
+            >
               <Card className="border-0 shadow-lg dark:bg-black">
                 <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -943,10 +1019,15 @@ This business plan effectively balances growth ambitions with comprehensive risk
                   bypassAPI={bypassAPI}
                 />
               </div>
-            </TabsContent>
+            </div>
 
             {/* Insights & Risks Tab */}
-            <TabsContent value="insights" className="h-full mt-1 sm:mt-2 overflow-y-auto animate-tab-enter">
+            <div 
+              className={`h-full mt-1 sm:mt-2 overflow-y-auto animate-tab-enter ${
+                activeTab === 'insights' ? 'block' : 'hidden'
+              }`}
+              ref={el => tabContentRefs.current['insights'] = el}
+            >
               <ProfessionalAnalysisDisplay
                 results={results}
                 onHighlightClick={handleShowInDocument}
@@ -954,10 +1035,15 @@ This business plan effectively balances growth ambitions with comprehensive risk
                 showSummary={false}
                 onActiveHighlightChange={(newId) => setActiveHighlight(newId)}
               />
-            </TabsContent>
+            </div>
 
             {/* Interactive Document Text Tab */}
-            <TabsContent value="document" className="h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter">
+            <div 
+              className={`h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter ${
+                activeTab === 'document' ? 'block' : 'hidden'
+              }`}
+              ref={el => tabContentRefs.current['document'] = el}
+            >
               <Card className="border-0 shadow-xl">
                 <CardHeader className="px-3 sm:px-4">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2">
@@ -1093,7 +1179,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                   )}
                 </CardContent>
               </Card>
-            </TabsContent>
+            </div>
           </div>
         </Tabs>
       </div>
