@@ -67,7 +67,7 @@ class ResendVerificationRequest(BaseModel):
 class Token(BaseModel):
     access_token: str   
     token_type: str = "bearer"
-    expires_in: int = 1 * 60  # 15 minutes in seconds
+    expires_in: int = 1 * 60 * 60  # 1 hour in seconds
 
 class TokenRefresh(BaseModel):
     refresh_token: Optional[str] = None  # Optional since it can come from cookie

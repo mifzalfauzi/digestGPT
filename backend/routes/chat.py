@@ -10,9 +10,11 @@ import os
 import uuid
 import tiktoken
 import re
+import secrets
+import json
 
 from database import get_db
-from models import User, Document, ChatHistory
+from models import User, Document, ChatHistory, PublicChatShare, PublicChatView
 from dependencies import (
     get_current_active_user,
     check_chat_limit,
@@ -102,6 +104,38 @@ class ChatHistoryResponse(BaseModel):
     filename: str
     chat_history: List[ChatHistoryItem]
     total: int
+
+
+class CreatePublicShareRequest(BaseModel):
+    document_id: uuid.UUID
+    title: str
+    description: Optional[str] = None
+
+
+class CreatePublicShareResponse(BaseModel):
+    success: bool
+    share_token: str
+    share_url: str
+    title: str
+    description: Optional[str]
+    created_at: str
+
+
+class PublicShareData(BaseModel):
+    title: str
+    description: Optional[str]
+    document_filename: str
+    chat_history: List[ChatHistoryItem]
+    view_count: int
+    created_at: str
+    # Document analysis data for rich public viewing
+    overview: Optional[str] = None
+    key_concepts: Optional[List[dict]] = None
+    key_points: Optional[List[dict]] = None
+    risk_flags: Optional[List[dict]] = None
+    swot_analysis: Optional[dict] = None
+    extracted_text: Optional[str] = None
+    file_url: Optional[str] = None
 
 
 def estimate_tokens_tiktoken(text: str, model: str = "gpt-3.5-turbo") -> int:
@@ -654,3 +688,246 @@ async def delete_chat_history(
     db.commit()
 
     return {"message": f"Deleted {deleted_count} chat messages"}
+
+
+@router.post("/create-public-share", response_model=CreatePublicShareResponse)
+async def create_public_share(
+    share_request: CreatePublicShareRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Create a public share link for a document's chat conversation"""
+    
+    # Verify document belongs to user
+    document = (
+        db.query(Document)
+        .filter(
+            Document.id == share_request.document_id, 
+            Document.user_id == current_user.id
+        )
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Document not found"
+        )
+
+    # Check if document has any chat history
+    chat_history_exists = (
+        db.query(ChatHistory)
+        .filter(
+            ChatHistory.document_id == share_request.document_id,
+            ChatHistory.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if not chat_history_exists:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot share a conversation with no chat history"
+        )
+
+    # Generate unique share token and chat session ID
+    share_token = secrets.token_urlsafe(32)
+    chat_session_id = uuid.uuid4()
+    
+    # Ensure token is unique (very unlikely to collide, but be safe)
+    while db.query(PublicChatShare).filter(PublicChatShare.share_token == share_token).first():
+        share_token = secrets.token_urlsafe(32)
+
+    try:
+        # Create the public share record
+        public_share = PublicChatShare(
+            user_id=current_user.id,
+            document_id=share_request.document_id,
+            chat_session_id=chat_session_id,
+            share_token=share_token,
+            title=share_request.title,
+            description=share_request.description,
+            is_active=True,
+            allow_download=False,  # Default to false for simple implementation
+            password_protected=False,  # Default to false for simple implementation
+            view_count=0
+        )
+
+        db.add(public_share)
+        db.commit()
+        db.refresh(public_share)
+
+        # Construct the public URL (you may want to make this configurable)
+        base_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        share_url = f"{base_url}/share/{share_token}"
+
+        return CreatePublicShareResponse(
+            success=True,
+            share_token=share_token,
+            share_url=share_url,
+            title=share_request.title,
+            description=share_request.description,
+            created_at=public_share.created_at.isoformat()
+        )
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create public share: {str(e)}"
+        )
+
+
+@router.get("/public-share/{share_token}", response_model=PublicShareData)
+async def get_public_share(
+    share_token: str,
+    db: Session = Depends(get_db),
+):
+    """Get public share data by share token (accessible without authentication)"""
+    
+    # Find the public share
+    public_share = (
+        db.query(PublicChatShare)
+        .filter(
+            PublicChatShare.share_token == share_token,
+            PublicChatShare.is_active == True
+        )
+        .first()
+    )
+
+    if not public_share:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Shared conversation not found or no longer available"
+        )
+
+    # Check if share has expired (if expiration is set)
+    if public_share.expires_at and datetime.utcnow() > public_share.expires_at:
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail="This shared conversation has expired"
+        )
+
+    # Check view limits (if set)
+    if public_share.max_views and public_share.view_count >= public_share.max_views:
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail="This shared conversation has reached its view limit"
+        )
+
+    # Get the document
+    document = (
+        db.query(Document)
+        .filter(Document.id == public_share.document_id)
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Associated document not found"
+        )
+
+    # Get chat history for this document
+    chat_history = (
+        db.query(ChatHistory)
+        .filter(
+            ChatHistory.document_id == public_share.document_id,
+            ChatHistory.user_id == public_share.user_id,
+        )
+        .order_by(ChatHistory.timestamp.asc())  # Chronological order for public view
+        .all()
+    )
+
+    # Convert to response format
+    chat_items = [
+        ChatHistoryItem(
+            id=chat.id,
+            user_message=chat.question,
+            ai_response=chat.answer,
+            timestamp=chat.timestamp.isoformat(),
+        )
+        for chat in chat_history
+    ]
+
+    # Parse document analysis data for public viewing
+    overview = document.summary if document.summary else None  # Use 'summary' field not 'overview'
+    extracted_text = document.document_text if document.document_text else None  # Use 'document_text' field
+    file_url = document.file_url if document.file_url else None
+    
+    # Parse key concepts
+    key_concepts = []
+    if document.key_concepts:
+        try:
+            key_concepts = json.loads(document.key_concepts)
+            if not isinstance(key_concepts, list):
+                key_concepts = []
+        except (json.JSONDecodeError, TypeError):
+            key_concepts = []
+    
+    # Parse key points
+    key_points = []
+    if document.key_points:
+        try:
+            key_points = json.loads(document.key_points)
+            if not isinstance(key_points, list):
+                key_points = []
+        except (json.JSONDecodeError, TypeError):
+            key_points = []
+    
+    # Parse risk flags
+    risk_flags = []
+    if document.risk_flags:
+        try:
+            risk_flags = json.loads(document.risk_flags)
+            if not isinstance(risk_flags, list):
+                risk_flags = []
+        except (json.JSONDecodeError, TypeError):
+            risk_flags = []
+    
+    # Parse SWOT analysis
+    swot_analysis = {}
+    if document.swot_analysis:
+        try:
+            parsed_swot = json.loads(document.swot_analysis)
+            if isinstance(parsed_swot, dict):
+                swot_analysis = {
+                    "strengths": parsed_swot.get("strengths", []),
+                    "weaknesses": parsed_swot.get("weaknesses", []),
+                    "opportunities": parsed_swot.get("opportunities", []),
+                    "threats": parsed_swot.get("threats", [])
+                }
+        except (json.JSONDecodeError, TypeError):
+            swot_analysis = {}
+
+    # Increment view count and log the view
+    try:
+        public_share.view_count += 1
+        public_share.last_accessed = datetime.utcnow()
+        
+        # Log the view for analytics (optional: could extract IP, user agent from request)
+        view_log = PublicChatView(
+            share_id=public_share.id,
+            viewed_at=datetime.utcnow()
+        )
+        db.add(view_log)
+        db.commit()
+    except Exception as e:
+        print(f"Warning: Failed to update view count: {e}")
+        db.rollback()
+
+    return PublicShareData(
+        title=public_share.title,
+        description=public_share.description,
+        document_filename=document.filename,
+        chat_history=chat_items,
+        view_count=public_share.view_count,
+        created_at=public_share.created_at.isoformat(),
+        overview=overview,
+        key_concepts=key_concepts,
+        key_points=key_points,
+        risk_flags=risk_flags,
+        swot_analysis=swot_analysis,
+        extracted_text=extracted_text,
+        file_url=file_url
+    )

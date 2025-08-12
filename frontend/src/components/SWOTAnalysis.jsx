@@ -498,7 +498,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
   return (
     <div className="max-w-6xl mx-auto space-y-4">
       {/* Professional Header Card - Following exact styling */}
-      <Card className="border-0 mt-2 sm:mt-3 shadow-lg">
+      <Card className="border-0 shadow-lg">
         <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -509,7 +509,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                 <CardTitle className="text-sm sm:text-base lg:text-lg font-bold text-slate-900 dark:text-white">
                   SWOT Analysis
                   {isDemoMode && <span className="text-xs text-orange-500 font-normal ml-2">(Demo)</span>}
-                  {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal ml-2">(Preview)</span>}
+                  {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal ml-2"></span>}
                 </CardTitle>
                 <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
                   Strategic analysis by <span className="text-center inline-block font-bold">
@@ -521,33 +521,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
             </div>
 
             {/* Demo/Bypass Status Badge */}
-            {(isDemoMode || bypassAPI) && (
-              <div className={`flex items-center gap-2 rounded-lg p-2 border ${
-                isDemoMode
-                  ? 'bg-gradient-to-r from-orange-50/80 to-amber-50/80 dark:from-orange-800/80 dark:to-amber-900/80 border-orange-200/50 dark:border-orange-700/50'
-                  : 'bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-800/80 dark:to-emerald-900/80 border-green-200/50 dark:border-green-700/50'
-              }`}>
-                <div className={`p-1 rounded-lg ${
-                  isDemoMode
-                    ? 'bg-gradient-to-br from-orange-500 to-amber-600'
-                    : 'bg-gradient-to-br from-green-500 to-emerald-600'
-                }`}>
-                  <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className={`text-xs font-medium ${
-                    isDemoMode ? 'text-orange-700 dark:text-orange-300' : 'text-green-700 dark:text-green-300'
-                  }`}>
-                    {isDemoMode ? 'Demo Mode' : 'Preview Mode'}
-                  </p>
-                  <p className={`text-xs ${
-                    isDemoMode ? 'text-orange-500 dark:text-orange-400' : 'text-green-500 dark:text-green-400'
-                  }`}>
-                    Sample data
-                  </p>
-                </div>
-              </div>
-            )}
+            
           </div>
         </CardHeader>
         <CardContent className="space-y-2 sm:space-y-3 px-3 sm:px-4">
@@ -619,7 +593,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
               <CardTitle className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
                 SWOT Insights
                 {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
-                {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal">(Preview)</span>}
+                {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal"></span>}
               </CardTitle>
               <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
                 Internal strengths & weaknesses and external opportunities & threats

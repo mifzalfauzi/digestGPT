@@ -274,7 +274,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   }
 
   return (
-    <div className="space-y-6 p-4 sm:p-6 h-full overflow-y-auto">
+    <div className="space-y-6 p-4 sm:p-4 h-full overflow-y-auto">
       {/* Executive Summary - Only show if showSummary is true */}
       {showSummary && (
         <Card className="border-0 shadow-xl dark:bg-black">
@@ -346,7 +346,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       )}
 
       {/* Key Insights Section */}
-      <Card className="border shadow-lg">
+      <Card className="border-0 shadow-lg">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -529,7 +529,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       </Card>
 
       {/* Risk Assessment Section */}
-      <Card className="border shadow-lg">
+      <Card className="border-0 shadow-lg">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

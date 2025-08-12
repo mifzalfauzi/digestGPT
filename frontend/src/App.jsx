@@ -17,6 +17,7 @@ import WelcomePage from './pages/WelcomePage'
 import StripeSuccess from './components/StripeSuccess'
 import StripeCancel from './components/StripeCancel'
 import CheckingAuthPage from './pages/CheckingAuth'
+import PublicSharePage from './pages/PublicSharePage'
 
 // Simplified Protected Route Component
 function ProtectedRoute({ children }) {
@@ -141,6 +142,7 @@ function AppContent() {
         {/* Special routes that don't need auth protection */}
         <Route path="/auth-callback" element={<AuthCallback />} />
         <Route path="/checking-auth" element={<CheckingAuthPage />} />
+        <Route path="/share/:shareToken" element={<PublicSharePage />} />
         
         {/* Default redirects */}
         <Route path="/" element={<Navigate to="/coming-soon" replace />} />

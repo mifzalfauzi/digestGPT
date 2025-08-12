@@ -40,7 +40,7 @@ def set_access_token_cookie(response: Response, access_token: str):
             key=ACCESS_TOKEN_COOKIE_NAME,
             value=access_token,
             httponly=True,
-            max_age=15 * 60,  # 15 minutes
+            max_age=60 * 60,  # 1 hour
             secure=True,
             samesite="lax",
             path="/"
@@ -51,7 +51,7 @@ def set_access_token_cookie(response: Response, access_token: str):
             key=ACCESS_TOKEN_COOKIE_NAME,
             value=access_token,
             httponly=True,
-            max_age=15 * 60,  # 15 minutes
+            max_age=60 * 60,  # 1 hour
             secure=False,
             # No samesite for development
             path="/"

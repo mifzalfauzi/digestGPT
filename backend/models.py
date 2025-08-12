@@ -159,4 +159,50 @@ class Payment(Base):
     status = Column(String)  # e.g., "succeeded", "pending", etc.
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     invoice_url = Column(String, nullable=True)
+    
+class PublicChatShare(Base):
+    __tablename__ = "public_chat_shares"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    chat_session_id = Column(UUID(as_uuid=True), nullable=False, index=True)  # Links to ChatHistory
+    document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id"), nullable=True)  # Optional: link to document
+    
+    # Public sharing details
+    share_token = Column(String, unique=True, nullable=False, index=True)  # Unique public URL token
+    title = Column(String, nullable=True)  # Optional: custom title for the shared chat
+    description = Column(Text, nullable=True)  # Optional: description of the chat
+    
+    # Sharing settings
+    is_active = Column(Boolean, default=True)  # Can be disabled without deleting
+    allow_download = Column(Boolean, default=False)  # Allow downloading chat transcript
+    password_protected = Column(Boolean, default=False)  # Require password to view
+    access_password = Column(String, nullable=True)  # Hashed password if protected
+    
+    # Analytics and limits
+    view_count = Column(Integer, default=0)  # Track how many times it's been viewed
+    max_views = Column(Integer, nullable=True)  # Optional: limit number of views
+    expires_at = Column(DateTime(timezone=True), nullable=True)  # Optional: expiration date
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_accessed = Column(DateTime(timezone=True), nullable=True)  # When last viewed by public
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+# 5. NEW: Public Chat Views (for analytics)
+class PublicChatView(Base):
+    __tablename__ = "public_chat_views"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    share_id = Column(UUID(as_uuid=True), ForeignKey("public_chat_shares.id"), nullable=False)
+    
+    # Viewer information (anonymous)
+    ip_address = Column(String, nullable=True)  # For basic analytics
+    user_agent = Column(String, nullable=True)  # Browser/device info
+    country = Column(String, nullable=True)  # Detected country
+    referrer = Column(String, nullable=True)  # Where they came from
+    
+    # View details
+    viewed_at = Column(DateTime(timezone=True), server_default=func.now())
+    session_duration = Column(Integer, nullable=True)  # How long they stayed (seconds)
 

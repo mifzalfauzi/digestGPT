@@ -6,7 +6,7 @@ import { Textarea } from './ui/textarea'
 import { Badge } from './ui/badge'
 import { Card, CardHeader, CardContent } from './ui/card'
 import { Separator } from './ui/separator'
-import { MessageCircle, Send, Bot, User, AlertCircle, Trash2, Sparkles, Brain, Zap, ThumbsUp, ThumbsDown, Copy, Check, Clock, ChevronDown } from 'lucide-react'
+import { MessageCircle, Send, Bot, User, AlertCircle, Trash2, Sparkles, Brain, Zap, ThumbsUp, ThumbsDown, Copy, Check, Clock, ChevronDown, Share2, ExternalLink, Link, Eye, X } from 'lucide-react'
 import MessageFormatter from './MessageFormatter'
 import TypewriterText from './TypewriterText'
 
@@ -37,6 +37,11 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
   const scrollTimeoutRef = useRef(null)
   const lastScrollHeightRef = useRef(0)
   const scrollThresholdRef = useRef(0)
+  
+  // Share functionality state
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+  const [shareData, setShareData] = useState(null)
+  const [isCreatingShare, setIsCreatingShare] = useState(false)
 
   // Mock responses for demo mode and API bypass mode
   const mockResponses = [
@@ -520,6 +525,54 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
     "Explain the most important sections"
   ]
 
+  // Handle sharing functionality
+  const handleCreateShare = async () => {
+    if (!documentId || messages.length === 0 || isDemoMode || bypassAPI) {
+      console.error('Cannot create share: invalid state')
+      return
+    }
+
+    setIsCreatingShare(true)
+    try {
+      // Create the public share with minimal data
+      const response = await axios.post('http://localhost:8000/chat/create-public-share', {
+        document_id: documentId,
+        title: `Chat about ${filename}`,
+        description: `Public conversation about ${filename}`
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        withCredentials: true,
+      })
+
+      setShareData(response.data)
+      console.log('Share created successfully:', response.data)
+    } catch (error) {
+      console.error('Error creating share:', error)
+      setChatError('Failed to create public share. Please try again.')
+    } finally {
+      setIsCreatingShare(false)
+    }
+  }
+
+  const handleCopyShareLink = async () => {
+    if (!shareData?.share_url) return
+    
+    try {
+      await navigator.clipboard.writeText(shareData.share_url)
+      setCopiedMessageId('share-link')
+      setTimeout(() => setCopiedMessageId(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy share link:', err)
+    }
+  }
+
+  const handleCloseShareModal = () => {
+    setIsShareModalOpen(false)
+    setShareData(null)
+  }
+
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800">
       {/* Modern Header - Responsive - Fixed at top */}
@@ -548,7 +601,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                     <span className="text-xs text-orange-500 font-normal">(Demo)</span>
                   )}
                   {bypassAPI && !isDemoMode && (
-                    <span className="text-xs text-green-600 font-normal">(Preview)</span>
+                    <span className="text-xs text-green-600 font-normal"></span>
                   )}
                 </h2>
 
@@ -564,15 +617,22 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
               </div>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearChat}
-            disabled={messages.length === 0}
-            className="text-slate-500 hover:text-slate-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-700 p-1 sm:p-1.5"
-          >
-            <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-          </Button>
+
+          {/* Share button - only show when not in casual mode and has messages */}
+          {!casualMode && documentId && messages.length > 0 && (
+            <div className="flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsShareModalOpen(true)}
+                className="h-6 w-6 sm:h-7 sm:w-7 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
+                title="Share this conversation publicly"
+              >
+                <Share2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              </Button>
+            </div>
+          )}
+        
         </div>
       </div>
 
@@ -981,6 +1041,153 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
           </div>
         </form>
       </div>
+
+      {/* Share Modal */}
+      {isShareModalOpen && (
+        <>
+          {/* Backdrop */}
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[80]" onClick={handleCloseShareModal} />
+          
+          {/* Modal */}
+          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-lg shadow-xl z-[90] w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Share Conversation
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCloseShareModal}
+                  className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {!shareData ? (
+                <>
+                  {/* Simple Create Interface */}
+                  <div className="text-center space-y-4">
+                    <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto">
+                      <Share2 className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                        Share This Conversation
+                      </h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Create a public link to share this conversation. Anyone with the link will be able to view the chat and document.
+                      </p>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-3 pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={handleCloseShareModal}
+                        className="flex-1"
+                        disabled={isCreatingShare}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleCreateShare}
+                        disabled={isCreatingShare}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700"
+                      >
+                        {isCreatingShare ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                            Creating Link...
+                          </>
+                        ) : (
+                          <>
+                            <Share2 className="h-4 w-4 mr-2" />
+                            Create Share Link
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Share Success */}
+                  <div className="text-center space-y-4">
+                    <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto">
+                      <Check className="h-8 w-8 text-green-600 dark:text-green-400" />
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                        Share Link Created!
+                      </h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Your conversation is now publicly accessible via this link:
+                      </p>
+                    </div>
+
+                    {/* Share Link */}
+                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg border">
+                      <div className="flex items-center gap-2">
+                        <Link className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-mono text-gray-900 dark:text-white break-all">
+                            {shareData.share_url}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleCopyShareLink}
+                          className={`flex-shrink-0 ${copiedMessageId === 'share-link' ? 'text-green-600' : ''}`}
+                        >
+                          {copiedMessageId === 'share-link' ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Share Stats */}
+                    {shareData.share_token && (
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                        <div className="flex items-center gap-2 text-sm text-blue-800 dark:text-blue-200">
+                          <Eye className="h-4 w-4" />
+                          <span>Share ID: {shareData.share_token}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex gap-3 pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => window.open(shareData.share_url, '_blank')}
+                        className="flex-1"
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Preview
+                      </Button>
+                      <Button
+                        onClick={handleCloseShareModal}
+                        className="flex-1 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900"
+                      >
+                        Done
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

@@ -33,7 +33,7 @@ function KeyConceptsDisplay({ concepts = [], onExplainConcept, isDemoMode = fals
               <CardTitle className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
                 Key Concepts 
                 {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
-                {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal">(Preview)</span>}
+                {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal"></span>}
               </CardTitle>
               <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
                 Important terms and concepts identified
@@ -61,7 +61,7 @@ function KeyConceptsDisplay({ concepts = [], onExplainConcept, isDemoMode = fals
   }
 
   return (
-    <Card className="border-0 shadow-lg">
+    <Card className="border shadow-2xl dark:bg-[#000000]">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -72,13 +72,13 @@ function KeyConceptsDisplay({ concepts = [], onExplainConcept, isDemoMode = fals
               <CardTitle className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
                 Key Concepts 
                 {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
-                {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal">(Preview)</span>}
+                {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal"></span>}
               </CardTitle>
               <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
                 {isDemoMode 
                   ? 'Sample concepts from demo document' 
                   : bypassAPI 
-                  ? 'Mock concepts for interface preview'
+                  ? 'Important terms and concepts identified'
                   : 'Important terms and concepts identified'
                 }
               </p>
@@ -96,24 +96,7 @@ function KeyConceptsDisplay({ concepts = [], onExplainConcept, isDemoMode = fals
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
-        {(isDemoMode || bypassAPI) && (
-          <div className={`mb-3 p-2 border rounded-lg ${
-            isDemoMode 
-              ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
-              : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-          }`}>
-            <p className={`text-xs font-medium ${
-              isDemoMode 
-                ? 'text-orange-700 dark:text-orange-300' 
-                : 'text-green-700 dark:text-green-300'
-            }`}>
-              {isDemoMode 
-                ? '💡 Demo Mode - These are sample concepts from the business plan demo'
-                : '💡 Preview Mode - Mock concepts loaded to showcase functionality without API usage'
-              }
-            </p>
-          </div>
-        )}
+ 
         
         <div className="grid gap-2">
           {concepts.map((concept, index) => {
@@ -259,40 +242,8 @@ function KeyConceptsDisplay({ concepts = [], onExplainConcept, isDemoMode = fals
         </div>
 
         {/* Summary Footer */}
-        <div className={`mt-4 p-3 rounded-xl border ${
-          isDemoMode 
-            ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
-            : bypassAPI
-            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-            : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
-        }`}>
-          <div className={`flex items-center gap-2 text-sm ${
-            isDemoMode 
-              ? 'text-orange-800 dark:text-orange-200' 
-              : bypassAPI
-              ? 'text-green-800 dark:text-green-200'
-              : 'text-amber-800 dark:text-amber-200'
-          }`}>
-            <Info className="h-3.5 w-3.5" />
-            <span className="font-medium">
-              {concepts.length} key {concepts.length === 1 ? 'concept' : 'concepts'} {isDemoMode ? 'in demo' : bypassAPI ? 'in preview' : 'identified'}
-            </span>
-          </div>
-          <p className={`text-xs mt-1 ${
-            isDemoMode 
-              ? 'text-orange-700 dark:text-orange-300' 
-              : bypassAPI
-              ? 'text-green-700 dark:text-green-300'
-              : 'text-amber-700 dark:text-amber-300'
-          }`}>
-            {isDemoMode 
-              ? 'In demo mode - try clicking concepts above to see explanations and chat integration.'
-              : bypassAPI
-              ? 'Preview mode with mock data - click concepts to test functionality without API usage.'
-              : 'Click on any concept above to view its detailed explanation and context.'
-            }
-          </p>
-        </div>
+        
+         
       </CardContent>
     </Card>
   )

@@ -97,6 +97,7 @@ try:
             "/auth/logout",
             "/convert-docx-to-pdf",
             "/pdf/",
+            "/chat/public-share/",
             "/debug/test-middleware",
             "/debug/force-expire-token",
             "/debug/test-cookie-setting"
