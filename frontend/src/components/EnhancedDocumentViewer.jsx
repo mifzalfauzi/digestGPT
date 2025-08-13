@@ -36,11 +36,9 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
     
     tabStateRef.current[activeTab] = {
       scrollPosition,
-      activeHighlight,
-      highlights: [...highlights],
       timestamp: Date.now()
     }
-  }, [activeTab, activeHighlight, highlights])
+  }, [activeTab])
   
   // Restore tab state
   const restoreTabState = useCallback((tabId) => {
@@ -49,13 +47,6 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
     
     // Only restore if we have recent state (within last 5 minutes)
     if (Date.now() - savedState.timestamp < 300000) {
-      if (savedState.activeHighlight !== undefined) {
-        setActiveHighlight(savedState.activeHighlight)
-      }
-      if (savedState.highlights && Array.isArray(savedState.highlights)) {
-        setHighlights(savedState.highlights)
-      }
-      
       // Restore scroll position
       setTimeout(() => {
         const tabElement = tabContentRefs.current[tabId]
@@ -711,10 +702,10 @@ This business plan effectively balances growth ambitions with comprehensive risk
     setDocxLoading(true)
     try {
       const arrayBuffer = await file.arrayBuffer()
-      const result = await mammoth.convertToHtml({ arrayBuffer })
-
+      const result = await mammoth.extractRawText({ arrayBuffer })
+      
       setDocxContent({
-        html: result.value,
+        text: result.value,
         messages: result.messages
       })
     } catch (err) {
@@ -1104,16 +1095,12 @@ This business plan effectively balances growth ambitions with comprehensive risk
 
                         {/* DOCX Content Display */}
                         {docxContent && !isDemoMode && !bypassAPI ? (
-                          <div className="prose prose-sm max-w-none dark:prose-invert">
-                            <div
-                              dangerouslySetInnerHTML={{ __html: docxContent.html }}
-                              style={{
-                                fontFamily: 'Inter, system-ui, sans-serif',
-                                lineHeight: '1.6',
-                                color: 'inherit'
-                              }}
-                            />
-                          </div>
+                          <HighlightableText
+                            text={docxContent.text}
+                            highlights={highlights}
+                            activeHighlight={activeHighlight}
+                            onHighlightClick={handleHighlightClick}
+                          />
                         ) : docxLoading ? (
                           <div className="flex items-center justify-center py-8">
                             <div className="text-center space-y-3">

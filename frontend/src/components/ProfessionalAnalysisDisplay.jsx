@@ -150,8 +150,11 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     }
   }, []) // Run only once on mount
 
-  // Only sync when activeHighlight changes due to external click (not tab restoration)
+  // Track if user manually changed pagination to avoid auto-sync conflicts
+  const userNavigatedManually = useRef(false)
   const previousActiveHighlight = useRef(activeHighlight)
+  
+  // Only sync when activeHighlight changes due to external click AND user hasn't manually navigated
   useEffect(() => {
     // Only sync if activeHighlight actually changed (not just tab restoration)
     if (!activeHighlight || activeHighlight === previousActiveHighlight.current) {
@@ -159,15 +162,17 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       return
     }
     
+    // Reset manual navigation flag when highlight changes
+    userNavigatedManually.current = false
     previousActiveHighlight.current = activeHighlight
     
-    if (activeHighlight.startsWith('insight-')) {
+    if (activeHighlight.startsWith('insight-') && !userNavigatedManually.current) {
       const idx = parseInt(activeHighlight.split('-')[1], 10)
       if (!isNaN(idx)) {
         const bounded = Math.min(Math.max(0, idx), Math.max(insights.length - 1, 0))
         setCurrentInsightIndex(bounded)
       }
-    } else if (activeHighlight.startsWith('risk-')) {
+    } else if (activeHighlight.startsWith('risk-') && !userNavigatedManually.current) {
       const idx = parseInt(activeHighlight.split('-')[1], 10)
       if (!isNaN(idx)) {
         const bounded = Math.min(Math.max(0, idx), Math.max(risks.length - 1, 0))
@@ -536,7 +541,11 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                             className="text-xs bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 border-emerald-300 dark:border-emerald-700"
                             onClick={(e) => {
                               e.stopPropagation()
-                              onHighlightClick(currentInsight.id)
+                              if (activeHighlight === currentInsight.id) {
+                                onActiveHighlightChange?.(null)
+                              } else {
+                                onHighlightClick(currentInsight.id)
+                              }
                             }}
                           >
                             <Search className="h-3 w-3 mr-1" />
@@ -562,7 +571,16 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentInsightIndex(prev => Math.max(0, prev - 1))}
+                  onClick={() => {
+                    userNavigatedManually.current = true
+                    setCurrentInsightIndex(prev => {
+                      const newIdx = Math.max(0, prev - 1)
+                      if (selectedFrom && selectedFrom.type === 'insight' && selectedFrom.index !== newIdx) {
+                        onActiveHighlightChange?.(null)
+                      }
+                      return newIdx
+                    })
+                  }}
                   disabled={currentInsightIndex === 0}
                   className="text-xs"
                 >
@@ -582,7 +600,10 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                             ? 'bg-emerald-500'
                             : 'bg-slate-300 dark:bg-gray-600 hover:bg-emerald-300'
                         }`}
-                        onClick={() => setCurrentInsightIndex(index)}
+                        onClick={() => {
+                          userNavigatedManually.current = true
+                          setCurrentInsightIndex(index)
+                        }}
                       />
                     ))}
                   </div>
@@ -590,7 +611,16 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentInsightIndex(prev => Math.min(insights.length - 1, prev + 1))}
+                  onClick={() => {
+                    userNavigatedManually.current = true
+                    setCurrentInsightIndex(prev => {
+                      const newIdx = Math.min(insights.length - 1, prev + 1)
+                      if (selectedFrom && selectedFrom.type === 'insight' && selectedFrom.index !== newIdx) {
+                        onActiveHighlightChange?.(null)
+                      }
+                      return newIdx
+                    })
+                  }}
                   disabled={currentInsightIndex === insights.length - 1}
                   className="text-xs"
                 >
@@ -731,8 +761,12 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                           size="sm"
                           className="text-xs bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 border-red-300 dark:border-red-700"
                           onClick={(e) => {
-                            e.stopPropagation() // Prevent alert click
-                            onHighlightClick(currentRisk.id)
+                            e.stopPropagation()
+                            if (activeHighlight === currentRisk.id) {
+                              onActiveHighlightChange?.(null)
+                            } else {
+                              onHighlightClick(currentRisk.id)
+                            }
                           }}
                         >
                           <Search className="h-3 w-3 mr-1" />
@@ -757,7 +791,16 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentRiskIndex(prev => Math.max(0, prev - 1))}
+                  onClick={() => {
+                    userNavigatedManually.current = true
+                    setCurrentRiskIndex(prev => {
+                      const newIdx = Math.max(0, prev - 1)
+                      if (selectedFrom && selectedFrom.type === 'risk' && selectedFrom.index !== newIdx) {
+                        onActiveHighlightChange?.(null)
+                      }
+                      return newIdx
+                    })
+                  }}
                   disabled={currentRiskIndex === 0}
                   className="text-xs"
                 >
@@ -777,7 +820,10 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                             ? 'bg-red-500'
                             : 'bg-slate-300 dark:bg-gray-600 hover:bg-red-300'
                         }`}
-                        onClick={() => setCurrentRiskIndex(index)}
+                        onClick={() => {
+                          userNavigatedManually.current = true
+                          setCurrentRiskIndex(index)
+                        }}
                       />
                     ))}
                   </div>
@@ -785,7 +831,16 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentRiskIndex(prev => Math.min(risks.length - 1, prev + 1))}
+                  onClick={() => {
+                    userNavigatedManually.current = true
+                    setCurrentRiskIndex(prev => {
+                      const newIdx = Math.min(risks.length - 1, prev + 1)
+                      if (selectedFrom && selectedFrom.type === 'risk' && selectedFrom.index !== newIdx) {
+                        onActiveHighlightChange?.(null)
+                      }
+                      return newIdx
+                    })
+                  }}
                   disabled={currentRiskIndex === risks.length - 1}
                   className="text-xs"
                 >
