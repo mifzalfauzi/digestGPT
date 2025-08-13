@@ -150,9 +150,17 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     }
   }, []) // Run only once on mount
 
-  // Sync displayed item when a highlight is selected externally (from extractive text)
+  // Only sync when activeHighlight changes due to external click (not tab restoration)
+  const previousActiveHighlight = useRef(activeHighlight)
   useEffect(() => {
-    if (!activeHighlight) return
+    // Only sync if activeHighlight actually changed (not just tab restoration)
+    if (!activeHighlight || activeHighlight === previousActiveHighlight.current) {
+      previousActiveHighlight.current = activeHighlight
+      return
+    }
+    
+    previousActiveHighlight.current = activeHighlight
+    
     if (activeHighlight.startsWith('insight-')) {
       const idx = parseInt(activeHighlight.split('-')[1], 10)
       if (!isNaN(idx)) {
