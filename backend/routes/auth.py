@@ -87,6 +87,8 @@ class UserProfileWithUsage(BaseModel):
     plan: str
     is_active: bool
     created_at: str
+    subscription_end_date: Optional[str] = None
+    timezone: Optional[str] = None
     usage: dict
 
 class GoogleTokenRequest(BaseModel):
@@ -736,6 +738,8 @@ async def get_current_user_profile(
         plan=current_user.plan.value,
         is_active=current_user.is_active,
         created_at=current_user.created_at.isoformat(),
+        subscription_end_date=current_user.subscription_end_date.isoformat() if current_user.subscription_end_date else None,
+        timezone=current_user.timezone,
         usage=usage_info["usage"]
     )
 

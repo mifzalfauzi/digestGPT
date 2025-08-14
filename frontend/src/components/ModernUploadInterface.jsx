@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs'
 import { Alert, AlertDescription } from './ui/alert'
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card'
 import { Badge } from './ui/badge'
-import { Upload, FileText, Brain, AlertTriangle, Loader2, Sparkles, Zap, Shield, Clock, X, CheckCircle } from 'lucide-react'
+import { Upload, FileText, Brain, AlertTriangle, Loader2, Sparkles, Zap, Shield, Clock, X, CheckCircle, Calendar } from 'lucide-react'
 
 const ModernUploadInterface = forwardRef(({
   file,
@@ -36,7 +36,7 @@ const ModernUploadInterface = forwardRef(({
   // File input reset function
   onFileInputReset
 }, ref) => {
-  const { canUploadDocument, getUsagePercentages } = useAuth()
+  const { canUploadDocument, getUsagePercentages, user } = useAuth()
   const [dragActive, setDragActive] = useState(false)
   const [showErrorModal, setShowErrorModal] = useState(false)
   const [modalError, setModalError] = useState('')
@@ -44,10 +44,50 @@ const ModernUploadInterface = forwardRef(({
   const [showTabWarningModal, setShowTabWarningModal] = useState(false)
   const [pendingTabSwitch, setPendingTabSwitch] = useState(null)
   const [showCollectionWarningModal, setShowCollectionWarningModal] = useState(false)
-  
+
   // Refs for file inputs
   const fileInputRef = useRef(null)
   const collectionInputRef = useRef(null)
+
+  // Subscription countdown component
+  const SubscriptionCountdown = () => {
+    if (!user?.subscription_end_date || user.plan === 'free') return null
+
+    const calculateDaysRemaining = () => {
+      const now = new Date()
+      const endDate = new Date(user.subscription_end_date)
+
+      // Convert to user's timezone if available
+      if (user.timezone) {
+        const nowInUserTz = new Date(now.toLocaleString("en-US", { timeZone: user.timezone }))
+        const endInUserTz = new Date(endDate.toLocaleString("en-US", { timeZone: user.timezone }))
+        const diffTime = endInUserTz - nowInUserTz
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      } else {
+        const diffTime = endDate - now
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      }
+    }
+
+    const daysRemaining = calculateDaysRemaining()
+
+    if (daysRemaining <= 0) return null
+
+    const getStatusColor = () => {
+      if (daysRemaining <= 3) return 'text-red-600 bg-red-50 border-red-200'
+      if (daysRemaining <= 7) return 'text-orange-600 bg-orange-50 border-orange-200'
+      return 'text-white bg-[#000000] border-white-200'
+    }
+
+    return (
+      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium ${getStatusColor()}`}>
+        {/* <Calendar className="h-4 w-4" /> */}
+        <span>
+          Ends in {daysRemaining} days
+        </span>
+      </div>
+    )
+  }
 
   // Expose resetFileInputs function to parent component
   useImperativeHandle(ref, () => ({
@@ -59,10 +99,10 @@ const ModernUploadInterface = forwardRef(({
     const preventDefault = (e) => {
       e.preventDefault()
     }
-    
+
     document.addEventListener('dragover', preventDefault)
     document.addEventListener('drop', preventDefault)
-    
+
     return () => {
       document.removeEventListener('dragover', preventDefault)
       document.removeEventListener('drop', preventDefault)
@@ -77,13 +117,13 @@ const ModernUploadInterface = forwardRef(({
   const handleDragEnter = (e) => {
     e.preventDefault()
     e.stopPropagation()
-    
+
     // Check if the dragged item is a file
     if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
-      const hasFiles = Array.from(e.dataTransfer.items).some(item => 
+      const hasFiles = Array.from(e.dataTransfer.items).some(item =>
         item.kind === 'file'
       )
-      
+
       if (hasFiles) {
         setDragCounter(prev => prev + 1)
         setDragActive(true)
@@ -94,9 +134,9 @@ const ModernUploadInterface = forwardRef(({
   const handleDragLeave = (e) => {
     e.preventDefault()
     e.stopPropagation()
-    
+
     setDragCounter(prev => prev - 1)
-    
+
     // Only set dragActive to false when we've completely left the drop zone
     if (dragCounter <= 1) {
       setDragActive(false)
@@ -107,10 +147,10 @@ const ModernUploadInterface = forwardRef(({
   const handleDrop = (e) => {
     e.preventDefault()
     e.stopPropagation()
-    
+
     setDragActive(false)
     setDragCounter(0)
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       // Create a synthetic event for file validation
       const syntheticEvent = {
@@ -142,10 +182,10 @@ const ModernUploadInterface = forwardRef(({
     if (!files || files.length === 0) return
 
     // Check for invalid file types first
-    const invalidFiles = Array.from(files).filter(file => 
+    const invalidFiles = Array.from(files).filter(file =>
       !file.name.toLowerCase().endsWith('.pdf')
     )
-    
+
     if (invalidFiles.length > 0) {
       const fileNames = invalidFiles.map(f => f.name).join(', ')
       const errorMessage = `Invalid file type(s): ${fileNames}. Please select PDF files only.`
@@ -158,7 +198,7 @@ const ModernUploadInterface = forwardRef(({
     if (inputMode === 'file') {
       const file = files[0]
       const maxSize = 5 * 1024 * 1024 // 5MB for single files
-      
+
       if (file.size > maxSize) {
         const maxSizeMB = maxSize / (1024 * 1024)
         const errorMessage = `File too large: ${file.name}. Maximum size is ${maxSizeMB}MB.`
@@ -166,7 +206,7 @@ const ModernUploadInterface = forwardRef(({
         setShowErrorModal(true)
         return
       }
-      
+
       // For single file mode, directly call handleFileChange
       handleFileChange(e)
       return
@@ -176,11 +216,11 @@ const ModernUploadInterface = forwardRef(({
     if (inputMode === 'collection') {
       const maxTotalSize = 10 * 1024 * 1024 // 10MB total for collection
       const maxPerFileSize = 5 * 1024 * 1024 // 5MB per file limit
-      
+
       // Check individual file sizes first
       const oversizedFiles = Array.from(files).filter(file => file.size > maxPerFileSize)
       const validSizedFiles = Array.from(files).filter(file => file.size <= maxPerFileSize)
-      
+
       // If all files are oversized, show error
       if (validSizedFiles.length === 0 && oversizedFiles.length > 0) {
         const fileNames = oversizedFiles.map(f => f.name).join(', ')
@@ -190,7 +230,7 @@ const ModernUploadInterface = forwardRef(({
         setShowErrorModal(true)
         return
       }
-      
+
       // If some files are oversized, show warning but continue with valid files
       if (oversizedFiles.length > 0 && validSizedFiles.length > 0) {
         const oversizedNames = oversizedFiles.map(f => f.name).join(', ')
@@ -199,7 +239,7 @@ const ModernUploadInterface = forwardRef(({
         setModalError(warningMessage)
         setShowErrorModal(true)
       }
-      
+
       // Check total collection size
       const totalSize = validSizedFiles.reduce((sum, file) => sum + file.size, 0)
       if (totalSize > maxTotalSize) {
@@ -230,39 +270,39 @@ const ModernUploadInterface = forwardRef(({
     const fileArray = Array.from(files)
     const validFiles = []
     const errors = []
-    
+
     const maxSize = inputMode === 'collection' ? 10 * 1024 * 1024 : 5 * 1024 * 1024
-    
+
     for (const selectedFile of fileArray) {
       // Check file type
       if (!selectedFile.name.toLowerCase().endsWith('.pdf') && !selectedFile.name.toLowerCase().endsWith('.docx')) {
         errors.push(`Invalid file type: ${selectedFile.name}. Please select PDF or DOCX files.`)
         continue
       }
-      
+
       // Check file size
       if (selectedFile.size > maxSize) {
         const maxSizeMB = maxSize / (1024 * 1024)
         errors.push(`File too large: ${selectedFile.name}. Maximum size is ${maxSizeMB}MB.`)
         continue
       }
-      
+
       // Check for duplicates
-      const isDuplicate = stagedFiles.some(staged => 
+      const isDuplicate = stagedFiles.some(staged =>
         staged.name === selectedFile.name && staged.size === selectedFile.size
       )
-      
+
       if (!isDuplicate) {
         validFiles.push(selectedFile)
       }
     }
-    
+
     if (errors.length > 0) {
       setModalError(errors.join('\n'))
       setShowErrorModal(true)
       return
     }
-    
+
     if (validFiles.length > 0) {
       handleMultipleFileChange(validFiles)
     }
@@ -302,7 +342,7 @@ const ModernUploadInterface = forwardRef(({
     } else if (inputMode === 'text') {
       setTextInput('')
     }
-    
+
     // Switch to the pending tab
     setInputMode(pendingTabSwitch)
     setShowTabWarningModal(false)
@@ -312,13 +352,20 @@ const ModernUploadInterface = forwardRef(({
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Professional Header */}
+      {/* Subscription Countdown */}
+      <div className="flex justify-center mb-6">
+        <SubscriptionCountdown />
+      </div>
       <div className="text-center mb-6">
+
         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">
           Document Intelligence Platform
         </h1>
-        <p className="text-sm sm:text-base text-slate-600 dark:text-gray-300 max-w-2xl mx-auto">
+        {/* <p className="text-sm sm:text-base text-slate-600 dark:text-gray-300 max-w-2xl mx-auto">
           Upload documents and get instant AI-powered insights, analysis, and answers
-        </p>
+        </p> */}
+
+
       </div>
 
       {/* Main Upload Card - Compact and Professional */}
@@ -326,8 +373,8 @@ const ModernUploadInterface = forwardRef(({
         <CardContent className="p-6">
           <Tabs value={inputMode} onValueChange={handleTabSwitch} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6 bg-slate-100 dark:bg-gray-700 p-1 rounded-xl h-auto">
-              <TabsTrigger 
-                value="file" 
+              <TabsTrigger
+                value="file"
                 className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:shadow-md rounded-lg py-2.5 px-3 text-sm transition-all duration-200 font-medium"
               >
                 <Upload className="h-4 w-4" />
@@ -337,8 +384,8 @@ const ModernUploadInterface = forwardRef(({
                   PDF
                 </Badge>
               </TabsTrigger>
-              <TabsTrigger 
-                value="collection" 
+              <TabsTrigger
+                value="collection"
                 className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:shadow-md rounded-lg py-2.5 px-3 text-sm transition-all duration-200 font-medium"
               >
                 <FileText className="h-4 w-4" />
@@ -364,14 +411,13 @@ const ModernUploadInterface = forwardRef(({
             <form onSubmit={inputMode === 'collection' ? handleCollectionUpload : handleSubmit}>
               <TabsContent value="file" className="space-y-4 animate-tab-enter">
                 <div className="relative group">
-                  <div 
-                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 touch-manipulation ${
-                      loading || hasAnalyzingDocuments 
+                  <div
+                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 touch-manipulation ${loading || hasAnalyzingDocuments
                         ? 'border-gray-300 bg-gray-50/50 dark:bg-gray-800/50 opacity-60 cursor-not-allowed'
-                        : dragActive 
-                          ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-900/30 scale-[1.02] shadow-lg' 
+                        : dragActive
+                          ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-900/30 scale-[1.02] shadow-lg'
                           : 'border-slate-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 group-hover:bg-blue-50/30 dark:group-hover:bg-blue-900/10'
-                    }`}
+                      }`}
                     onDragEnter={loading || hasAnalyzingDocuments ? undefined : handleDragEnter}
                     onDragLeave={loading || hasAnalyzingDocuments ? undefined : handleDragLeave}
                     onDragOver={loading || hasAnalyzingDocuments ? undefined : handleDrag}
@@ -405,7 +451,7 @@ const ModernUploadInterface = forwardRef(({
                               </div>
                             </div>
                           </div>
-                          
+
                           {/* Files list within the upload area */}
                           <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg border border-slate-200/50 dark:border-gray-600/50 p-3 max-h-32 overflow-y-auto">
                             <div className="grid gap-2">
@@ -439,8 +485,8 @@ const ModernUploadInterface = forwardRef(({
                               )}
                               {/* Show staged files */}
                               {stagedFiles.map((stagedFile, index) => (
-                                <div 
-                                  key={index} 
+                                <div
+                                  key={index}
                                   className="flex items-center justify-between p-2 bg-white/80 dark:bg-gray-700/80 rounded border border-slate-200/50 dark:border-gray-600/50 hover:bg-white dark:hover:bg-gray-700 transition-colors"
                                 >
                                   <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -470,7 +516,7 @@ const ModernUploadInterface = forwardRef(({
                               ))}
                             </div>
                           </div>
-                          
+
                           <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200 text-xs">
                             Ready for Analysis
                           </Badge>
@@ -488,7 +534,7 @@ const ModernUploadInterface = forwardRef(({
                       )}
                     </label>
                   </div>
-                  
+
                   {/* Compact File Info */}
                   <div className="flex items-center justify-center gap-4 mt-3 text-xs text-slate-500 dark:text-gray-400">
                     <div className="flex items-center gap-1">
@@ -504,7 +550,7 @@ const ModernUploadInterface = forwardRef(({
                       <span>Secure</span>
                     </div>
                   </div>
-                  
+
 
                 </div>
               </TabsContent>
@@ -531,14 +577,13 @@ const ModernUploadInterface = forwardRef(({
 
                 {/* Collection Upload Area */}
                 <div className="relative group">
-                  <div 
-                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 touch-manipulation ${
-                      loading || hasAnalyzingDocuments 
+                  <div
+                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 touch-manipulation ${loading || hasAnalyzingDocuments
                         ? 'border-gray-300 bg-gray-50/50 dark:bg-gray-800/50 opacity-60 cursor-not-allowed'
-                        : dragActive 
-                          ? 'border-purple-500 bg-purple-50/70 dark:bg-purple-900/30 scale-[1.02] shadow-lg' 
+                        : dragActive
+                          ? 'border-purple-500 bg-purple-50/70 dark:bg-purple-900/30 scale-[1.02] shadow-lg'
                           : 'border-purple-300 dark:border-purple-600 hover:border-purple-400 dark:hover:border-purple-500 group-hover:bg-purple-50/30 dark:group-hover:bg-purple-900/10'
-                    }`}
+                      }`}
                     onDragEnter={loading || hasAnalyzingDocuments ? undefined : handleDragEnter}
                     onDragLeave={loading || hasAnalyzingDocuments ? undefined : handleDragLeave}
                     onDragOver={loading || hasAnalyzingDocuments ? undefined : handleDrag}
@@ -588,13 +633,13 @@ const ModernUploadInterface = forwardRef(({
                               Clear All
                             </Button>
                           </div>
-                          
+
                           {/* Files list within the upload area */}
                           <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg border border-purple-200/50 dark:border-purple-600/50 p-3 max-h-32 overflow-y-auto">
                             <div className="grid gap-2">
                               {stagedFiles.map((stagedFile, index) => (
-                                <div 
-                                  key={index} 
+                                <div
+                                  key={index}
                                   className="flex items-center justify-between p-2 bg-white/80 dark:bg-gray-700/80 rounded border border-purple-200/50 dark:border-purple-600/50 hover:bg-white dark:hover:bg-gray-700 transition-colors"
                                 >
                                   <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -638,7 +683,7 @@ const ModernUploadInterface = forwardRef(({
                       )}
                     </label>
                   </div>
-                  
+
                   {/* Compact File Info */}
                   <div className="flex items-center justify-center gap-4 mt-3 text-xs text-slate-500 dark:text-gray-400">
                     <div className="flex items-center gap-1">
@@ -654,7 +699,7 @@ const ModernUploadInterface = forwardRef(({
                       <span>Organized</span>
                     </div>
                   </div>
-                  
+
 
                 </div>
               </TabsContent>
@@ -679,11 +724,11 @@ const ModernUploadInterface = forwardRef(({
 
               {/* Professional Submit Button */}
               <div className="mt-6 pt-4 border-slate-200/50 dark:border-gray-700/50">
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={loading || hasAnalyzingDocuments || !canUploadDocument() ||
-                    (inputMode === 'file' && !file && stagedFiles.length === 0) || 
-                    (inputMode === 'collection' && (stagedFiles.length === 0 || !collectionName?.trim())) || 
+                    (inputMode === 'file' && !file && stagedFiles.length === 0) ||
+                    (inputMode === 'collection' && (stagedFiles.length === 0 || !collectionName?.trim())) ||
                     (inputMode === 'text' && !textInput.trim())}
                   className="w-full h-12 dark:bg-white dark:hover:bg-[#1f1f1f] dark:hover:text-white text-black text-base font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 touch-manipulation"
                 >
@@ -693,7 +738,7 @@ const ModernUploadInterface = forwardRef(({
                       <span>
                         {loading && !hasAnalyzingDocuments
                           ? 'Loading Document...'
-                          : hasAnalyzingDocuments 
+                          : hasAnalyzingDocuments
                             ? `Analyzing ${analyzingCount} Document${analyzingCount > 1 ? 's' : ''}...`
                             : 'Analyzing Document...'
                         }
@@ -739,8 +784,8 @@ const ModernUploadInterface = forwardRef(({
                       ))}
                     </div>
                     <div className="flex justify-end gap-2 mt-6">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         onClick={() => setShowErrorModal(false)}
                       >
                         Close
@@ -810,13 +855,13 @@ const ModernUploadInterface = forwardRef(({
                       </div>
                     </div>
                     <div className="flex justify-end gap-2 mt-6">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         onClick={() => setShowTabWarningModal(false)}
                       >
                         Cancel
                       </Button>
-                      <Button 
+                      <Button
                         onClick={confirmTabSwitch}
                         className="bg-amber-600 hover:bg-amber-700 text-white"
                       >
@@ -853,7 +898,7 @@ const ModernUploadInterface = forwardRef(({
                       </div>
                     </div>
                     <div className="flex justify-end gap-2 mt-6">
-                      <Button 
+                      <Button
                         onClick={() => setShowCollectionWarningModal(false)}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
                       >
