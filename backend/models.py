@@ -42,12 +42,11 @@ class User(Base):
     timezone = Column(String, nullable=True, default='UTC')  # User's timezone (e.g., 'America/New_York')
     last_ip_address = Column(String, nullable=True)  # For timezone detection
     
-    stripe_customer_id = Column(String, nullable=True, index=True)
-    stripe_subscription_id = Column(String, nullable=True, index=True)
-    subscription_status = Column(String, nullable=True) # active, inactive, past_due, incomplete, incomplete_expired, trialing, paused, canceled, unpaid
-    subscription_end_date = Column(DateTime(timezone=True), nullable=True)  # When subscription expires
-    last_payment_check = Column(DateTime(timezone=True), nullable=True)     # Last time we checked payment status
+   
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    
+
 
 
 # 2. Document table
@@ -111,12 +110,18 @@ class UserSubscription(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    plan_id = Column(UUID(as_uuid=True), ForeignKey("subscription_plans.id"), nullable=False)
+    plan_id = Column(UUID(as_uuid=True), ForeignKey("subscription_plans.id"), nullable=True)
     is_active = Column(Boolean, default=True)
     subscribed_at = Column(DateTime(timezone=True), server_default=func.now())
     stripe_customer_id = Column(String, nullable=True)
     stripe_subscription_id = Column(String, nullable=True)
     cancel_at = Column(DateTime(timezone=True), nullable=True)
+    subscription_status = Column(String, nullable=True) # active, inactive, past_due, incomplete, incomplete_expired, trialing, paused, canceled, unpaid
+    subscription_end_date = Column(DateTime(timezone=True), nullable=True)  # When subscription expires
+    last_payment_check = Column(DateTime(timezone=True), nullable=True) 
+    auto_debit_enabled = Column(Boolean, default=True)
+    current_period_end = Column(DateTime(timezone=True), nullable=True)
+    
 
 
 # 7. Feedback

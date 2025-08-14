@@ -1971,16 +1971,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                   </p> */}
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 max-w-2xl mx-auto">
-                  {/* <Button
-                    onClick={startDemoMode}
-                    variant="outline"
-                    className="flex-1 bg-white/80 hover:bg-white dark:bg-gray-900/80 dark:hover:bg-gray-900 border-2 border-gray-200 hover:border-blue-300 dark:border-gray-700 dark:hover:border-blue-600 text-gray-700 hover:text-blue-700 dark:text-gray-300 dark:hover:text-blue-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 px-6 py-3 text-base font-semibold rounded-xl backdrop-blur-sm"
-                  >
-                    <Eye className="h-5 w-5 mr-2" />
-                    View Demo
-                  </Button> */}
-                </div>
+              
 
                 
 

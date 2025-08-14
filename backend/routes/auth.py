@@ -731,6 +731,12 @@ async def get_current_user_profile(
     """Get current user's profile and usage information"""
     usage_info = get_user_limits_info(current_user, db)
     
+    # Get subscription data from UserSubscription table
+    from models import UserSubscription
+    user_subscription = db.query(UserSubscription).filter(
+        UserSubscription.user_id == current_user.id
+    ).first()
+    
     return UserProfileWithUsage(
         id=current_user.id,
         email=current_user.email,
@@ -738,7 +744,7 @@ async def get_current_user_profile(
         plan=current_user.plan.value,
         is_active=current_user.is_active,
         created_at=current_user.created_at.isoformat(),
-        subscription_end_date=current_user.subscription_end_date.isoformat() if current_user.subscription_end_date else None,
+        subscription_end_date=user_subscription.subscription_end_date.isoformat() if user_subscription and user_subscription.subscription_end_date else None,
         timezone=current_user.timezone,
         usage=usage_info["usage"]
     )

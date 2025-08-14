@@ -6,7 +6,7 @@ import stripe
 import os
 from datetime import datetime, timedelta, timezone
 from database import get_db
-from models import User, UserPlan
+from models import User, UserPlan, UserSubscription, SubscriptionPlan
 from dependencies import get_current_active_user
 from email_service import email_service
 from invoice_generator import invoice_generator
@@ -16,6 +16,68 @@ from timezone_service import timezone_service
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 router = APIRouter(prefix="/stripe", tags=["stripe"])
+
+# Helper functions for UserSubscription management
+def get_subscription_plan_by_name(db: Session, plan_name: str):
+    """Get subscription plan by name"""
+    return db.query(SubscriptionPlan).filter(SubscriptionPlan.name == plan_name).first()
+
+def get_user_subscription(db: Session, user_id: str):
+    """Get UserSubscription for a user"""
+    return db.query(UserSubscription).filter(
+        UserSubscription.user_id == user_id
+    ).first()
+
+def get_or_create_user_subscription(
+    db: Session, 
+    user_id: str, 
+    plan_name: str,
+    stripe_customer_id: str = None,
+    stripe_subscription_id: str = None,
+    subscription_status: str = None,
+    subscription_end_date = None,
+    last_payment_check = None
+):
+    """Get existing UserSubscription or create a new one"""
+    # First, try to find existing subscription for this user
+    user_subscription = db.query(UserSubscription).filter(
+        UserSubscription.user_id == user_id
+    ).first()
+    
+    # Get the plan by name
+    plan = get_subscription_plan_by_name(db, plan_name)
+    if not plan:
+        print(f"⚠️ Plan '{plan_name}' not found in database. Creating with default values.")
+        # For now, we'll still create the UserSubscription without plan_id
+        # In production, you should ensure plans exist in the database
+    
+    if user_subscription:
+        # Update existing subscription
+        if plan:
+            user_subscription.plan_id = plan.id
+        user_subscription.stripe_customer_id = stripe_customer_id
+        user_subscription.stripe_subscription_id = stripe_subscription_id
+        user_subscription.subscription_status = subscription_status
+        user_subscription.subscription_end_date = subscription_end_date
+        user_subscription.last_payment_check = last_payment_check
+        user_subscription.is_active = True
+        print(f"✅ Updated existing UserSubscription for user {user_id}")
+    else:
+        # Create new subscription
+        user_subscription = UserSubscription(
+            user_id=user_id,
+            plan_id=plan.id if plan else None,
+            stripe_customer_id=stripe_customer_id,
+            stripe_subscription_id=stripe_subscription_id,
+            subscription_status=subscription_status,
+            subscription_end_date=subscription_end_date,
+            last_payment_check=last_payment_check,
+            is_active=True
+        )
+        db.add(user_subscription)
+        print(f"✅ Created new UserSubscription for user {user_id}")
+    
+    return user_subscription
 
 class CheckoutRequest(BaseModel):
     price_id: str
@@ -39,8 +101,9 @@ async def create_checkout_session(
         print(f"🛒 Creating checkout session for user: {current_user.email}")
         print(f"📋 Price ID: {request.price_id}")
         
-        # Create or get Stripe customer
-        stripe_customer_id = current_user.stripe_customer_id
+        # Create or get Stripe customer from UserSubscription table
+        user_subscription = get_user_subscription(db, str(current_user.id))
+        stripe_customer_id = user_subscription.stripe_customer_id if user_subscription else None
         
         if not stripe_customer_id:
             # Create new Stripe customer
@@ -54,8 +117,21 @@ async def create_checkout_session(
             )
             stripe_customer_id = customer.id
             
-            # Save customer ID to user
-            current_user.stripe_customer_id = stripe_customer_id
+            # Save customer ID to UserSubscription table
+            if user_subscription:
+                user_subscription.stripe_customer_id = stripe_customer_id
+            else:
+                # Create new UserSubscription record with customer ID
+                user_subscription = get_or_create_user_subscription(
+                    db=db,
+                    user_id=str(current_user.id),
+                    plan_name="Free",  # Default plan
+                    stripe_customer_id=stripe_customer_id,
+                    stripe_subscription_id=None,
+                    subscription_status=None,
+                    subscription_end_date=None,
+                    last_payment_check=None
+                )
             db.commit()
             print(f"✅ Created Stripe customer: {stripe_customer_id}")
         
@@ -110,13 +186,15 @@ async def update_plan_manual(
         
         if request.session_id in update_plan_manual.processed_sessions:
             print(f"⚠️ Session {request.session_id} already processed, skipping email")
+            # Get existing subscription data for return
+            existing_user_subscription = get_user_subscription(db, str(current_user.id))
             # Return success but don't send email again - include subscription_end_date
             return {
                 "status": "already_processed",
                 "message": "Session already processed",
                 "new_plan": current_user.plan.value,
                 "user_email": current_user.email,
-                "subscription_end_date": current_user.subscription_end_date.isoformat() if current_user.subscription_end_date else None,
+                "subscription_end_date": existing_user_subscription.subscription_end_date.isoformat() if existing_user_subscription and existing_user_subscription.subscription_end_date else None,
                 "skip_email": True
             }
         
@@ -127,7 +205,11 @@ async def update_plan_manual(
         session = stripe.checkout.Session.retrieve(request.session_id)
         print(f"💳 Session payment status: {session.payment_status}")
         print(f"🏪 Session customer: {session.customer}")
-        print(f"👤 User customer ID: {current_user.stripe_customer_id}")
+        
+        # Get current user's stripe customer ID from UserSubscription
+        user_subscription = get_user_subscription(db, str(current_user.id))
+        user_stripe_customer_id = user_subscription.stripe_customer_id if user_subscription else None
+        print(f"👤 User customer ID: {user_stripe_customer_id}")
         
         # Validate session belongs to current user and payment is successful
         if session.payment_status != 'paid':
@@ -136,7 +218,7 @@ async def update_plan_manual(
                 detail=f"Payment not completed. Status: {session.payment_status}"
             )
         
-        if session.customer != current_user.stripe_customer_id:
+        if session.customer != user_stripe_customer_id:
             raise HTTPException(
                 status_code=400, 
                 detail="Session does not belong to current user"
@@ -221,12 +303,20 @@ async def update_plan_manual(
                 subscription_end = now + timedelta(days=30)
                 print(f"🔄 Using fallback period: {subscription_start} to {subscription_end}")
         
-        # Update all subscription info
-        current_user.stripe_subscription_id = subscription_id
-        current_user.subscription_status = "active"
-        current_user.subscription_end_date = subscription_end
-        current_user.last_payment_check = now
+        # Update user plan and timestamp only (keep stripe_customer_id for customer creation logic)
         current_user.updated_at = now
+        
+        # Update UserSubscription table with all subscription info
+        user_subscription = get_or_create_user_subscription(
+            db=db,
+            user_id=str(current_user.id),
+            plan_name=plan_name,
+            stripe_customer_id=session.customer,  # Use customer ID from session
+            stripe_subscription_id=subscription_id,
+            subscription_status="active",
+            subscription_end_date=subscription_end,
+            last_payment_check=now
+        )
         
         # Commit changes
         db.commit()
@@ -387,7 +477,10 @@ async def get_subscription_status(
     try:
         now = datetime.now(timezone.utc)
         
-        if not current_user.stripe_customer_id:
+        # Get subscription data from UserSubscription table
+        user_subscription = get_user_subscription(db, str(current_user.id))
+        
+        if not (user_subscription and user_subscription.stripe_customer_id):
             return {
                 "has_subscription": False,
                 "plan": current_user.plan.value,
@@ -398,9 +491,9 @@ async def get_subscription_status(
             }
         
         # Check if we have local subscription data
-        if current_user.subscription_end_date:
-            days_until_expiry = (current_user.subscription_end_date - now).days
-            is_expired = current_user.subscription_end_date < now
+        if user_subscription and user_subscription.subscription_end_date:
+            days_until_expiry = (user_subscription.subscription_end_date - now).days
+            is_expired = user_subscription.subscription_end_date < now
             
             # If expired, check if we should downgrade
             if is_expired and current_user.plan != UserPlan.FREE:
@@ -412,10 +505,19 @@ async def get_subscription_status(
                     # Downgrade to free
                     old_plan = current_user.plan.value
                     current_user.plan = UserPlan.FREE
-                    current_user.subscription_status = "expired"
-                    current_user.stripe_subscription_id = None
-                    current_user.subscription_end_date = None
-                    current_user.last_payment_check = now
+                    
+                    # Update UserSubscription table - mark as inactive
+                    user_subscription = get_or_create_user_subscription(
+                        db=db,
+                        user_id=str(current_user.id),
+                        plan_name="Free",
+                        stripe_customer_id=user_subscription.stripe_customer_id if user_subscription else None,
+                        stripe_subscription_id=None,
+                        subscription_status="expired",
+                        subscription_end_date=None,
+                        last_payment_check=now
+                    )
+                    user_subscription.is_active = False
                     
                     db.commit()
                     
@@ -429,13 +531,13 @@ async def get_subscription_status(
                     }
             
             return {
-                "has_subscription": bool(current_user.stripe_subscription_id),
+                "has_subscription": bool(user_subscription.stripe_subscription_id),
                 "plan": current_user.plan.value,
-                "status": current_user.subscription_status or "unknown",
-                "subscription_end_date": current_user.subscription_end_date.isoformat(),
+                "status": user_subscription.subscription_status or "unknown",
+                "subscription_end_date": user_subscription.subscription_end_date.isoformat(),
                 "days_until_expiry": days_until_expiry,
                 "is_expired": is_expired,
-                "subscription_id": current_user.stripe_subscription_id
+                "subscription_id": user_subscription.stripe_subscription_id
             }
         else:
             return {
@@ -461,14 +563,17 @@ async def sync_subscription_status(
 ):
     """Manually sync subscription status from Stripe (no webhooks)"""
     try:
-        if not current_user.stripe_customer_id:
+        # Get user subscription first
+        user_subscription = get_user_subscription(db, str(current_user.id))
+        
+        if not (user_subscription and user_subscription.stripe_customer_id):
             return {"status": "no_customer", "plan": current_user.plan.value}
         
         print(f"🔄 Syncing subscription status for: {current_user.email}")
         
         # Get all subscriptions for the customer
         subscriptions = stripe.Subscription.list(
-            customer=current_user.stripe_customer_id,
+            customer=user_subscription.stripe_customer_id,
             limit=10
         )
         
@@ -517,16 +622,28 @@ async def sync_subscription_status(
             old_plan = current_user.plan.value
             
             # Update plan
+            plan_name = ""
             if price_id == os.getenv("STRIPE_PRICE_ID_STANDARD"):
                 current_user.plan = UserPlan.STANDARD
+                plan_name = "Standard"
             elif price_id == os.getenv("STRIPE_PRICE_ID_PRO"):
                 current_user.plan = UserPlan.PRO
+                plan_name = "Pro"
             
-            current_user.stripe_subscription_id = active_subscription.id
-            current_user.subscription_status = active_subscription.status
-            current_user.subscription_end_date = subscription_end
-            current_user.last_payment_check = now
             current_user.updated_at = now
+            
+            # Update UserSubscription table with all subscription info
+            if plan_name:
+                user_subscription = get_or_create_user_subscription(
+                    db=db,
+                    user_id=str(current_user.id),
+                    plan_name=plan_name,
+                    stripe_customer_id=user_subscription.stripe_customer_id,
+                    stripe_subscription_id=active_subscription.id,
+                    subscription_status=active_subscription.status,
+                    subscription_end_date=subscription_end,
+                    last_payment_check=now
+                )
             
             db.commit()
             
@@ -546,11 +663,20 @@ async def sync_subscription_status(
             
             if current_user.plan != UserPlan.FREE:
                 current_user.plan = UserPlan.FREE
-                current_user.subscription_status = "inactive"
-                current_user.stripe_subscription_id = None
-                current_user.subscription_end_date = None
-                current_user.last_payment_check = now
                 current_user.updated_at = now
+                
+                # Update UserSubscription table - mark as inactive
+                user_subscription = get_or_create_user_subscription(
+                    db=db,
+                    user_id=str(current_user.id),
+                    plan_name="Free",
+                    stripe_customer_id=user_subscription.stripe_customer_id,
+                    stripe_subscription_id=None,
+                    subscription_status="inactive",
+                    subscription_end_date=None,
+                    last_payment_check=now
+                )
+                user_subscription.is_active = False
                 
                 db.commit()
                 
@@ -577,18 +703,22 @@ async def sync_subscription_status(
 @router.post("/create-portal-session")
 async def create_portal_session(
     request: PortalRequest,
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
 ):
     """Create a Stripe Customer Portal Session"""
     try:
-        if not current_user.stripe_customer_id:
+        # Get stripe customer ID from UserSubscription
+        user_subscription = get_user_subscription(db, str(current_user.id))
+        
+        if not (user_subscription and user_subscription.stripe_customer_id):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="No Stripe customer found for this user"
             )
         
         portal_session = stripe.billing_portal.Session.create(
-            customer=current_user.stripe_customer_id,
+            customer=user_subscription.stripe_customer_id,
             return_url=request.return_url,
         )
         
@@ -608,28 +738,31 @@ async def cancel_subscription(
 ):
     """Cancel user's subscription (no webhooks - manual update)"""
     try:
+        # Get subscription data from UserSubscription table
+        user_subscription = get_user_subscription(db, str(current_user.id))
+        
         print(f"🚫 Cancel subscription request from user: {current_user.email}")
         print(f"📋 Current user plan: {current_user.plan.value}")
-        print(f"🔍 Stripe customer ID: {current_user.stripe_customer_id}")
-        print(f"🔍 Stripe subscription ID: {current_user.stripe_subscription_id}")
+        print(f"🔍 Stripe customer ID: {user_subscription.stripe_customer_id if user_subscription else None}")
+        print(f"🔍 Stripe subscription ID: {user_subscription.stripe_subscription_id if user_subscription else None}")
         
         # If user has a paid plan but no Stripe IDs, suggest syncing first
-        if current_user.plan != UserPlan.FREE and not current_user.stripe_customer_id:
+        if current_user.plan != UserPlan.FREE and not (user_subscription and user_subscription.stripe_customer_id):
             print("⚠️ User has paid plan but no Stripe customer ID")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="No Stripe customer found. Please try syncing your subscription first by contacting support."
             )
         
-        if not current_user.stripe_subscription_id:
+        if not (user_subscription and user_subscription.stripe_subscription_id):
             print("❌ No stripe_subscription_id found")
             
             # If they have a customer ID, try to find their subscription
-            if current_user.stripe_customer_id:
+            if user_subscription and user_subscription.stripe_customer_id:
                 print("🔍 Attempting to find subscription for existing customer...")
                 try:
                     subscriptions = stripe.Subscription.list(
-                        customer=current_user.stripe_customer_id,
+                        customer=user_subscription.stripe_customer_id,
                         status='active',
                         limit=1
                     )
@@ -638,9 +771,17 @@ async def cancel_subscription(
                         subscription = subscriptions.data[0]
                         print(f"✅ Found active subscription: {subscription.id}")
                         
-                        # Update the user's subscription ID
-                        current_user.stripe_subscription_id = subscription.id
-                        current_user.subscription_status = subscription.status
+                        # Update the user's subscription in UserSubscription table
+                        user_subscription = get_or_create_user_subscription(
+                            db=db,
+                            user_id=str(current_user.id),
+                            plan_name=current_user.plan.value.title(),  # Free/Standard/Pro
+                            stripe_customer_id=user_subscription.stripe_customer_id,
+                            stripe_subscription_id=subscription.id,
+                            subscription_status=subscription.status,
+                            subscription_end_date=None,  # Will be updated when we get subscription details
+                            last_payment_check=datetime.now(timezone.utc)
+                        )
                         db.commit()
                         
                         print("✅ Updated user with found subscription ID")
@@ -661,11 +802,11 @@ async def cancel_subscription(
                     detail="No active subscription found"
                 )
         
-        print(f"📡 Calling Stripe to cancel subscription: {current_user.stripe_subscription_id}")
+        print(f"📡 Calling Stripe to cancel subscription: {user_subscription.stripe_subscription_id}")
         
         # Cancel subscription at period end
         subscription = stripe.Subscription.modify(
-            current_user.stripe_subscription_id,
+            user_subscription.stripe_subscription_id,
             cancel_at_period_end=True
         )
         
@@ -673,9 +814,11 @@ async def cancel_subscription(
         print(f"📋 New subscription status: {subscription.status}")
         print(f"📋 Cancel at period end: {subscription.cancel_at_period_end}")
         
-        # Update user status locally
-        current_user.subscription_status = "cancel_at_period_end"
-        current_user.last_payment_check = datetime.now(timezone.utc)
+        # Update user status in UserSubscription table
+        user_subscription = get_user_subscription(db, str(current_user.id))
+        if user_subscription:
+            user_subscription.subscription_status = "cancel_at_period_end"
+            user_subscription.last_payment_check = datetime.now(timezone.utc)
         current_user.updated_at = datetime.now(timezone.utc)
         
         db.commit()
@@ -684,8 +827,8 @@ async def cancel_subscription(
         return {
             "status": "success",
             "message": "Subscription will be cancelled at the end of the current period",
-            "subscription_end_date": current_user.subscription_end_date.isoformat() if current_user.subscription_end_date else None,
-            "days_remaining": (current_user.subscription_end_date - datetime.now(timezone.utc)).days if current_user.subscription_end_date else None
+            "subscription_end_date": user_subscription.subscription_end_date.isoformat() if user_subscription and user_subscription.subscription_end_date else None,
+            "days_remaining": (user_subscription.subscription_end_date - datetime.now(timezone.utc)).days if user_subscription and user_subscription.subscription_end_date else None
         }
         
     except HTTPException:
@@ -711,29 +854,32 @@ async def cancel_subscription(
 
 @router.get("/subscription-health")
 async def get_subscription_health(
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
 ):
     """Get comprehensive subscription health status"""
     try:
         now = datetime.now(timezone.utc)
+        user_subscription = get_user_subscription(db, str(current_user.id))
+        
         health_status = {
             "user_id": str(current_user.id),
             "email": current_user.email,
             "current_plan": current_user.plan.value,
-            "subscription_status": current_user.subscription_status,
-            "has_stripe_customer": bool(current_user.stripe_customer_id),
-            "has_active_subscription": bool(current_user.stripe_subscription_id),
-            "last_check": current_user.last_payment_check.isoformat() if current_user.last_payment_check else None
+            "subscription_status": user_subscription.subscription_status if user_subscription else None,
+            "has_stripe_customer": bool(user_subscription.stripe_customer_id if user_subscription else False),
+            "has_active_subscription": bool(user_subscription.stripe_subscription_id if user_subscription else False),
+            "last_check": user_subscription.last_payment_check.isoformat() if user_subscription and user_subscription.last_payment_check else None
         }
         
-        if current_user.subscription_end_date:
-            days_until_expiry = (current_user.subscription_end_date - now).days
+        if user_subscription and user_subscription.subscription_end_date:
+            days_until_expiry = (user_subscription.subscription_end_date - now).days
             health_status.update({
-                "subscription_end_date": current_user.subscription_end_date.isoformat(),
+                "subscription_end_date": user_subscription.subscription_end_date.isoformat(),
                 "days_until_expiry": days_until_expiry,
                 "is_expired": days_until_expiry < 0,
                 "expires_soon": 0 <= days_until_expiry <= 7,  # Expires within a week
-                "needs_attention": days_until_expiry <= 3 or current_user.subscription_status in ["past_due", "payment_failed"]
+                "needs_attention": days_until_expiry <= 3 or user_subscription.subscription_status in ["past_due", "payment_failed"]
             })
         else:
             health_status.update({
@@ -741,7 +887,7 @@ async def get_subscription_health(
                 "days_until_expiry": None,
                 "is_expired": False,
                 "expires_soon": False,
-                "needs_attention": current_user.plan != UserPlan.FREE and not current_user.stripe_subscription_id
+                "needs_attention": current_user.plan != UserPlan.FREE and not (user_subscription and user_subscription.stripe_subscription_id)
             })
         
         return health_status
@@ -760,16 +906,19 @@ async def fix_missing_stripe_data(
 ):
     """Fix users who have paid plans but missing Stripe customer/subscription data"""
     try:
+        # Get current subscription data
+        user_subscription = get_user_subscription(db, str(current_user.id))
+        
         print(f"🔧 Fixing missing Stripe data for user: {current_user.email}")
         print(f"📋 Current plan: {current_user.plan.value}")
-        print(f"🔍 Stripe customer ID: {current_user.stripe_customer_id}")
-        print(f"🔍 Stripe subscription ID: {current_user.stripe_subscription_id}")
+        print(f"🔍 Stripe customer ID: {user_subscription.stripe_customer_id if user_subscription else None}")
+        print(f"🔍 Stripe subscription ID: {user_subscription.stripe_subscription_id if user_subscription else None}")
         
         if current_user.plan == UserPlan.FREE:
             return {"status": "no_action_needed", "message": "User is on free plan"}
         
         # First, try to find a Stripe customer by email
-        if not current_user.stripe_customer_id:
+        if not (user_subscription and user_subscription.stripe_customer_id):
             print("🔍 Searching for Stripe customer by email...")
             try:
                 customers = stripe.Customer.list(email=current_user.email, limit=10)
@@ -778,7 +927,20 @@ async def fix_missing_stripe_data(
                     customer = customers.data[0]  # Take the first match
                     print(f"✅ Found Stripe customer: {customer.id}")
                     
-                    current_user.stripe_customer_id = customer.id
+                    # Update UserSubscription with found customer ID
+                    if not user_subscription:
+                        user_subscription = get_or_create_user_subscription(
+                            db=db,
+                            user_id=str(current_user.id),
+                            plan_name=current_user.plan.value.title(),
+                            stripe_customer_id=customer.id,
+                            stripe_subscription_id=None,
+                            subscription_status=None,
+                            subscription_end_date=None,
+                            last_payment_check=datetime.now(timezone.utc)
+                        )
+                    else:
+                        user_subscription.stripe_customer_id = customer.id
                     db.commit()
                     print("✅ Updated user with found customer ID")
                 else:
@@ -786,9 +948,20 @@ async def fix_missing_stripe_data(
                     # For now, just downgrade them to free
                     old_plan = current_user.plan.value
                     current_user.plan = UserPlan.FREE
-                    current_user.subscription_status = None
-                    current_user.stripe_subscription_id = None
-                    current_user.subscription_end_date = None
+                    
+                    # Update UserSubscription table - mark as inactive
+                    user_subscription = get_or_create_user_subscription(
+                        db=db,
+                        user_id=str(current_user.id),
+                        plan_name="Free",
+                        stripe_customer_id=None,
+                        stripe_subscription_id=None,
+                        subscription_status=None,
+                        subscription_end_date=None,
+                        last_payment_check=datetime.now(timezone.utc)
+                    )
+                    user_subscription.is_active = False
+                    
                     db.commit()
                     
                     return {
@@ -806,11 +979,11 @@ async def fix_missing_stripe_data(
                 )
         
         # Now try to find an active subscription
-        if not current_user.stripe_subscription_id and current_user.stripe_customer_id:
+        if not (user_subscription and user_subscription.stripe_subscription_id) and (user_subscription and user_subscription.stripe_customer_id):
             print("🔍 Searching for active subscription...")
             try:
                 subscriptions = stripe.Subscription.list(
-                    customer=current_user.stripe_customer_id,
+                    customer=user_subscription.stripe_customer_id,
                     status='active',
                     limit=10
                 )
@@ -823,18 +996,28 @@ async def fix_missing_stripe_data(
                     price_id = subscription.items.data[0].price.id
                     subscription_end = datetime.fromtimestamp(subscription.current_period_end, timezone.utc)
                     
-                    # Update user with subscription data
-                    current_user.stripe_subscription_id = subscription.id
-                    current_user.subscription_status = subscription.status
-                    current_user.subscription_end_date = subscription_end
-                    current_user.last_payment_check = datetime.now(timezone.utc)
-                    
-                    # Verify the plan matches the price
+                    # Verify the plan matches the price and update user plan
                     old_plan = current_user.plan.value
+                    plan_name = ""
                     if price_id == os.getenv("STRIPE_PRICE_ID_STANDARD"):
                         current_user.plan = UserPlan.STANDARD
+                        plan_name = "Standard"
                     elif price_id == os.getenv("STRIPE_PRICE_ID_PRO"):
                         current_user.plan = UserPlan.PRO
+                        plan_name = "Pro"
+                    
+                    # Update UserSubscription table with all subscription data
+                    if plan_name:
+                        user_subscription = get_or_create_user_subscription(
+                            db=db,
+                            user_id=str(current_user.id),
+                            plan_name=plan_name,
+                            stripe_customer_id=user_subscription.stripe_customer_id,
+                            stripe_subscription_id=subscription.id,
+                            subscription_status=subscription.status,
+                            subscription_end_date=subscription_end,
+                            last_payment_check=datetime.now(timezone.utc)
+                        )
                     
                     db.commit()
                     
@@ -843,8 +1026,8 @@ async def fix_missing_stripe_data(
                     return {
                         "status": "fixed",
                         "message": "Successfully synced Stripe data",
-                        "customer_id": current_user.stripe_customer_id,
-                        "subscription_id": current_user.stripe_subscription_id,
+                        "customer_id": user_subscription.stripe_customer_id,
+                        "subscription_id": user_subscription.stripe_subscription_id,
                         "old_plan": old_plan,
                         "current_plan": current_user.plan.value,
                         "subscription_end_date": subscription_end.isoformat(),
@@ -855,9 +1038,20 @@ async def fix_missing_stripe_data(
                     # Downgrade to free
                     old_plan = current_user.plan.value
                     current_user.plan = UserPlan.FREE
-                    current_user.subscription_status = "no_active_subscription"
-                    current_user.stripe_subscription_id = None
-                    current_user.subscription_end_date = None
+                    
+                    # Update UserSubscription table - mark as inactive
+                    user_subscription = get_or_create_user_subscription(
+                        db=db,
+                        user_id=str(current_user.id),
+                        plan_name="Free",
+                        stripe_customer_id=user_subscription.stripe_customer_id if user_subscription else None,
+                        stripe_subscription_id=None,
+                        subscription_status="no_active_subscription",
+                        subscription_end_date=None,
+                        last_payment_check=datetime.now(timezone.utc)
+                    )
+                    user_subscription.is_active = False
+                    
                     db.commit()
                     
                     return {
@@ -877,8 +1071,8 @@ async def fix_missing_stripe_data(
         return {
             "status": "already_synced",
             "message": "User already has complete Stripe data",
-            "customer_id": current_user.stripe_customer_id,
-            "subscription_id": current_user.stripe_subscription_id
+            "customer_id": user_subscription.stripe_customer_id if user_subscription else None,
+            "subscription_id": user_subscription.stripe_subscription_id if user_subscription else None
         }
         
     except HTTPException:
@@ -929,14 +1123,19 @@ async def download_invoice(
 @router.get("/invoice-data/{session_id}")
 async def get_invoice_data(
     session_id: str,
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
 ):
     """Get invoice data for display"""
     try:
         # Retrieve the checkout session from Stripe
         session = stripe.checkout.Session.retrieve(session_id)
         
-        if session.customer != current_user.stripe_customer_id:
+        # Get user's stripe customer ID from UserSubscription
+        user_subscription = get_user_subscription(db, str(current_user.id))
+        user_stripe_customer_id = user_subscription.stripe_customer_id if user_subscription else None
+        
+        if session.customer != user_stripe_customer_id:
             raise HTTPException(status_code=403, detail="Access denied")
         
         if session.payment_status != 'paid':
