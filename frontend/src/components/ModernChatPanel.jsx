@@ -42,7 +42,8 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [shareData, setShareData] = useState(null)
   const [isCreatingShare, setIsCreatingShare] = useState(false)
-
+  const [isHistoryLoadingComplete, setIsHistoryLoadingComplete] = useState(false)
+  
   // Mock responses for demo mode and API bypass mode
   const mockResponses = [
     "Based on my analysis of your business plan, this document outlines a comprehensive strategy for market expansion with a focus on AI-powered solutions. The plan demonstrates strong financial planning with projected 40% revenue growth through strategic market penetration in Southeast Asia.\n\nKey highlights include:\n• **Market Opportunity**: Untapped potential in emerging markets with 200% YoY growth\n• **Technology Advantage**: Proprietary AI capabilities providing competitive differentiation\n• **Financial Strength**: 18-month runway with strong customer retention (95%)\n• **Sustainability Focus**: 60% carbon footprint reduction plan\n\nWould you like me to dive deeper into any specific section?",
@@ -244,6 +245,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
 
           // Set messages immediately after processing
           setMessages(historicalMessages)
+          setIsHistoryLoadingComplete(true)
           
           // Add delay to ensure messages are rendered before enabling sidebar
           setTimeout(() => {
@@ -319,6 +321,16 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
       onLoadingHistoryChange(isLoadingHistory)
     }
   }, [isLoadingHistory, onLoadingHistoryChange])
+
+  useEffect(() => {
+    if (isHistoryLoadingComplete) {
+      setTimeout(() => {
+        setIsLoadingHistory(false)
+        setIsHistoryLoadingComplete(false)
+        scrollToBottom(true, "smooth")
+      }, 2000) // Add 300ms delay to ensure rendering completes
+    }
+  }, [isHistoryLoadingComplete])
 
 
   const handleSendMessage = async (e) => {

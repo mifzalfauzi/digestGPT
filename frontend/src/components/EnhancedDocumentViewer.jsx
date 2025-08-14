@@ -603,7 +603,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
   useEffect(() => {
     if (activeTab === 'analysis' || !activeTab) { // Only set if still on default
       if (hasDocumentViewer) {
-        setActiveTab("document-viewer")
+        setActiveTab("analysis")
       } else if (isDemoMode || bypassAPI) {
         setActiveTab("analysis")
       } else {

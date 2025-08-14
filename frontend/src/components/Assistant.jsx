@@ -2375,7 +2375,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                         </div>
                       </div>
                       <div className="space-y-3">
-                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Fetching Document</h3>
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Loading Document</h3>
                         <p className="text-lg text-gray-600 dark:text-gray-400">
                           Setting up environment...
                         </p>
@@ -2421,7 +2421,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                         </div>
                       </div>
                       <div className="space-y-3">
-                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Fetching Document</h3>
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Loading Document</h3>
                         <p className="text-lg text-gray-600 dark:text-gray-400">
                         Setting up environment...
                         </p>
@@ -2469,7 +2469,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                         </div>
                       </div>
                       <div className="space-y-4">
-                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white">Fetching Document</h3>
+                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white">Loading Document</h3>
                         <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed">
                           Setting up environment...
                         </p>
@@ -2517,7 +2517,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                         </div>
                       </div>
                       <div className="space-y-4">
-                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white">Fetching Document</h3>
+                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white">Loading Document</h3>
                         <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed">
                           Setting up environment...
                         </p>

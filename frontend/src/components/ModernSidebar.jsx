@@ -86,8 +86,7 @@ function ModernSidebar({
     if (isDocumentLoadingOrSwitching) {
       setShowLoadingOverlay(true)
     } else {
-      const timeout = setTimeout(() => setShowLoadingOverlay(false), 1800) // 1100ms delay
-      return () => clearTimeout(timeout)
+      setShowLoadingOverlay(false)
     }
   }, [isDocumentLoadingOrSwitching])
 
@@ -215,6 +214,7 @@ function ModernSidebar({
               // Clear all collection and document states
               onClearHistoricalCollection()
               onNewDocument()
+              navigate('/assistant')
               // Close mobile sidebar with slight delay to ensure state is updated
               if (onClose) {
                 if (window.innerWidth < 1024) {

@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { X, FileText, FolderOpen, MessageCircle, Clock, ChevronRight, ChevronDown, MoreVertical, Trash2, Loader2 } from 'lucide-react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
+import { X, FileText, FolderOpen, MessageCircle, Clock, ChevronRight, ChevronDown, MoreVertical, Trash2, Loader2, Search } from 'lucide-react'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
 import { Card } from './ui/card'
+import { Input } from './ui/input'  // Added import for search input
 
 function HistoryDrawer({
   isOpen,
@@ -26,6 +27,8 @@ function HistoryDrawer({
   const [showDropdown, setShowDropdown] = useState(null)
   const [showDeleteModal, setShowDeleteModal] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [documentsQuery, setDocumentsQuery] = useState('')
+  const [collectionsQuery, setCollectionsQuery] = useState('')
   const dropdownRef = useRef(null)
 
   // Close dropdown when clicking outside
@@ -53,9 +56,28 @@ function HistoryDrawer({
     }
   }, [showDropdown])
 
-  // Show all documents and collections in history (don't filter out active ones)
-  const filteredDocuments = historicalDocuments
-  const filteredCollections = collections
+  // Filtered documents
+  const filteredDocuments = useMemo(() => {
+    const q = documentsQuery.toLowerCase().trim()
+    if (!q) return historicalDocuments
+    return historicalDocuments.filter(doc => 
+      doc.filename?.toLowerCase().includes(q) ||
+      doc.summary?.toLowerCase().includes(q)
+    )
+  }, [historicalDocuments, documentsQuery])
+
+  // Filtered collections (match name or any document name/summary)
+  const filteredCollections = useMemo(() => {
+    const q = collectionsQuery.toLowerCase().trim()
+    if (!q) return collections
+    return collections.filter(col => {
+      if (col.name?.toLowerCase().includes(q)) return true
+      return (col.documents || []).some(doc => 
+        doc.filename?.toLowerCase().includes(q) ||
+        doc.summary?.toLowerCase().includes(q)
+      )
+    })
+  }, [collections, collectionsQuery])
 
   // Toggle collection expansion
   const toggleCollectionExpansion = (collectionId) => {
@@ -258,6 +280,17 @@ function HistoryDrawer({
                     )}
                   </div>
 
+                  {/* Collections Search */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search collections..."
+                      value={collectionsQuery}
+                      onChange={(e) => setCollectionsQuery(e.target.value)}
+                      className="pl-9 text-sm"
+                    />
+                  </div>
+
                   {/* Show skeleton loading while fetching */}
                   {isLoadingCollections ? (
                     <div className="space-y-3">
@@ -440,6 +473,17 @@ function HistoryDrawer({
                     {isLoadingDocuments && (
                       <div className="w-4 h-4 border border-gray-300 border-t-blue-600 rounded-full animate-spin" />
                     )}
+                  </div>
+
+                  {/* Documents Search */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search documents..."
+                      value={documentsQuery}
+                      onChange={(e) => setDocumentsQuery(e.target.value)}
+                      className="pl-9 text-sm"
+                    />
                   </div>
 
                   {/* Show skeleton loading while fetching */}
