@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs'
 import { Alert, AlertDescription } from './ui/alert'
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card'
 import { Badge } from './ui/badge'
-import { Upload, FileText, Brain, AlertTriangle, Loader2, Sparkles, Zap, Shield, Clock, X, CheckCircle, Calendar } from 'lucide-react'
+import { Upload, FileText, Brain, AlertTriangle, Loader2, Sparkles, Zap, Shield, Clock, X, CheckCircle, Calendar, Info, InfoIcon } from 'lucide-react'
 
 const ModernUploadInterface = forwardRef(({
   file,
@@ -76,11 +76,11 @@ const ModernUploadInterface = forwardRef(({
     const getStatusColor = () => {
       if (daysRemaining <= 3) return 'text-red-600 bg-red-50 border-red-200'
       if (daysRemaining <= 7) return 'text-orange-600 bg-orange-50 border-orange-200'
-      return 'text-white bg-[#000000] border-white-200'
+      return 'shadow-2xl text-white bg-black border-white-200'
     }
 
     return (
-      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium ${getStatusColor()}`}>
+      <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium ${getStatusColor()}`}>
         {/* <Calendar className="h-4 w-4" /> */}
         <span>
           Ends in {daysRemaining} days
@@ -356,11 +356,17 @@ const ModernUploadInterface = forwardRef(({
       <div className="flex justify-center mb-6">
         <SubscriptionCountdown />
       </div>
+
       <div className="text-center mb-6">
 
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">
-          Document Intelligence Platform
-        </h1>
+        <div className="flex items-center justify-center gap-2">
+          <Sparkles className="h-8 w-8" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">
+            What will you upload?
+          </h1>
+        </div>
+
+
         {/* <p className="text-sm sm:text-base text-slate-600 dark:text-gray-300 max-w-2xl mx-auto">
           Upload documents and get instant AI-powered insights, analysis, and answers
         </p> */}
@@ -413,10 +419,10 @@ const ModernUploadInterface = forwardRef(({
                 <div className="relative group">
                   <div
                     className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 touch-manipulation ${loading || hasAnalyzingDocuments
-                        ? 'border-gray-300 bg-gray-50/50 dark:bg-gray-800/50 opacity-60 cursor-not-allowed'
-                        : dragActive
-                          ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-900/30 scale-[1.02] shadow-lg'
-                          : 'border-slate-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 group-hover:bg-blue-50/30 dark:group-hover:bg-blue-900/10'
+                      ? 'border-gray-300 bg-gray-50/50 dark:bg-gray-800/50 opacity-60 cursor-not-allowed'
+                      : dragActive
+                        ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-900/30 scale-[1.02] shadow-lg'
+                        : 'border-slate-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 group-hover:bg-blue-50/30 dark:group-hover:bg-blue-900/10'
                       }`}
                     onDragEnter={loading || hasAnalyzingDocuments ? undefined : handleDragEnter}
                     onDragLeave={loading || hasAnalyzingDocuments ? undefined : handleDragLeave}
@@ -579,10 +585,10 @@ const ModernUploadInterface = forwardRef(({
                 <div className="relative group">
                   <div
                     className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 touch-manipulation ${loading || hasAnalyzingDocuments
-                        ? 'border-gray-300 bg-gray-50/50 dark:bg-gray-800/50 opacity-60 cursor-not-allowed'
-                        : dragActive
-                          ? 'border-purple-500 bg-purple-50/70 dark:bg-purple-900/30 scale-[1.02] shadow-lg'
-                          : 'border-purple-300 dark:border-purple-600 hover:border-purple-400 dark:hover:border-purple-500 group-hover:bg-purple-50/30 dark:group-hover:bg-purple-900/10'
+                      ? 'border-gray-300 bg-gray-50/50 dark:bg-gray-800/50 opacity-60 cursor-not-allowed'
+                      : dragActive
+                        ? 'border-purple-500 bg-purple-50/70 dark:bg-purple-900/30 scale-[1.02] shadow-lg'
+                        : 'border-purple-300 dark:border-purple-600 hover:border-purple-400 dark:hover:border-purple-500 group-hover:bg-purple-50/30 dark:group-hover:bg-purple-900/10'
                       }`}
                     onDragEnter={loading || hasAnalyzingDocuments ? undefined : handleDragEnter}
                     onDragLeave={loading || hasAnalyzingDocuments ? undefined : handleDragLeave}
