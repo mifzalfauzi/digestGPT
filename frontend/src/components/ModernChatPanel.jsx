@@ -507,11 +507,21 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
       [messageId]: feedbackType
     }))
 
-    // Here you could send feedback to your backend
-    console.log(`Feedback for message ${messageId}: ${feedbackType}`)
+    // Send feedback to backend
+    const message = messages.find(m => m.id === messageId)?.content || ''
+    axios.post('http://localhost:8000/feedback', {
+      feedback_type: feedbackType === 'good' ? 'positive' : 'negative',
+      feedback_category: 'chat',
+      message: message
+    }, {
+      withCredentials: true
+    }).then(response => {
+      console.log('Chat feedback submitted:', response.data)
+    }).catch(error => {
+      console.error('Chat feedback error:', error)
+    })
 
-    // Optional: Send to backend
-    // axios.post('/api/feedback', { messageId, feedbackType, documentId })
+    console.log(`Feedback for message ${messageId}: ${feedbackType}`)
   }
 
   const clearChat = () => {

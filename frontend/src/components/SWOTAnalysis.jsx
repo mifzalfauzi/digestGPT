@@ -27,6 +27,7 @@ import {
   BookOpen,
 } from "lucide-react"
 import { Separator } from "./ui/separator"
+import axios from "axios"
 
 
 export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = false }) {
@@ -316,6 +317,23 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       ...prev,
       [itemId]: rating
     }))
+
+    // Send feedback to backend
+    const feedbackType = rating === 'up' ? 'positive' : 'negative'
+    const feedbackCategory = `swot_${category}`  // e.g., 'swot_strengths'
+    const message = `${item.title}\n${item.description}`
+
+    axios.post('http://localhost:8000/feedback', {
+      feedback_type: feedbackType,
+      feedback_category: feedbackCategory,
+      message: message
+    }, {
+      withCredentials: true
+    }).then(response => {
+      console.log('Feedback submitted:', response.data)
+    }).catch(error => {
+      console.error('Feedback error:', error)
+    })
   }, [])
 
   const goToPage = useCallback((category, page) => {

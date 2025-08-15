@@ -4,14 +4,14 @@ import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Alert, AlertDescription } from './ui/alert'
 import { Separator } from './ui/separator'
-import { 
-  Brain, 
-  Target, 
-  AlertTriangle, 
-  TrendingUp, 
-  Shield, 
-  Eye, 
-  Sparkles, 
+import {
+  Brain,
+  Target,
+  AlertTriangle,
+  TrendingUp,
+  Shield,
+  Eye,
+  Sparkles,
   Search,
   CheckCircle2,
   Info,
@@ -23,11 +23,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  Check,
   ThumbsUp,
   ThumbsDown
 } from 'lucide-react'
 import HighlightableText from './HighlightableText'
 import MarkdownRenderer from './MarkdownRenderer'
+import axios from 'axios'
 
 function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighlight, onActiveHighlightChange, showSummary = true }) {
   const [insights, setInsights] = useState([])
@@ -39,7 +41,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   const [currentRiskIndex, setCurrentRiskIndex] = useState(0)
   const [copiedItem, setCopiedItem] = useState(null)
   const [feedbackGiven, setFeedbackGiven] = useState({})
-  
+
   // Simple persistence using ref to avoid re-render loops
   const persistedState = useRef({
     currentInsightIndex: 0,
@@ -65,7 +67,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   useEffect(() => {
     console.log('ProfessionalAnalysisDisplay - Full results:', results)
     console.log('ProfessionalAnalysisDisplay - Analysis data:', results?.analysis)
-    
+
     if (!results?.analysis) return
 
     // Handle case where analysis might be a string instead of object
@@ -137,7 +139,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     setHighlights(newHighlights)
 
   }, [results])
-  
+
   // Separate useEffect for initialization to avoid conflicts
   useEffect(() => {
     if (!persistedState.current.isInitialized) {
@@ -153,7 +155,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   // Track if user manually changed pagination to avoid auto-sync conflicts
   const userNavigatedManually = useRef(false)
   const previousActiveHighlight = useRef(activeHighlight)
-  
+
   // Only sync when activeHighlight changes due to external click AND user hasn't manually navigated
   useEffect(() => {
     // Only sync if activeHighlight actually changed (not just tab restoration)
@@ -161,11 +163,11 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       previousActiveHighlight.current = activeHighlight
       return
     }
-    
+
     // Reset manual navigation flag when highlight changes
     userNavigatedManually.current = false
     previousActiveHighlight.current = activeHighlight
-    
+
     if (activeHighlight.startsWith('insight-') && !userNavigatedManually.current) {
       const idx = parseInt(activeHighlight.split('-')[1], 10)
       if (!isNaN(idx)) {
@@ -235,42 +237,42 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
 
   const getCategoryBadgeClasses = (category) => {
     switch (category) {
-      case 'financial': 
+      case 'financial':
         return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
-      case 'legal': 
+      case 'legal':
         return 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
-      case 'technical': 
+      case 'technical':
         return 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300'
-      case 'strategic': 
+      case 'strategic':
         return 'bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300'
-      case 'compliance': 
+      case 'compliance':
         return 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300'
-      case 'security': 
+      case 'security':
         return 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300'
-      case 'operational': 
+      case 'operational':
         return 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300'
-      default: 
+      default:
         return 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
     }
   }
 
   const getCategoryIconClasses = (category) => {
     switch (category) {
-      case 'financial': 
+      case 'financial':
         return 'bg-emerald-100 dark:bg-emerald-900/30'
-      case 'legal': 
+      case 'legal':
         return 'bg-blue-100 dark:bg-blue-900/30'
-      case 'technical': 
+      case 'technical':
         return 'bg-purple-100 dark:bg-purple-900/30'
-      case 'strategic': 
+      case 'strategic':
         return 'bg-orange-100 dark:bg-orange-900/30'
-      case 'compliance': 
+      case 'compliance':
         return 'bg-red-100 dark:bg-red-900/30'
-      case 'security': 
+      case 'security':
         return 'bg-red-100 dark:bg-red-900/30'
-      case 'operational': 
+      case 'operational':
         return 'bg-yellow-100 dark:bg-yellow-900/30'
-      default: 
+      default:
         return 'bg-blue-100 dark:bg-blue-900/30'
     }
   }
@@ -286,26 +288,26 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
 
   const getSeverityBadgeClasses = (severity) => {
     switch (severity) {
-      case 'critical': 
+      case 'critical':
         return 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300'
-      case 'high': 
+      case 'high':
         return 'bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300'
-      case 'medium': 
+      case 'medium':
         return 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300'
-      default: 
+      default:
         return 'bg-gray-50 text-gray-700 dark:bg-gray-900/20 dark:text-gray-300'
     }
   }
 
   const getSeverityIconClasses = (severity) => {
     switch (severity) {
-      case 'critical': 
+      case 'critical':
         return 'bg-red-100 dark:bg-red-900/30'
-      case 'high': 
+      case 'high':
         return 'bg-orange-100 dark:bg-orange-900/30'
-      case 'medium': 
+      case 'medium':
         return 'bg-yellow-100 dark:bg-yellow-900/30'
-      default: 
+      default:
         return 'bg-gray-100 dark:bg-gray-900/30'
     }
   }
@@ -320,7 +322,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       feedbackGiven
     }
   }, [currentInsightIndex, currentRiskIndex, copiedItem, feedbackGiven])
-  
+
   // Get current items for display
   const currentInsight = insights[currentInsightIndex]
   const currentRisk = risks[currentRiskIndex]
@@ -344,6 +346,23 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     }))
     // Here you could also send feedback to your analytics/backend
     console.log(`Feedback given for ${itemId}: ${type}`)
+
+    // Send feedback to backend
+    const feedbackType = type === 'positive' ? 'positive' : 'negative'
+    const feedbackCategory = itemId.startsWith('insight-') ? 'insight' : 'risk'
+    const message = itemId.startsWith('insight-') ? insights[parseInt(itemId.split('-')[1])].text : risks[parseInt(itemId.split('-')[1])].text
+
+    axios.post('http://localhost:8000/feedback', {
+      feedback_type: feedbackType,
+      feedback_category: feedbackCategory,
+      message: message
+    }, {
+      withCredentials: true
+    }).then(response => {
+      console.log('Feedback submitted:', response.data)
+    }).catch(error => {
+      console.error('Feedback error:', error)
+    })
   }
 
   return (
@@ -369,7 +388,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
         <Card className="border-0 shadow-xl dark:bg-black">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-3">
-             
+
               <div>
                 <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
                   Executive Summary
@@ -378,7 +397,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                   Summary by Claude
                 </p>
               </div>
-             
+
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -387,7 +406,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                 {summary || 'Comprehensive analysis will appear here after document processing...'}
               </p>
             </div>
-            
+
             {/* Quick Stats */}
             <div className="grid grid-cols-4 gap-3 mt-6">
               <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-4 border border-emerald-200/50 dark:border-emerald-800/30">
@@ -399,7 +418,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                   {insights.length}
                 </p>
               </div>
-              
+
               <div className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 rounded-xl p-4 border border-red-200/50 dark:border-red-800/30">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
@@ -419,7 +438,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                   {keyConcepts.length}
                 </p>
               </div>
-              
+
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/30">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -460,38 +479,36 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
           {insights.length > 0 && currentInsight ? (
             <>
               {/* Current Insight Display */}
-              <Card 
-                className={`transition-all duration-300 dark:bg-green-900/20 ${
-                  highlights.find(h => h.id === currentInsight.id) ? 'cursor-pointer hover:shadow-lg' : ''
-                } ${
-                  activeHighlight === currentInsight.id
+              <Card
+                className={`transition-all duration-300 dark:bg-green-900/20 ${highlights.find(h => h.id === currentInsight.id) ? 'hover:shadow-lg' : ''
+                  } ${activeHighlight === currentInsight.id
                     ? 'ring-2 ring-emerald-400 dark:ring-emerald-500 shadow-lg bg-emerald-50/50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700'
                     : 'border-slate-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-600'
-                }`}
-                onClick={() => {
-                  const hasHighlight = highlights.find(h => h.id === currentInsight.id);
-                  hasHighlight && onHighlightClick(currentInsight.id);
-                }}
+                  }`}
+              // onClick={() => {
+              //   const hasHighlight = highlights.find(h => h.id === currentInsight.id);
+              //   hasHighlight && onHighlightClick(currentInsight.id);
+              // }}
               >
                 <CardContent className="p-5">
                   <div className="flex items-start gap-4">
                     <div className={`p-2.5 ${getCategoryIconClasses(currentInsight.category)} rounded-lg flex-shrink-0`}>
                       {getCategoryIcon(currentInsight.category)}
                     </div>
-                    
+
                     <div className="flex-1 space-y-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="text-slate-800 dark:text-slate-100 leading-relaxed font-medium text-sm flex-1">
                           <MarkdownRenderer content={currentInsight.text} />
                         </div>
                         <div className="flex flex-col gap-2 items-end">
-                          <Badge 
-                            variant="outline" 
+                          <Badge
+                            variant="outline"
                             className={`text-xs ${getCategoryBadgeClasses(currentInsight.category)} capitalize`}
                           >
                             {currentInsight.category}
                           </Badge>
-                          
+
                           {/* Copy and Feedback buttons */}
                           <div className="flex gap-1">
                             <Button
@@ -501,38 +518,38 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                               className="h-7 w-7 p-0 hover:bg-emerald-100 dark:hover:bg-emerald-900/20"
                               title="Copy insight"
                             >
-                              <Copy className={`h-3 w-3 ${copiedItem === currentInsight.id ? 'text-emerald-600' : 'text-gray-500'}`} />
+                              {copiedItem === currentInsight.id ? (
+                                <Check className="h-3 w-3 text-emerald-600" />
+                              ) : (
+                                <Copy className="h-3 w-3 text-emerald-600" />
+                              )}
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleFeedback(currentInsight.id, 'positive')}
-                              className={`h-7 w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${
-                                feedbackGiven[currentInsight.id] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
-                              }`}
+                              className={`h-7 w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${feedbackGiven[currentInsight.id] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
+                                }`}
                               title="Helpful insight"
                             >
-                              <ThumbsUp className={`h-3 w-3 ${
-                                feedbackGiven[currentInsight.id] === 'positive' ? 'text-green-600' : 'text-gray-500'
-                              }`} />
+                              <ThumbsUp className={`h-3 w-3 ${feedbackGiven[currentInsight.id] === 'positive' ? 'text-green-600' : 'text-gray-500'
+                                }`} />
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleFeedback(currentInsight.id, 'negative')}
-                              className={`h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${
-                                feedbackGiven[currentInsight.id] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
-                              }`}
+                              className={`h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${feedbackGiven[currentInsight.id] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
+                                }`}
                               title="Not helpful"
                             >
-                              <ThumbsDown className={`h-3 w-3 ${
-                                feedbackGiven[currentInsight.id] === 'negative' ? 'text-red-600' : 'text-gray-500'
-                              }`} />
+                              <ThumbsDown className={`h-3 w-3 ${feedbackGiven[currentInsight.id] === 'negative' ? 'text-red-600' : 'text-gray-500'
+                                }`} />
                             </Button>
                           </div>
                         </div>
                       </div>
-                      
+
                       {highlights.find(h => h.id === currentInsight.id) && (
                         <div className="flex items-center gap-3 pt-2 border-t border-slate-200 dark:border-gray-600">
                           <Button
@@ -543,16 +560,23 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                               e.stopPropagation()
                               if (activeHighlight === currentInsight.id) {
                                 onActiveHighlightChange?.(null)
+
+                                const hasHighlight = highlights.find(h => h.id === currentInsight.id);
+                                hasHighlight && onHighlightClick(currentInsight.id);
                               } else {
                                 onHighlightClick(currentInsight.id)
                               }
                             }}
+                          // onClick={() => {
+                          //   const hasHighlight = highlights.find(h => h.id === currentInsight.id);
+                          //   hasHighlight && onHighlightClick(currentInsight.id);
+                          // }}
                           >
                             <Search className="h-3 w-3 mr-1" />
                             {activeHighlight === currentInsight.id ? 'Hide highlight' : 'Show in document'}
                             <ArrowRight className="h-3 w-3 ml-1" />
                           </Button>
-                          
+
                           {currentInsight.quote && (
                             <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-gray-400">
                               <div className="w-1 h-1 bg-slate-400 rounded-full"></div>
@@ -595,11 +619,10 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                     {insights.map((_, index) => (
                       <div
                         key={index}
-                        className={`w-2 h-2 rounded-full transition-colors cursor-pointer ${
-                          index === currentInsightIndex
-                            ? 'bg-emerald-500'
-                            : 'bg-slate-300 dark:bg-gray-600 hover:bg-emerald-300'
-                        }`}
+                        className={`w-2 h-2 rounded-full transition-colors cursor-pointer ${index === currentInsightIndex
+                          ? 'bg-emerald-500'
+                          : 'bg-slate-300 dark:bg-gray-600 hover:bg-emerald-300'
+                          }`}
                         onClick={() => {
                           userNavigatedManually.current = true
                           setCurrentInsightIndex(index)
@@ -661,11 +684,10 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                 </p>
               </div>
             </div>
-            <Badge className={`${
-              risks.length === 0 
-                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-            }`}>
+            <Badge className={`${risks.length === 0
+              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+              }`}>
               {risks.length === 0 ? 'Low Risk' : `${risks.length} risks `}
             </Badge>
           </div>
@@ -674,24 +696,22 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
           {risks.length > 0 && currentRisk ? (
             <>
               {/* Current Risk Display */}
-              <Alert 
-                className={`transition-all duration-300 ${
-                  highlights.find(h => h.id === currentRisk.id) ? 'cursor-pointer hover:shadow-lg' : ''
-                } ${
-                  activeHighlight === currentRisk.id
+              <Alert
+                className={`transition-all duration-300 ${highlights.find(h => h.id === currentRisk.id) ? ' hover:shadow-lg' : ''
+                  } ${activeHighlight === currentRisk.id
                     ? 'ring-2 ring-red-400 dark:ring-red-500 shadow-lg bg-red-50/50 dark:bg-red-950/30 border-red-300 dark:border-red-600'
                     : 'border-red-200 dark:border-red-800 hover:border-red-300 dark:hover:border-red-600'
-                } bg-gradient-to-r from-red-50/80 to-orange-50/80 dark:from-red-950/20 dark:to-orange-950/20`}
-                onClick={() => {
-                  const hasHighlight = highlights.find(h => h.id === currentRisk.id);
-                  hasHighlight && onHighlightClick(currentRisk.id);
-                }}
+                  } bg-gradient-to-r from-red-50/80 to-orange-50/80 dark:from-red-950/20 dark:to-orange-950/20`}
+              // onClick={() => {
+              //   const hasHighlight = highlights.find(h => h.id === currentRisk.id);
+              //   hasHighlight && onHighlightClick(currentRisk.id);
+              // }}
               >
                 <div className="flex items-start gap-4">
                   <div className={`p-2.5 ${getSeverityIconClasses(currentRisk.severity)} rounded-lg flex-shrink-0`}>
                     <AlertTriangle className={`h-5 w-5 text-${getSeverityColor(currentRisk.severity)}-600 dark:text-${getSeverityColor(currentRisk.severity)}-400`} />
                   </div>
-                  
+
                   <div className="flex-1 space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <AlertDescription className="text-red-800 dark:text-red-200 leading-relaxed font-medium text-sm flex-1">
@@ -699,20 +719,20 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                       </AlertDescription>
                       <div className="flex flex-col gap-2 items-end">
                         <div className="flex flex-col gap-1 items-end">
-                          <Badge 
-                            variant="outline" 
+                          <Badge
+                            variant="outline"
                             className={`text-xs ${getCategoryBadgeClasses(currentRisk.category)} capitalize`}
                           >
                             {currentRisk.category}
                           </Badge>
-                          <Badge 
-                            variant="outline" 
+                          <Badge
+                            variant="outline"
                             className={`text-xs ${getSeverityBadgeClasses(currentRisk.severity)} capitalize`}
                           >
                             {currentRisk.severity}
                           </Badge>
                         </div>
-                        
+
                         {/* Copy and Feedback buttons */}
                         <div className="flex gap-1">
                           <Button
@@ -722,38 +742,38 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                             className="h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
                             title="Copy risk"
                           >
-                            <Copy className={`h-3 w-3 ${copiedItem === currentRisk.id ? 'text-red-600' : 'text-gray-500'}`} />
+                            {copiedItem === currentRisk.id ? (
+                              <Check className="h-3 w-3 text-red-600" />
+                            ) : (
+                              <Copy className="h-3 w-3 text-red-600" />
+                            )}
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleFeedback(currentRisk.id, 'positive')}
-                            className={`h-7 w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${
-                              feedbackGiven[currentRisk.id] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
-                            }`}
+                            className={`h-7 w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${feedbackGiven[currentRisk.id] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
+                              }`}
                             title="Accurate risk assessment"
                           >
-                            <ThumbsUp className={`h-3 w-3 ${
-                              feedbackGiven[currentRisk.id] === 'positive' ? 'text-green-600' : 'text-gray-500'
-                            }`} />
+                            <ThumbsUp className={`h-3 w-3 ${feedbackGiven[currentRisk.id] === 'positive' ? 'text-green-600' : 'text-gray-500'
+                              }`} />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleFeedback(currentRisk.id, 'negative')}
-                            className={`h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${
-                              feedbackGiven[currentRisk.id] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
-                            }`}
+                            className={`h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${feedbackGiven[currentRisk.id] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
+                              }`}
                             title="Inaccurate assessment"
                           >
-                            <ThumbsDown className={`h-3 w-3 ${
-                              feedbackGiven[currentRisk.id] === 'negative' ? 'text-red-600' : 'text-gray-500'
-                            }`} />
+                            <ThumbsDown className={`h-3 w-3 ${feedbackGiven[currentRisk.id] === 'negative' ? 'text-red-600' : 'text-gray-500'
+                              }`} />
                           </Button>
                         </div>
                       </div>
                     </div>
-                    
+
                     {highlights.find(h => h.id === currentRisk.id) && (
                       <div className="flex items-center gap-3 pt-2 border-t border-red-200 dark:border-red-700">
                         <Button
@@ -764,16 +784,23 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                             e.stopPropagation()
                             if (activeHighlight === currentRisk.id) {
                               onActiveHighlightChange?.(null)
+
+                              const hasHighlight = highlights.find(h => h.id === currentRisk.id);
+                              hasHighlight && onHighlightClick(currentRisk.id);
                             } else {
                               onHighlightClick(currentRisk.id)
                             }
                           }}
+                        // onClick={() => {
+                        //   const hasHighlight = highlights.find(h => h.id === currentRisk.id);
+                        //   hasHighlight && onHighlightClick(currentRisk.id);
+                        // }}
                         >
                           <Search className="h-3 w-3 mr-1" />
                           {activeHighlight === currentRisk.id ? 'Hide highlight' : 'Show in document'}
                           <ArrowRight className="h-3 w-3 ml-1" />
                         </Button>
-                        
+
                         {currentRisk.quote && (
                           <div className="flex items-center gap-2 text-xs text-red-700 dark:text-red-300">
                             <div className="w-1 h-1 bg-red-400 rounded-full"></div>
@@ -815,11 +842,10 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                     {risks.map((_, index) => (
                       <div
                         key={index}
-                        className={`w-2 h-2 rounded-full transition-colors cursor-pointer ${
-                          index === currentRiskIndex
-                            ? 'bg-red-500'
-                            : 'bg-slate-300 dark:bg-gray-600 hover:bg-red-300'
-                        }`}
+                        className={`w-2 h-2 rounded-full transition-colors cursor-pointer ${index === currentRiskIndex
+                          ? 'bg-red-500'
+                          : 'bg-slate-300 dark:bg-gray-600 hover:bg-red-300'
+                          }`}
                         onClick={() => {
                           userNavigatedManually.current = true
                           setCurrentRiskIndex(index)

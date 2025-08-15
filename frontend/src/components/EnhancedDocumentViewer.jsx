@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Separator } from './ui/separator'
-import { Eye, FileText, Brain, TrendingUp, Clock, Sparkles, Target, AlertTriangle, CheckCircle2, BookOpen, Key, ArrowBigDown, Download } from 'lucide-react'
+import { Eye, FileText, Brain, TrendingUp, Clock, Sparkles, Target, AlertTriangle, CheckCircle2, BookOpen, Key, ArrowBigDown, Download, Copy, ThumbsUp, ThumbsDown } from 'lucide-react'
 import ProfessionalAnalysisDisplay from './ProfessionalAnalysisDisplay'
 import KeyConceptsDisplay from './KeyConceptsDisplay'
 import HighlightableText from './HighlightableText'
@@ -14,6 +14,7 @@ import mammoth from 'mammoth'
 import SWOTAnalysis from './SWOTAnalysis'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
+import axios from 'axios' // Added axios import
 function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, isDemoMode = false, bypassAPI = false }) {
   const [activeHighlight, setActiveHighlight] = useState(null)
   const [highlights, setHighlights] = useState([])
@@ -716,6 +717,46 @@ This business plan effectively balances growth ambitions with comprehensive risk
     }
   }
 
+  // State for copy and feedback
+  const [copiedItem, setCopiedItem] = useState(null)
+  const [feedbackGiven, setFeedbackGiven] = useState({})
+
+  const handleCopy = async (text, itemId) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedItem(itemId)
+      setTimeout(() => setCopiedItem(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy text: ', err)
+    }
+  }
+
+  const handleFeedback = (itemId, type) => {
+    setFeedbackGiven(prev => ({
+      ...prev,
+      [itemId]: type
+    }))
+
+    // Send feedback to backend
+    const feedbackType = type === 'positive' ? 'positive' : 'negative'
+    const feedbackCategory = 'summary'
+    const message = text
+
+    axios.post('http://localhost:8000/feedback', {
+      feedback_type: feedbackType,
+      feedback_category: feedbackCategory,
+      message: message
+    }, {
+      withCredentials: true
+    }).then(response => {
+      console.log('Summary feedback submitted:', response.data)
+    }).catch(error => {
+      console.error('Summary feedback error:', error)
+    })
+
+    console.log(`Feedback given for ${itemId}: ${type}`)
+  }
+
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800">
       {/* Enhanced Header - Fixed at top */}
@@ -947,7 +988,46 @@ This business plan effectively balances growth ambitions with comprehensive risk
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2 sm:space-y-3 px-3 sm:px-4">
-                  <div className="bg-gradient-to-r from-purple-50/80 to-blue-50/80 dark:from-purple-950/30 dark:to-blue-950/30 rounded-2xl p-3 sm:p-4 border border-purple-200/50 dark:border-purple-800/30">
+                  <div className="bg-gradient-to-r from-purple-50/80 to-blue-50/80 dark:from-purple-950/30 dark:to-blue-950/30 rounded-2xl p-3 sm:p-4 border border-purple-200/50 dark:border-purple-800/30 relative">
+                    {/* Add action buttons at top right */}
+                    <div className="absolute bottom-3 right-3 flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleCopy(results?.analysis?.summary || '', 'summary')}
+                        className="h-7 w-7 p-0 hover:bg-purple-100 dark:hover:bg-purple-900/20"
+                        title="Copy summary"
+                      >
+                        <Copy className={`h-3 w-3 ${copiedItem === 'summary' ? 'text-purple-600' : 'text-gray-500'}`} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleFeedback('summary', 'positive')}
+                        className={`h-7 w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${
+                          feedbackGiven['summary'] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
+                        }`}
+                        title="Helpful summary"
+                      >
+                        <ThumbsUp className={`h-3 w-3 ${
+                          feedbackGiven['summary'] === 'positive' ? 'text-green-600' : 'text-gray-500'
+                        }`} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleFeedback('summary', 'negative')}
+                        className={`h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${
+                          feedbackGiven['summary'] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
+                        }`}
+                        title="Not helpful"
+                      >
+                        <ThumbsDown className={`h-3 w-3 ${
+                          feedbackGiven['summary'] === 'negative' ? 'text-red-600' : 'text-gray-500'
+                        }`} />
+                      </Button>
+                    </div>
+
                     <MarkdownRenderer
                       content={results?.analysis?.summary || 'Comprehensive analysis will appear here after document processing...'}
                       className="text-slate-800 dark:text-slate-100 leading-relaxed text-sm font-medium"
