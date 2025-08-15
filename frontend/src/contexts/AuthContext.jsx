@@ -348,6 +348,15 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const handlePostLoginRedirect = () => {
+    const selectedPlan = localStorage.getItem('selectedPlan')
+    if (selectedPlan) {
+      localStorage.removeItem('selectedPlan')
+      return `/upgrade?plan=${selectedPlan}`
+    }
+    return '/assistant'
+  }
+
   // NEW: Send magic link function
   const sendMagicLink = async (email) => {
     try {
@@ -475,6 +484,7 @@ export const AuthProvider = ({ children }) => {
     sendMagicLink, // NEW: Export magic link function
     showSessionModal,
     checkAuthStatus,
+    handlePostLoginRedirect, // NEW: Export post-login redirect handler
     // sessionExpiredMessage,
     closeSessionModal
   }

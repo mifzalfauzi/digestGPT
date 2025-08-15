@@ -19,9 +19,23 @@ import {
   Brain,
   Eye,
 } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
+import { useAuth } from "../contexts/AuthContext"
 
 export default function LandingPage() {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+
+  const handlePlanClick = (planType) => {
+    if (isAuthenticated) {
+      // User is authenticated, redirect to assistant
+      navigate('/assistant');
+    } else {
+      // User is not authenticated, redirect to sign in
+      navigate('/signin');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
       {/* Header - Compact */}
@@ -424,8 +438,8 @@ export default function LandingPage() {
                   </div>
 
                   <div className="flex justify-start pt-6">
-                    <Button className="bg-white hover:bg-yellow-700 px-4 py-2 text-sm" size="sm">
-                      Start
+                    <Button className="bg-white w-full hover:bg-yellow-700 hover:text-white px-4 py-2 text-sm" size="sm" onClick={() => handlePlanClick('free')}>
+                      Try drop2chat*
                     </Button>
                   </div>
                 </CardContent>
@@ -477,8 +491,12 @@ export default function LandingPage() {
                   </div>
 
                   <div className="flex justify-start pt-6">
-                    <Button className="bg-white hover:bg-green-700 px-4 py-2 text-sm" size="sm">
-                      Get Standard
+                    <Button 
+                      onClick={() => handlePlanClick('standard')}
+                      className="bg-white w-full hover:bg-green-700 hover:text-white px-4 py-2 text-sm" 
+                      size="sm"
+                    >
+                      Try drop2chat*
                     </Button>
                   </div>
                 </CardContent>
@@ -525,8 +543,12 @@ export default function LandingPage() {
                   </div>
 
                   <div className="flex justify-start pt-6">
-                    <Button className="bg-white hover:bg-blue-700 px-4 py-2 text-sm" size="sm">
-                      Get Pro
+                    <Button 
+                      onClick={() => handlePlanClick('pro')}
+                      className="bg-white w-full hover:bg-blue-700 hover:text-white px-4 py-2 text-sm" 
+                      size="sm"
+                    >
+                      Try drop2chat*
                     </Button>
                   </div>
                 </CardContent>
