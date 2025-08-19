@@ -15,6 +15,7 @@ function ChatInterface({ documentId, filename, autoExpand = false }) {
   const [isLoading, setIsLoading] = useState(false)
   const [isExpanded, setIsExpanded] = useState(autoExpand)
   const messagesEndRef = useRef(null)
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "auto" })
@@ -46,7 +47,7 @@ function ChatInterface({ documentId, filename, autoExpand = false }) {
     setMessages(prev => [...prev, newUserMessage])
 
     try {
-      const response = await axios.post('http://localhost:8000/chat', {
+      const response = await axios.post(`${BASE_URL}/chat`, {
         document_id: documentId,
         message: userMessage
       })

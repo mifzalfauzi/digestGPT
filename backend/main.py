@@ -65,6 +65,7 @@ app.add_middleware(
         "http://localhost:3000", 
         "http://localhost:5173",
         "https://drop2chat.com",
+        "https://www.drop2chat.com",
         "https://accounts.google.com",
     ],
     allow_credentials=True,

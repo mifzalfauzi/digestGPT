@@ -11,6 +11,7 @@ function TypewriterText({
   useFormatter = false
 }) {
   const [displayedText, setDisplayedText] = useState('')
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
   const [isComplete, setIsComplete] = useState(false)
   const timeoutRef = useRef(null)
   const isTypingRef = useRef(false)

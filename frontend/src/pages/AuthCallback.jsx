@@ -8,6 +8,7 @@ export default function AuthCallback() {
   const [searchParams] = useSearchParams();
   const { checkAuthStatus, fetchUserData } = useAuth();
   const hasRun = useRef(false); // Prevent multiple runs
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
 
   useEffect(() => {
     // Prevent multiple executions
@@ -34,7 +35,7 @@ export default function AuthCallback() {
         console.log('🔓 Extracting authentication tokens...');
         
         // Extract auth tokens from the short-lived token
-        const response = await fetch('http://localhost:8000/auth/extract-auth', {
+        const response = await fetch(`${BASE_URL}/auth/extract-auth`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

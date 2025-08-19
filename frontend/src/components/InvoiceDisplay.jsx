@@ -6,6 +6,7 @@ export default function InvoiceDisplay({ sessionId, invoiceData: propInvoiceData
   const [isLoading, setIsLoading] = useState(!propInvoiceData && sessionId);
   const [error, setError] = useState(null);
   const [downloadLoading, setDownloadLoading] = useState(false);
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
 
   useEffect(() => {
     if (sessionId && !propInvoiceData) {
@@ -16,7 +17,7 @@ export default function InvoiceDisplay({ sessionId, invoiceData: propInvoiceData
   const fetchInvoiceData = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`http://localhost:8000/stripe/invoice-data/${sessionId}`, {
+      const response = await fetch(`${BASE_URL}/stripe/invoice-data/${sessionId}`, {
         credentials: 'include'
       });
 
@@ -43,7 +44,7 @@ export default function InvoiceDisplay({ sessionId, invoiceData: propInvoiceData
     try {
       setDownloadLoading(true);
       
-      const response = await fetch(`http://localhost:8000/stripe/download-invoice/${invoiceFilename}`, {
+      const response = await fetch(`${BASE_URL}/stripe/download-invoice/${invoiceFilename}`, {
         credentials: 'include'
       });
 

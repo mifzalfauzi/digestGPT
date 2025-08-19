@@ -6,7 +6,7 @@ import { RefreshCw, Brain, CheckCircle, AlertCircle } from 'lucide-react'
 function ReanalysisButton({ documentId, onReanalysisComplete }) {
   const [isReanalyzing, setIsReanalyzing] = useState(false)
   const [reanalysisStatus, setReanalysisStatus] = useState(null) // 'success', 'error', or null
-
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
   const handleReanalysis = async () => {
     if (!documentId) return
 
@@ -15,7 +15,7 @@ function ReanalysisButton({ documentId, onReanalysisComplete }) {
 
     try {
       const response = await axios.post(
-        `http://localhost:8000/documents/${documentId}/reanalyze`,
+        `${BASE_URL}/documents/${documentId}/reanalyze`,
         {},
         {
           withCredentials: true  // 🔐 Send HttpOnly cookies (access_token)

@@ -11,6 +11,7 @@ import MarkdownRenderer from './MarkdownRenderer'
 function ModernDocumentViewer({ results, file, inputMode }) {
   const [activeHighlight, setActiveHighlight] = useState(null)
   const [highlights, setHighlights] = useState([])
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
 
   const getFileUrl = () => {
     // For newly uploaded files with file object

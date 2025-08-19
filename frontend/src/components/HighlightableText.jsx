@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 
 function HighlightableText({ text, highlights = [], activeHighlight = null, onHighlightClick, highlightRefs }) {
   const [renderedText, setRenderedText] = useState([])
-
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
   useEffect(() => {
     console.log('HighlightableText - Text length:', text?.length)
     console.log('HighlightableText - Highlights:', highlights)

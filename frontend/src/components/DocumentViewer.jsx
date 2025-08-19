@@ -8,7 +8,7 @@ import MarkdownRenderer from './MarkdownRenderer'
 function DocumentViewer({ results, file, inputMode }) {
   const [activeHighlight, setActiveHighlight] = useState(null)
   const [highlights, setHighlights] = useState([])
-
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
   const getFileUrl = () => {
     if (file && inputMode === 'file' && file.type === 'application/pdf') {
       return URL.createObjectURL(file)

@@ -9,7 +9,7 @@ function DocxViewer({ file, onTextExtracted }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [downloadUrl, setDownloadUrl] = useState(null)
-
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
   useEffect(() => {
     if (file && file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       handleDocxToPdf()
@@ -25,7 +25,7 @@ function DocxViewer({ file, onTextExtracted }) {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const response = await fetch('http://localhost:8000/convert-docx-to-pdf', {
+      const response = await fetch(`${BASE_URL}/convert-docx-to-pdf`, {
         method: 'POST',
         body: formData
       })
@@ -169,7 +169,7 @@ function DocxViewer({ file, onTextExtracted }) {
       <CardContent className="p-0 h-full">
         <div className="h-full border border-slate-200 dark:border-gray-600 rounded-xl overflow-hidden">
           <iframe
-            src={`http://localhost:8000${pdfUrl}`}
+            src={`${BASE_URL}${pdfUrl}`}
             className="w-full h-full min-h-[60vh]"
             title="DOCX as PDF"
           />

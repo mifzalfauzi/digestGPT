@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import { marked } from 'marked'
 
 function FullMarkdownRenderer({ content, className = '' }) {
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
   const htmlContent = useMemo(() => {
     if (!content) return ''
 

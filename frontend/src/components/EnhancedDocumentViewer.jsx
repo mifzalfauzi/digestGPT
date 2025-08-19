@@ -23,7 +23,7 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
   const [docxContent, setDocxContent] = useState(null)
   const [docxLoading, setDocxLoading] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
-  
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
   // Tab state storage for persistence
   const tabStateRef = useRef({})
   const tabContentRefs = useRef({})
@@ -742,7 +742,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
     const feedbackCategory = 'summary'
     const message = text
 
-    axios.post('http://localhost:8000/feedback', {
+    axios.post(`${BASE_URL}/feedback`, {
       feedback_type: feedbackType,
       feedback_category: feedbackCategory,
       message: message

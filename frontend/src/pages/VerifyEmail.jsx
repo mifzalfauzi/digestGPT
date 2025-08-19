@@ -7,7 +7,7 @@ export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState('verifying');
   const [message, setMessage] = useState('');
-  
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
   // CRITICAL FIX: Prevent multiple API calls
   const hasVerified = useRef(false);
   const verificationAttempted = useRef(false);
@@ -37,7 +37,7 @@ export default function VerifyEmail() {
     console.log('🔄 Starting verification with token:', verificationToken);
     
     try {
-      const response = await fetch(`http://localhost:8000/auth/verify-email?token=${verificationToken}`);
+      const response = await fetch(`${BASE_URL}/auth/verify-email?token=${verificationToken}`);
       const data = await response.json();
       
       console.log('📡 Backend response:', response.status, data);

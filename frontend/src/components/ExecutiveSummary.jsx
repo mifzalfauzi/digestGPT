@@ -17,7 +17,7 @@ function ExecutiveSummary({ results }) {
   const summary = results?.analysis?.summary || ''
   const insights = results?.analysis?.key_points || []
   const risks = results?.analysis?.risk_flags || []
-
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
   return (
     <div className="space-y-6 p-6">
       {/* Executive Summary Card */}

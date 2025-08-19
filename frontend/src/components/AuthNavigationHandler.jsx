@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 
 export const AuthNavigationHandler = () => {
   const navigate = useNavigate()
-  
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
   useEffect(() => {
     // Listen for navigation requests from AuthContext
     const handleStorageChange = (e) => {

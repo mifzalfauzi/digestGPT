@@ -10,7 +10,7 @@ export default function StripeSuccess() {
   const [invoiceData, setInvoiceData] = useState(null);
   const [invoiceFilename, setInvoiceFilename] = useState(null);
   const [hasProcessed, setHasProcessed] = useState(false); // Prevent duplicate calls
-
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
   // Get session_id from URL parameters
   const getSessionId = () => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -44,7 +44,7 @@ export default function StripeSuccess() {
       console.log('🔄 Updating plan with session ID:', sessionId);
 
       // Call the manual update endpoint
-      const response = await fetch('http://localhost:8000/stripe/update-plan-manual', {
+      const response = await fetch(`${BASE_URL}/stripe/update-plan-manual`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

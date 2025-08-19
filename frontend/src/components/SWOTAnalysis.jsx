@@ -31,6 +31,7 @@ import axios from "axios"
 
 
 export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = false }) {
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
   const [currentPage, setCurrentPage] = useState({
     strengths: 0,
     weaknesses: 0,
@@ -323,7 +324,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     const feedbackCategory = `swot_${category}`  // e.g., 'swot_strengths'
     const message = `${item.title}\n${item.description}`
 
-    axios.post('http://localhost:8000/feedback', {
+    axios.post(`${BASE_URL}/feedback`, {
       feedback_type: feedbackType,
       feedback_category: feedbackCategory,
       message: message

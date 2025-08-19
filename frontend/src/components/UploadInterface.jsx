@@ -17,6 +17,7 @@ function UploadInterface({
   loading,
   error
 }) {
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
   return (
     <div className="max-w-2xl mx-auto">
       <div className="text-center mb-8">

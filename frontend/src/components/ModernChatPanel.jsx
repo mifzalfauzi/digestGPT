@@ -37,6 +37,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
   const scrollTimeoutRef = useRef(null)
   const lastScrollHeightRef = useRef(0)
   const scrollThresholdRef = useRef(0)
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
   
   // Share functionality state
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
@@ -203,7 +204,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
 
       try {
         const response = await axios.get(
-          `http://localhost:8000/chat/history/${currentDocumentId}`,
+          `${BASE_URL}/chat/history/${currentDocumentId}`,
           {
             withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
           }
@@ -375,7 +376,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
 
       if (casualMode) {
         // Call the dedicated casual chat endpoint
-        const response = await axios.post('http://localhost:8000/chat/casual-chat-gemini', {
+        const response = await axios.post(`${BASE_URL}/chat/casual-chat-gemini`, {
           message: userMessage
         }, {
           headers: {
@@ -404,7 +405,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
           throw new Error('No document selected for chat')
         }
         
-        const response = await axios.post('http://localhost:8000/chat', {
+        const response = await axios.post(`${BASE_URL}/chat`, {
           document_id: documentId,
           message: userMessage
         }, {
@@ -509,7 +510,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
 
     // Send feedback to backend
     const message = messages.find(m => m.id === messageId)?.content || ''
-    axios.post('http://localhost:8000/feedback', {
+    axios.post(`${BASE_URL}/feedback`, {
       feedback_type: feedbackType === 'good' ? 'positive' : 'negative',
       feedback_category: 'chat',
       message: message
@@ -557,7 +558,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
     setIsCreatingShare(true)
     try {
       // Create the public share with minimal data
-      const response = await axios.post('http://localhost:8000/chat/create-public-share', {
+      const response = await axios.post(`${BASE_URL}/chat/create-public-share`, {
         document_id: documentId,
         title: `Chat about ${filename}`,
         description: `Public conversation about ${filename}`

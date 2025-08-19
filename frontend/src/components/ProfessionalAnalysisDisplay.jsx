@@ -41,6 +41,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   const [currentRiskIndex, setCurrentRiskIndex] = useState(0)
   const [copiedItem, setCopiedItem] = useState(null)
   const [feedbackGiven, setFeedbackGiven] = useState({})
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
 
   // Simple persistence using ref to avoid re-render loops
   const persistedState = useRef({
@@ -352,7 +353,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     const feedbackCategory = itemId.startsWith('insight-') ? 'insight' : 'risk'
     const message = itemId.startsWith('insight-') ? insights[parseInt(itemId.split('-')[1])].text : risks[parseInt(itemId.split('-')[1])].text
 
-    axios.post('http://localhost:8000/feedback', {
+    axios.post(`${BASE_URL}/feedback`, {
       feedback_type: feedbackType,
       feedback_category: feedbackCategory,
       message: message

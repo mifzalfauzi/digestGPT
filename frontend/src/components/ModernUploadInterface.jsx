@@ -44,7 +44,7 @@ const ModernUploadInterface = forwardRef(({
   const [showTabWarningModal, setShowTabWarningModal] = useState(false)
   const [pendingTabSwitch, setPendingTabSwitch] = useState(null)
   const [showCollectionWarningModal, setShowCollectionWarningModal] = useState(false)
-
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
   // Refs for file inputs
   const fileInputRef = useRef(null)
   const collectionInputRef = useRef(null)

@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card"
 import ThemeToggle from "@/components/ThemeToggle" // Import the new ThemeToggle component
 import { Typewriter } from "react-simple-typewriter"
 
+
 export default function ComingSoonPage() {
     const [email, setEmail] = useState("")
     const [isSubmitted, setIsSubmitted] = useState(false)
@@ -20,6 +21,7 @@ export default function ComingSoonPage() {
         minutes: 0,
         seconds: 0,
     })
+    const BASE_URL = import.meta.env.VITE_API_BASE_URL
 
     // Set fixed launch date: August 25, 2025 at 00:00:00
     useEffect(() => {

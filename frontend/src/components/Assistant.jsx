@@ -35,6 +35,8 @@ function Assistant() {
     isAuthenticated
   } = useAuth()
 
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
+
   // Initialize state from cache or defaults - MUST be defined before state initialization
   const cachedState = DocumentCache.getCachedAppState()
   const hasUrlParams = urlDocumentId || urlCollectionId
@@ -137,14 +139,14 @@ function Assistant() {
           // Always fetch fresh data (either immediately or in background)
           console.log('Fetching fresh historical data...');
           const [docsResponse, collectionsResponse] = await Promise.all([
-            axios.get('http://localhost:8000/documents/', {
+            axios.get(`${BASE_URL}/documents/`, {
               withCredentials: true,
               params: {
                 skip: 0,
                 limit: 50
               }
             }),
-            axios.get('http://localhost:8000/collections/', {
+            axios.get(`${BASE_URL}/collections/`, {
               withCredentials: true,
               params: { skip: 0, limit: 50 }
             })
@@ -162,7 +164,7 @@ function Assistant() {
           if (collectionsResponse.data) {
             const fullCollections = await Promise.all(collectionsResponse.data.map(async (col) => {
               try {
-                const detailRes = await axios.get(`http://localhost:8000/collections/${col.id}`, {
+                const detailRes = await axios.get(`${BASE_URL}/collections/${col.id}`, {
                   withCredentials: true,
                 });
                 return { ...col, documents: detailRes.data.documents || [] };
@@ -329,7 +331,7 @@ function Assistant() {
 
     try {
       console.log(`Fetching ${useCache ? 'fresh' : 'background'} document:`, documentId)
-      const response = await axios.get(`http://localhost:8000/documents/${documentId}`, {
+      const response = await axios.get(`${BASE_URL}/documents/${documentId}`, {
         withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
         signal: documentSwitchAbortController.current?.signal,
         timeout: 30000 // 30 second timeout to prevent hanging
@@ -362,7 +364,7 @@ function Assistant() {
     }
 
     try {
-      const response = await axios.get(`http://localhost:8000/collections/by-document/${documentId}`, {
+      const response = await axios.get(`${BASE_URL}/collections/by-document/${documentId}`, {
         withCredentials: true,
       })
 
@@ -386,7 +388,7 @@ function Assistant() {
     try {
       // Load both documents and collections in parallel
       const [docsResponse, collectionsResponse] = await Promise.all([
-        axios.get('http://localhost:8000/documents/', {
+        axios.get(`${BASE_URL}/documents/`, {
           // headers: {
           //   'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}`
           // },
@@ -396,7 +398,7 @@ function Assistant() {
             limit: 50
           }
         }),
-        axios.get('http://localhost:8000/collections/', {
+        axios.get(`${BASE_URL}/collections/`, {
           // headers: { 'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}` },
           withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
           params: { skip: 0, limit: 50 }
@@ -412,7 +414,7 @@ function Assistant() {
       if (collectionsResponse.data) {
         const fullCollections = await Promise.all(collectionsResponse.data.map(async (col) => {
           try {
-            const detailRes = await axios.get(`http://localhost:8000/collections/${col.id}`, {
+            const detailRes = await axios.get(`${BASE_URL}/collections/${col.id}`, {
               // headers: { 'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}` }
               withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
             });
@@ -474,7 +476,7 @@ function Assistant() {
     try {
       console.log('Fetching document text for ID:', documentId);
 
-      const response = await axios.get(`http://localhost:8000/documents/${documentId}`, {
+      const response = await axios.get(`${BASE_URL}/documents/${documentId}`, {
         withCredentials: true  // Include cookies like auth_token
       });
 
@@ -1053,7 +1055,7 @@ function Assistant() {
       const filesToProcess = [...stagedFiles]
 
       // Create collection in backend first
-      const collectionResponse = await axios.post("http://localhost:8000/collections/", {
+      const collectionResponse = await axios.post(`${BASE_URL}/collections/`, {
         name: collectionName.trim(),
         description: `Collection created with ${stagedFiles.length} documents`
       }, {
@@ -1195,7 +1197,7 @@ function Assistant() {
         //   },
         // })
 
-        response = await axios.post("http://localhost:8000/documents/upload", formData, {
+        response = await axios.post(`${BASE_URL}/documents/upload`, formData, {
           headers: {
             "Content-Type": "multipart/form-data"
           },
@@ -1216,7 +1218,7 @@ function Assistant() {
           console.log(`Adding collection_id to text analysis: ${collectionId}`)
         }
 
-        response = await axios.post("http://localhost:8000/documents/analyze-text", textPayload, {
+        response = await axios.post(`${BASE_URL}/documents/analyze-text`, textPayload, {
           headers: {
             "Content-Type": "application/json",
           },
@@ -1787,7 +1789,7 @@ This business plan effectively balances ambitious growth objectives with compreh
 
   const loadHistoricalCollectionDocuments = async (collectionId) => {
     try {
-      const response = await axios.get(`http://localhost:8000/collections/${collectionId}`, {
+      const response = await axios.get(`${BASE_URL}/collections/${collectionId}`, {
         // headers: {
         //   'Authorization': `Bearer ${user?.token || localStorage.getItem('auth_token')}`
         // }
@@ -2673,7 +2675,7 @@ This business plan effectively balances ambitious growth objectives with compreh
         onSelectCollection={selectCollectionFromHistory}
         onDeleteDocument={async (documentId) => {
           try {
-            await axios.post(`http://localhost:8000/documents/delete?document_id=${documentId}`, {}, {
+            await axios.post(`${BASE_URL}/documents/delete?document_id=${documentId}`, {}, {
               headers: {  
                 'Content-Type': 'application/json',
               },
@@ -2723,7 +2725,7 @@ This business plan effectively balances ambitious growth objectives with compreh
         
         onDeleteCollection={async (collectionId) => {
           try {
-            await axios.post(`http://localhost:8000/collections/delete?collection_id=${collectionId}`, {}, {
+            await axios.post(`${BASE_URL}/collections/delete?collection_id=${collectionId}`, {}, {
               headers: {
                 'Content-Type': 'application/json',
               },

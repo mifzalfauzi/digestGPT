@@ -13,6 +13,7 @@ function SignIn() {
   const navigate = useNavigate()
   const location = useLocation()
   const { login, isAuthenticated } = useAuth()
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
 
   // UNIFIED MESSAGE HANDLING
   const [message, setMessage] = useState('')
@@ -188,7 +189,7 @@ function SignIn() {
       googlePopups.forEach(popup => popup.remove())
 
       // Send Google token to backend, cookies will be set automatically
-      await axios.post('http://localhost:8000/auth/google', {
+      await axios.post(`${BASE_URL}/auth/google`, {
         token: response.credential
       }, {
         withCredentials: true
@@ -239,7 +240,7 @@ function SignIn() {
     try {
       console.log('🔄 Sending magic link request for:', email)
 
-      const response = await fetch('http://localhost:8000/auth/send-magic-link', {
+      const response = await fetch(`${BASE_URL}/auth/send-magic-link`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

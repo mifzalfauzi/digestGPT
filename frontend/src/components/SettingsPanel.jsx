@@ -33,7 +33,7 @@ import DocumentCache from '../utils/documentCache' // Make sure to import your D
 function SettingsPanel({ isOpen, onClose, onDataDeleted }) {
   const { theme, setTheme } = useTheme()
   const { user, usage } = useAuth()
-  
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
   // Delete confirmation states
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -52,7 +52,7 @@ function SettingsPanel({ isOpen, onClose, onDataDeleted }) {
   // Fetch deletion preview when delete modal opens
   const fetchDeletionPreview = async () => {
     try {
-      const response = await axios.get('http://localhost:8000/documents/deletion-preview', {
+      const response = await axios.get(`${BASE_URL}/documents/deletion-preview`, {
         withCredentials: true
       })
       setDeletionPreview(response.data.preview)
@@ -71,7 +71,7 @@ function SettingsPanel({ isOpen, onClose, onDataDeleted }) {
     try {
       console.log('Starting delete all documents...')
       
-      const response = await axios.post('http://localhost:8000/documents/delete-all', {}, {
+      const response = await axios.post(`${BASE_URL}/documents/delete-all`, {}, {
         headers: {
           'Content-Type': 'application/json',
         },

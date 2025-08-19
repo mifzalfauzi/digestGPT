@@ -15,6 +15,7 @@ import {
 
 function KeyConceptsDisplay({ concepts = [], onExplainConcept, isDemoMode = false, bypassAPI = false }) {
   const [selectedConcept, setSelectedConcept] = useState(null)
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
 
   const handleConceptClick = (concept, index) => {
     const conceptId = `concept-${index}`

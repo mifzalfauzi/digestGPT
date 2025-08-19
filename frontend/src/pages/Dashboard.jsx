@@ -22,6 +22,7 @@ function Dashboard() {
   // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL  
 
   // Placeholder data - will be replaced with actual API data
   const [usageStats, setUsageStats] = useState({

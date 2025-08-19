@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom'
 const UsageWarningBanner = ({ onDismiss, className = "" }) => {
   const navigate = useNavigate()
   const { user, getUsagePercentages } = useAuth()
-
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
   if (!user) return null
 
   const percentages = getUsagePercentages()

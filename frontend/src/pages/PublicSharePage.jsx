@@ -18,7 +18,7 @@ function PublicSharePage() {
   const [activeTab, setActiveTab] = useState('overview')
   const leftRef = useRef(null)
   const rightRef = useRef(null)
-
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
   const syncHeights = () => {
     if (leftRef.current && rightRef.current) {
       // Use clientHeight to respect max-h and padding
@@ -61,7 +61,7 @@ function PublicSharePage() {
   useEffect(() => {
     const fetchShareData = async () => {
       try {
-        const response = await axios.get(`http://localhost:8000/chat/public-share/${shareToken}`)
+        const response = await axios.get(`${BASE_URL}/chat/public-share/${shareToken}`)
         setShareData(response.data)
         console.log('Share data received:', response.data)
       } catch (err) {

@@ -9,6 +9,7 @@ export default function ResendVerification() {
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState(''); // 'success', 'error', 'info'
   const navigate = useNavigate();
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
 
   const handleResend = async (e) => {
     e.preventDefault();
@@ -33,7 +34,7 @@ export default function ResendVerification() {
     try {
       console.log('🔄 Sending resend verification request for:', email);
       
-      const response = await fetch('http://localhost:8000/auth/resend-verification', {
+      const response = await fetch(`${BASE_URL}/auth/resend-verification`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

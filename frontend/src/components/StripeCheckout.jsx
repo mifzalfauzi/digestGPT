@@ -13,7 +13,7 @@ export default function StripeCheckout() {
   const [cancelConfirmText, setCancelConfirmText] = useState('');
   const [cancelEmailText, setCancelEmailText] = useState('');
   const { user } = useAuth();
-
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
   // Debug environment variables
   // React.useEffect(() => {
   //   console.log('🔧 Environment Variables Debug:');
@@ -79,7 +79,7 @@ export default function StripeCheckout() {
       }
 
       console.log('📡 Sending request to server...');
-      console.log('🔗 Request URL:', 'http://localhost:8000/stripe/create-checkout-session');
+      console.log('🔗 Request URL:', `${BASE_URL}/stripe/create-checkout-session`);
       console.log('📦 Request body:', JSON.stringify({
         price_id: plan.priceId,
         success_url: `${window.location.origin}/stripe-success`,
@@ -87,7 +87,7 @@ export default function StripeCheckout() {
       }, null, 2));
 
       // Create checkout session
-      const response = await fetch('http://localhost:8000/stripe/create-checkout-session', {
+      const response = await fetch(`${BASE_URL}/stripe/create-checkout-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -156,7 +156,7 @@ export default function StripeCheckout() {
     try {
       setLoading(prev => ({ ...prev, manage: true }));
 
-      const response = await fetch('http://localhost:8000/stripe/create-portal-session', {
+      const response = await fetch(`${BASE_URL}/stripe/create-portal-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -201,7 +201,7 @@ export default function StripeCheckout() {
     try {
       setLoading(prev => ({ ...prev, cancel: true }));
 
-      const response = await fetch('http://localhost:8000/stripe/cancel-subscription', {
+      const response = await fetch(`${BASE_URL}/stripe/cancel-subscription`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

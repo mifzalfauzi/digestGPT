@@ -30,6 +30,7 @@ function HistoryDrawer({
   const [documentsQuery, setDocumentsQuery] = useState('')
   const [collectionsQuery, setCollectionsQuery] = useState('')
   const dropdownRef = useRef(null)
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL
 
   // Close dropdown when clicking outside
   useEffect(() => {
