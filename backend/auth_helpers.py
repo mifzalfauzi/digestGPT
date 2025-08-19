@@ -42,7 +42,7 @@ def set_access_token_cookie(response: Response, access_token: str):
             httponly=True,
             max_age=60 * 60,  # 1 hour
             secure=True,
-            samesite="lax",
+            samesite="none",
             path="/"
         )
     else:
@@ -53,7 +53,7 @@ def set_access_token_cookie(response: Response, access_token: str):
             httponly=True,
             max_age=60 * 60,  # 1 hour
             secure=False,
-            # No samesite for development
+            samesite="lax",
             path="/"
         )
 
@@ -67,7 +67,7 @@ def set_refresh_token_cookie(response: Response, refresh_token: str):
             httponly=True,
             max_age=30 * 24 * 60 * 60,  # 30 days
             secure=True,
-            samesite="lax",
+            samesite="none",
             path="/"
         )
     else:
@@ -78,7 +78,7 @@ def set_refresh_token_cookie(response: Response, refresh_token: str):
             httponly=True,
             max_age=30 * 24 * 60 * 60,  # 30 days
             secure=False,
-            # No samesite for development
+            samesite="lax",
             path="/"
         )
 
@@ -114,14 +114,14 @@ def clear_all_auth_cookies(response: Response):
             key=ACCESS_TOKEN_COOKIE_NAME,
             httponly=True,
             secure=True,
-            samesite="lax",
+            samesite="none",
             path="/"
         )
         response.delete_cookie(
             key=REFRESH_TOKEN_COOKIE_NAME,
             httponly=True,
             secure=True,
-            samesite="lax",
+            samesite="none",
             path="/"
         )
     else:
@@ -130,14 +130,14 @@ def clear_all_auth_cookies(response: Response):
             key=ACCESS_TOKEN_COOKIE_NAME,
             httponly=True,
             secure=False,
-            # No samesite for development
+            samesite="lax",
             path="/"
         )
         response.delete_cookie(
             key=REFRESH_TOKEN_COOKIE_NAME,
             httponly=True,
             secure=False,
-            # No samesite for development
+            samesite="lax",
             path="/"
         )
 
