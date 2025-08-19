@@ -11,9 +11,13 @@ from dependencies import get_current_active_user
 from email_service import email_service
 from invoice_generator import invoice_generator
 from timezone_service import timezone_service
-
+from fastapi import APIRouter, Depends, HTTPException, status
 # Configure Stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+
+BASE_FRONTEND_URL = os.getenv("BASE_FRONTEND_URL")
+
+BASE_BACKEND_URL = os.getenv("BASE_BACKEND_URL")
 
 router = APIRouter(prefix="/stripe", tags=["stripe"])
 
@@ -81,11 +85,11 @@ def get_or_create_user_subscription(
 
 class CheckoutRequest(BaseModel):
     price_id: str
-    success_url: str = "http://localhost:3000/stripe-success"
-    cancel_url: str = "http://localhost:3000/stripe-cancel"
+    success_url: str = f"{BASE_FRONTEND_URL}/stripe-success"
+    cancel_url: str = f"{BASE_FRONTEND_URL}/stripe-cancel"
 
 class PortalRequest(BaseModel):
-    return_url: str = "http://localhost:3000/dashboard"
+    return_url: str = f"{BASE_FRONTEND_URL}/dashboard"
     
 class ManualUpdateRequest(BaseModel):
     session_id: str
@@ -370,7 +374,7 @@ async def update_plan_manual(
             # Create invoice download URL if invoice was generated
             invoice_download_url = None
             if invoice_filename:
-                invoice_download_url = f"http://localhost:8000/stripe/download-invoice/{invoice_filename}"
+                invoice_download_url = f"{BASE_BACKEND_URL}/stripe/download-invoice/{invoice_filename}"
             
             # Format date in user's timezone
             user_timezone = current_user.timezone or 'UTC'

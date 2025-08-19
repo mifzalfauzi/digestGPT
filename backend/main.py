@@ -67,6 +67,7 @@ app.add_middleware(
         "https://drop2chat.com",
         "https://www.drop2chat.com",
         "https://accounts.google.com",
+        "https://drop2chat-git-sit-mifzalfauzis-projects.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],

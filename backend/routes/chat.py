@@ -758,7 +758,7 @@ async def create_public_share(
         db.refresh(public_share)
 
         # Construct the public URL (you may want to make this configurable)
-        base_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        base_url = os.getenv("BASE_FRONTEND_URL")
         share_url = f"{base_url}/share/{share_token}"
 
         return CreatePublicShareResponse(

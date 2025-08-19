@@ -29,6 +29,9 @@ from dotenv import load_dotenv
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
+BASE_FRONTEND_URL = os.getenv("BASE_FRONTEND_URL")
+BASE_BACKEND_URL = os.getenv("BASE_BACKEND_URL")
+
 # Cookie configuration
 ACCESS_TOKEN_COOKIE_NAME = "ACCESS_NWST"
 REFRESH_TOKEN_COOKIE_NAME = "REFRESH_NWST"
@@ -36,7 +39,7 @@ REFRESH_TOKEN_COOKIE_NAME = "REFRESH_NWST"
 # Google OAuth configuration
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/google/callback")
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", f"{BASE_FRONTEND_URL}/auth/google/callback")
 
 # Load environment variables
 load_dotenv()
@@ -295,7 +298,7 @@ async def magic_login_simple(token: str, response: Response, db: Session = Depen
         
         if not user:
             return RedirectResponse(
-                url="http://localhost:3000/signin?error=invalid_link",
+                url=f"{BASE_FRONTEND_URL}/signin?error=invalid_link",  
                 status_code=302
             )
         
@@ -305,7 +308,7 @@ async def magic_login_simple(token: str, response: Response, db: Session = Depen
             user.verification_token_expires_at = None
             db.commit()
             return RedirectResponse(
-                url="http://localhost:3000/signin?error=link_expired",
+                url=f"{BASE_FRONTEND_URL}/signin?error=link_expired",
                 status_code=302
             )
         
@@ -331,7 +334,7 @@ async def magic_login_simple(token: str, response: Response, db: Session = Depen
         print(f"✅ Created short-lived token (expires in 2 minutes)")
         
         # Redirect with the short-lived token
-        redirect_url = f"http://localhost:3000/auth-callback?token={short_token}&welcome=true"
+        redirect_url = f"{BASE_FRONTEND_URL}/auth-callback?token={short_token}&welcome=true"
         
         return RedirectResponse(url=redirect_url, status_code=302)
         
@@ -339,7 +342,7 @@ async def magic_login_simple(token: str, response: Response, db: Session = Depen
         db.rollback()
         print(f"❌ Magic login error: {str(e)}")
         return RedirectResponse(
-            url="http://localhost:3000/signin?error=login_failed",
+            url=f"{BASE_FRONTEND_URL}/signin?error=login_failed",
             status_code=302
         )
 
@@ -783,7 +786,7 @@ def send_verification_email(to_email, token):
     print(f"📧 To: {to_email}")
     print(f"📧 Token: {token}")
 
-    verification_url = f"http://localhost:3000/verify-email?token={token}"
+    verification_url = f"{BASE_FRONTEND_URL}/verify-email?token={token}"
     print(f"📧 Verification URL: {verification_url}")
     
     msg = EmailMessage()
@@ -847,7 +850,7 @@ def send_magic_link_email(to_email, token):
     print(f"📧 Token: {token}")
 
     # Magic link URL (goes directly to backend)
-    magic_url = f"http://localhost:8000/auth/magic-login?token={token}"
+    magic_url = f"{BASE_BACKEND_URL}/auth/magic-login?token={token}"
     print(f"📧 Magic URL: {magic_url}")
     
     msg = EmailMessage()
