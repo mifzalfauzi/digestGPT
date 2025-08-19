@@ -225,7 +225,7 @@ function ChatInterface({ documentId, filename, autoExpand = false }) {
                       handleSendMessage(e)
                     }
                   }}
-                  placeholder="Ask a question about your document..."
+                  placeholder="Ask a question about your document"
                   className="min-h-[60px] flex-1"
                   disabled={isLoading}
                 />
