@@ -684,7 +684,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                     })
                   }}
                   disabled={currentInsightIndex === 0}
-                  className="text-xs sm:text-sm w-full sm:w-auto"
+                  className="hidden sm:flex text-xs sm:text-sm w-full sm:w-auto"
                 >
                   <ChevronLeft className="h-3 w-3 mr-1" />
                   Previous
@@ -726,7 +726,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                     })
                   }}
                   disabled={currentInsightIndex === insights.length - 1}
-                  className="text-xs sm:text-sm w-full sm:w-auto"
+                  className="hidden sm:flex text-xs sm:text-sm w-full sm:w-auto"
                 >
                   Next
                   <ChevronRight className="h-3 w-3 ml-1" />
@@ -917,7 +917,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                     })
                   }}
                   disabled={currentRiskIndex === 0}
-                  className="text-xs sm:text-sm w-full sm:w-auto"
+                  className="hidden sm:flex text-xs sm:text-sm w-full sm:w-auto"
                 >
                   <ChevronLeft className="h-3 w-3 mr-1" />
                   Previous
@@ -959,7 +959,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                     })
                   }}
                   disabled={currentRiskIndex === risks.length - 1}
-                  className="text-xs sm:text-sm w-full sm:w-auto"
+                  className="hidden sm:flex text-xs sm:text-sm w-full sm:w-auto"
                 >
                   Next
                   <ChevronRight className="h-3 w-3 ml-1" />
