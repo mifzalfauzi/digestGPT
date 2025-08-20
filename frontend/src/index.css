@@ -150,6 +150,10 @@ html {
     overscroll-behavior: none;
     -webkit-overscroll-behavior: none;
     touch-action: pan-x pan-y;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    min-height: -moz-available;
+    min-height: fill-available;
   }
 
 
@@ -168,6 +172,11 @@ html {
     overscroll-behavior: none;
     -webkit-overscroll-behavior: none;
     min-height: 100vh;
+    min-height: -webkit-fill-available;
+    min-height: -moz-available;
+    min-height: fill-available;
+    display: flex;
+    flex-direction: column;
     position: relative;
   }
 
