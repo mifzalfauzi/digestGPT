@@ -169,8 +169,8 @@ html {
     overflow-x: hidden;
     scroll-behavior: auto;
     -webkit-overflow-scrolling: auto;
-    overscroll-behavior: none;
-    -webkit-overscroll-behavior: none;
+    overscroll-behavior: auto;
+    -webkit-overscroll-behavior: auto;
     min-height: 100vh;
     min-height: -webkit-fill-available;
     min-height: -moz-available;
@@ -186,8 +186,8 @@ html {
     html,
     body {
       -webkit-overflow-scrolling: auto;
-      overscroll-behavior: none;
-      -webkit-overscroll-behavior: none;
+      overscroll-behavior: auto;
+      -webkit-overscroll-behavior: auto;
       touch-action: pan-x pan-y;
     }
   }
@@ -195,8 +195,8 @@ html {
   /* Prevent pull-to-refresh on all browsers */
   html,
   body {
-    overscroll-behavior-y: none;
-    -webkit-overscroll-behavior-y: none;
+    overscroll-behavior-y: auto;
+    -webkit-overscroll-behavior-y: auto;
   }
 
   /* Smooth scrolling only for specific elements */
@@ -207,8 +207,8 @@ html {
 
   /* Disable pull-to-refresh globally */
   * {
-    overscroll-behavior: none;
-    -webkit-overscroll-behavior: none;
+    overscroll-behavior: auto;
+    -webkit-overscroll-behavior: auto;
   }
 
   /* Additional fixes for webkit browsers */
