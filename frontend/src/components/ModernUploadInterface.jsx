@@ -82,8 +82,9 @@ const ModernUploadInterface = forwardRef(({
     return (
       <div className={`inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border text-xs sm:text-sm font-medium ${getStatusColor()}`}>
         <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+        {/* <span className="xs:hidden">Ends in</span> */}
         <span className="whitespace-nowrap">
-          <span className="hidden xs:inline">Ends in </span>{daysRemaining} days
+          <span className="hidden xs:inline"></span>Ends in {daysRemaining} days
         </span>
       </div>
     )
@@ -376,9 +377,8 @@ const ModernUploadInterface = forwardRef(({
                 className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:shadow-md rounded-lg py-2 sm:py-2.5 px-2 sm:px-3 text-xs sm:text-sm transition-all duration-200 font-medium"
               >
                 <Upload className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden xs:inline sm:hidden">Single</span>
                 <span className="xs:hidden sm:inline">Single File</span>
-                <span className="xs:hidden">File</span>
+               
                 <Badge variant="secondary" className="ml-0.5 sm:ml-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 hidden sm:block">
                   PDF
                 </Badge>

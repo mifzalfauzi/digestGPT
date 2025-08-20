@@ -367,7 +367,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   }
 
   return (
-    <div className="space-y-6 p-4 sm:p-4 h-full overflow-y-auto">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 h-full overflow-y-auto">
       {/* Selection banner when coming from extractive text */}
       {/* {selectedFrom && selectedFrom.index !== null && (
         <div className="flex items-center justify-between p-2 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 text-xs">
@@ -498,65 +498,70 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                     </div>
 
                     <div className="flex-1 space-y-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="text-slate-800 dark:text-slate-100 leading-relaxed font-medium text-sm flex-1">
-                          <MarkdownRenderer content={currentInsight.text} />
-                        </div>
-                        <div className="flex flex-col gap-2 items-end">
+                      {/* Mobile-first responsive layout */}
+                      <div className="space-y-3">
+                        {/* Badge and buttons row - mobile stacked, desktop inline */}
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
                           <Badge
                             variant="outline"
-                            className={`text-xs ${getCategoryBadgeClasses(currentInsight.category)} capitalize`}
+                            className={`text-xs ${getCategoryBadgeClasses(currentInsight.category)} capitalize w-fit`}
                           >
                             {currentInsight.category}
                           </Badge>
 
-                          {/* Copy and Feedback buttons */}
-                          <div className="flex gap-1">
+                          {/* Copy and Feedback buttons - responsive sizing */}
+                          <div className="flex gap-1 sm:gap-1.5">
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleCopy(currentInsight.text, currentInsight.id)}
-                              className="h-7 w-7 p-0 hover:bg-emerald-100 dark:hover:bg-emerald-900/20"
+                              className="h-6 w-6 sm:h-7 sm:w-7 p-0 hover:bg-emerald-100 dark:hover:bg-emerald-900/20"
                               title="Copy insight"
                             >
                               {copiedItem === currentInsight.id ? (
-                                <Check className="h-3 w-3 text-emerald-600" />
+                                <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-emerald-600" />
                               ) : (
-                                <Copy className="h-3 w-3 text-emerald-600" />
+                                <Copy className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-emerald-600" />
                               )}
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleFeedback(currentInsight.id, 'positive')}
-                              className={`h-7 w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${feedbackGiven[currentInsight.id] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
+                              className={`h-6 w-6 sm:h-7 sm:w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${feedbackGiven[currentInsight.id] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
                                 }`}
                               title="Helpful insight"
                             >
-                              <ThumbsUp className={`h-3 w-3 ${feedbackGiven[currentInsight.id] === 'positive' ? 'text-green-600' : 'text-gray-500'
+                              <ThumbsUp className={`h-2.5 w-2.5 sm:h-3 sm:w-3 ${feedbackGiven[currentInsight.id] === 'positive' ? 'text-green-600' : 'text-gray-500'
                                 }`} />
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleFeedback(currentInsight.id, 'negative')}
-                              className={`h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${feedbackGiven[currentInsight.id] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
+                              className={`h-6 w-6 sm:h-7 sm:w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${feedbackGiven[currentInsight.id] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
                                 }`}
                               title="Not helpful"
                             >
-                              <ThumbsDown className={`h-3 w-3 ${feedbackGiven[currentInsight.id] === 'negative' ? 'text-red-600' : 'text-gray-500'
+                              <ThumbsDown className={`h-2.5 w-2.5 sm:h-3 sm:w-3 ${feedbackGiven[currentInsight.id] === 'negative' ? 'text-red-600' : 'text-gray-500'
                                 }`} />
                             </Button>
                           </div>
                         </div>
+                        
+                        {/* Content text - full width */}
+                        <div className="text-slate-800 dark:text-slate-100 leading-relaxed font-medium text-sm">
+                          <MarkdownRenderer content={currentInsight.text} />
+                        </div>
                       </div>
 
                       {highlights.find(h => h.id === currentInsight.id) && (
-                        <div className="flex items-center gap-3 pt-2 border-t border-slate-200 dark:border-gray-600">
+                        <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-gray-600">
+                          {/* Highlight button - full width on mobile */}
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-xs bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 border-emerald-300 dark:border-emerald-700"
+                            className="w-full sm:w-auto text-xs bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 border-emerald-300 dark:border-emerald-700"
                             onClick={(e) => {
                               e.stopPropagation()
                               if (activeHighlight === currentInsight.id) {
@@ -568,20 +573,23 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                                 onHighlightClick(currentInsight.id)
                               }
                             }}
-                          // onClick={() => {
-                          //   const hasHighlight = highlights.find(h => h.id === currentInsight.id);
-                          //   hasHighlight && onHighlightClick(currentInsight.id);
-                          // }}
                           >
-                            <Search className="h-3 w-3 mr-1" />
-                            {activeHighlight === currentInsight.id ? 'Hide highlight' : 'Show in document'}
-                            <ArrowRight className="h-3 w-3 ml-1" />
+                            <Search className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1 sm:mr-1.5" />
+                            <span className="text-xs sm:text-sm">
+                              {activeHighlight === currentInsight.id ? 'Hide highlight' : 'Show in document'}
+                            </span>
+                            <ArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3 ml-1 sm:ml-1.5" />
                           </Button>
 
+                          {/* Quote - separate line on mobile for better readability */}
                           {currentInsight.quote && (
-                            <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-gray-400">
-                              <div className="w-1 h-1 bg-slate-400 rounded-full"></div>
-                              <span className="italic">"{currentInsight.quote.substring(0, 40)}..."</span>
+                            <div className="flex items-start gap-2 text-xs text-slate-600 dark:text-gray-400 px-2 py-1 bg-slate-50 dark:bg-emerald-900 rounded">
+                              <div className="w-1 h-1 bg-slate-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                              <span className="italic break-words">
+                                "{currentInsight.quote.length > 60 
+                                  ? `${currentInsight.quote.substring(0, 60)}...` 
+                                  : currentInsight.quote}"
+                              </span>
                             </div>
                           )}
                         </div>
@@ -591,8 +599,8 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                 </CardContent>
               </Card>
 
-              {/* Insights Pagination */}
-              <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-gray-700">
+              {/* Insights Pagination - Mobile optimized */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 pt-3 border-t border-slate-200 dark:border-gray-700">
                 <Button
                   variant="outline"
                   size="sm"
@@ -607,13 +615,13 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                     })
                   }}
                   disabled={currentInsightIndex === 0}
-                  className="text-xs"
+                  className="text-xs sm:text-sm w-full sm:w-auto"
                 >
                   <ChevronLeft className="h-3 w-3 mr-1" />
                   Previous
                 </Button>
-                <div className="text-center">
-                  <p className="text-sm font-medium text-slate-900 dark:text-white">
+                <div className="text-center order-first sm:order-none">
+                  <p className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white">
                     Insight {currentInsightIndex + 1} of {insights.length}
                   </p>
                   <div className="flex gap-1 mt-1 justify-center">
@@ -646,7 +654,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                     })
                   }}
                   disabled={currentInsightIndex === insights.length - 1}
-                  className="text-xs"
+                  className="text-xs sm:text-sm w-full sm:w-auto"
                 >
                   Next
                   <ChevronRight className="h-3 w-3 ml-1" />
@@ -714,73 +722,78 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                   </div>
 
                   <div className="flex-1 space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <AlertDescription className="text-red-800 dark:text-red-200 leading-relaxed font-medium text-sm flex-1">
-                        <MarkdownRenderer content={currentRisk.text} />
-                      </AlertDescription>
-                      <div className="flex flex-col gap-2 items-end">
-                        <div className="flex flex-col gap-1 items-end">
+                    {/* Mobile-first responsive layout */}
+                    <div className="space-y-3">
+                      {/* Badges and buttons row - mobile stacked, desktop inline */}
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
+                        <div className="flex flex-wrap gap-1.5">
                           <Badge
                             variant="outline"
-                            className={`text-xs ${getCategoryBadgeClasses(currentRisk.category)} capitalize`}
+                            className={`text-xs ${getCategoryBadgeClasses(currentRisk.category)} capitalize w-fit`}
                           >
                             {currentRisk.category}
                           </Badge>
                           <Badge
                             variant="outline"
-                            className={`text-xs ${getSeverityBadgeClasses(currentRisk.severity)} capitalize`}
+                            className={`text-xs ${getSeverityBadgeClasses(currentRisk.severity)} capitalize w-fit`}
                           >
                             {currentRisk.severity}
                           </Badge>
                         </div>
 
-                        {/* Copy and Feedback buttons */}
-                        <div className="flex gap-1">
+                        {/* Copy and Feedback buttons - responsive sizing */}
+                        <div className="flex gap-1 sm:gap-1.5">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleCopy(currentRisk.text, currentRisk.id)}
-                            className="h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
+                            className="h-6 w-6 sm:h-7 sm:w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
                             title="Copy risk"
                           >
                             {copiedItem === currentRisk.id ? (
-                              <Check className="h-3 w-3 text-red-600" />
+                              <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-red-600" />
                             ) : (
-                              <Copy className="h-3 w-3 text-red-600" />
+                              <Copy className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-red-600" />
                             )}
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleFeedback(currentRisk.id, 'positive')}
-                            className={`h-7 w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${feedbackGiven[currentRisk.id] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
+                            className={`h-6 w-6 sm:h-7 sm:w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${feedbackGiven[currentRisk.id] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
                               }`}
                             title="Accurate risk assessment"
                           >
-                            <ThumbsUp className={`h-3 w-3 ${feedbackGiven[currentRisk.id] === 'positive' ? 'text-green-600' : 'text-gray-500'
+                            <ThumbsUp className={`h-2.5 w-2.5 sm:h-3 sm:w-3 ${feedbackGiven[currentRisk.id] === 'positive' ? 'text-green-600' : 'text-gray-500'
                               }`} />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleFeedback(currentRisk.id, 'negative')}
-                            className={`h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${feedbackGiven[currentRisk.id] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
+                            className={`h-6 w-6 sm:h-7 sm:w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${feedbackGiven[currentRisk.id] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
                               }`}
                             title="Inaccurate assessment"
                           >
-                            <ThumbsDown className={`h-3 w-3 ${feedbackGiven[currentRisk.id] === 'negative' ? 'text-red-600' : 'text-gray-500'
+                            <ThumbsDown className={`h-2.5 w-2.5 sm:h-3 sm:w-3 ${feedbackGiven[currentRisk.id] === 'negative' ? 'text-red-600' : 'text-gray-500'
                               }`} />
                           </Button>
                         </div>
                       </div>
+                      
+                      {/* Content text - full width */}
+                      <AlertDescription className="text-red-800 dark:text-red-200 leading-relaxed font-medium text-sm">
+                        <MarkdownRenderer content={currentRisk.text} />
+                      </AlertDescription>
                     </div>
 
                     {highlights.find(h => h.id === currentRisk.id) && (
-                      <div className="flex items-center gap-3 pt-2 border-t border-red-200 dark:border-red-700">
+                      <div className="space-y-2 pt-2 border-t border-red-200 dark:border-red-700">
+                        {/* Highlight button - full width on mobile */}
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-xs bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 border-red-300 dark:border-red-700"
+                          className="w-full sm:w-auto text-xs bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 border-red-300 dark:border-red-700"
                           onClick={(e) => {
                             e.stopPropagation()
                             if (activeHighlight === currentRisk.id) {
@@ -792,20 +805,23 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                               onHighlightClick(currentRisk.id)
                             }
                           }}
-                        // onClick={() => {
-                        //   const hasHighlight = highlights.find(h => h.id === currentRisk.id);
-                        //   hasHighlight && onHighlightClick(currentRisk.id);
-                        // }}
                         >
-                          <Search className="h-3 w-3 mr-1" />
-                          {activeHighlight === currentRisk.id ? 'Hide highlight' : 'Show in document'}
-                          <ArrowRight className="h-3 w-3 ml-1" />
+                          <Search className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1 sm:mr-1.5" />
+                          <span className="text-xs sm:text-sm">
+                            {activeHighlight === currentRisk.id ? 'Hide highlight' : 'Show in document'}
+                          </span>
+                          <ArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3 ml-1 sm:ml-1.5" />
                         </Button>
 
+                        {/* Quote - separate line on mobile for better readability */}
                         {currentRisk.quote && (
-                          <div className="flex items-center gap-2 text-xs text-red-700 dark:text-red-300">
-                            <div className="w-1 h-1 bg-red-400 rounded-full"></div>
-                            <span className="italic">"{currentRisk.quote.substring(0, 40)}..."</span>
+                          <div className="flex items-start gap-2 text-xs text-red-700 dark:text-red-300 px-2 py-1 bg-red-50 dark:bg-red-900/20 rounded">
+                            <div className="w-1 h-1 bg-red-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                            <span className="italic break-words">
+                              "{currentRisk.quote.length > 60 
+                                ? `${currentRisk.quote.substring(0, 60)}...` 
+                                : currentRisk.quote}"
+                            </span>
                           </div>
                         )}
                       </div>
@@ -814,8 +830,8 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                 </div>
               </Alert>
 
-              {/* Risks Pagination */}
-              <div className="flex items-center justify-between pt-2 border-t border-red-200 dark:border-red-700">
+              {/* Risks Pagination - Mobile optimized */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 pt-3 border-t border-red-200 dark:border-red-700">
                 <Button
                   variant="outline"
                   size="sm"
@@ -830,13 +846,13 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                     })
                   }}
                   disabled={currentRiskIndex === 0}
-                  className="text-xs"
+                  className="text-xs sm:text-sm w-full sm:w-auto"
                 >
                   <ChevronLeft className="h-3 w-3 mr-1" />
                   Previous
                 </Button>
-                <div className="text-center">
-                  <p className="text-sm font-medium text-slate-900 dark:text-white">
+                <div className="text-center order-first sm:order-none">
+                  <p className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white">
                     Risk {currentRiskIndex + 1} of {risks.length}
                   </p>
                   <div className="flex gap-1 mt-1 justify-center">
@@ -869,7 +885,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                     })
                   }}
                   disabled={currentRiskIndex === risks.length - 1}
-                  className="text-xs"
+                  className="text-xs sm:text-sm w-full sm:w-auto"
                 >
                   Next
                   <ChevronRight className="h-3 w-3 ml-1" />
