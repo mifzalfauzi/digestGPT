@@ -43,6 +43,16 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   const [feedbackGiven, setFeedbackGiven] = useState({})
   const BASE_URL = import.meta.env.VITE_API_BASE_URL
 
+  // Scroll position persistence refs
+  const containerRef = useRef(null)
+  const scrollPositionRef = useRef({
+    scrollTop: 0,
+    scrollHeight: 0,
+    clientHeight: 0,
+    scrollPercentage: 0,
+    timestamp: Date.now()
+  })
+
   // Simple persistence using ref to avoid re-render loops
   const persistedState = useRef({
     currentInsightIndex: 0,
@@ -50,7 +60,14 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     copiedItem: null,
     feedbackGiven: {},
     isInitialized: false,
-    lastResultsId: null
+    lastResultsId: null,
+    scrollPosition: {
+      scrollTop: 0,
+      scrollHeight: 0,
+      clientHeight: 0,
+      scrollPercentage: 0,
+      timestamp: Date.now()
+    }
   })
 
   // Touch/swipe handling state - separated for insights and risks
@@ -161,6 +178,60 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
 
   }, [results])
 
+  // Scroll position tracking functions
+  const saveScrollPosition = useCallback(() => {
+    if (!containerRef.current) return
+    
+    const element = containerRef.current
+    const scrollTop = element.scrollTop
+    const scrollHeight = element.scrollHeight
+    const clientHeight = element.clientHeight
+    
+    const scrollData = {
+      scrollTop,
+      scrollHeight,
+      clientHeight,
+      scrollPercentage: scrollHeight > clientHeight ? (scrollTop / (scrollHeight - clientHeight)) * 100 : 0,
+      timestamp: Date.now()
+    }
+    
+    scrollPositionRef.current = scrollData
+    persistedState.current.scrollPosition = scrollData
+  }, [])
+
+  const restoreScrollPosition = useCallback(() => {
+    if (!containerRef.current || !persistedState.current.scrollPosition) return
+    
+    const savedScroll = persistedState.current.scrollPosition
+    const element = containerRef.current
+    
+    // Only restore if saved within last 10 minutes
+    if (Date.now() - savedScroll.timestamp < 600000) {
+      // Use percentage-based restoration with fallback attempts
+      const restorePosition = (attempt = 0) => {
+        if (attempt > 3) return
+        
+        setTimeout(() => {
+          if (!containerRef.current) {
+            restorePosition(attempt + 1)
+            return
+          }
+          
+          // Use percentage-based restoration for better consistency
+          if (savedScroll.scrollPercentage > 0) {
+            const maxScroll = element.scrollHeight - element.clientHeight
+            const targetScroll = (savedScroll.scrollPercentage / 100) * maxScroll
+            element.scrollTop = Math.max(0, Math.min(targetScroll, maxScroll))
+          } else if (savedScroll.scrollTop !== undefined) {
+            element.scrollTop = savedScroll.scrollTop
+          }
+        }, 100 + (attempt * 50))
+      }
+      
+      restorePosition()
+    }
+  }, [])
+
   // Separate useEffect for initialization to avoid conflicts
   useEffect(() => {
     if (!persistedState.current.isInitialized) {
@@ -169,9 +240,38 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       setCurrentRiskIndex(persistedState.current.currentRiskIndex || 0)
       if (persistedState.current.copiedItem) setCopiedItem(persistedState.current.copiedItem)
       if (persistedState.current.feedbackGiven) setFeedbackGiven(persistedState.current.feedbackGiven)
+      
+      // Restore scroll position after a brief delay to ensure content is loaded
+      setTimeout(() => {
+        restoreScrollPosition()
+      }, 200)
+      
       persistedState.current.isInitialized = true
     }
-  }, []) // Run only once on mount
+  }, [restoreScrollPosition]) // Run only once on mount
+
+  // Save scroll position on scroll events
+  useEffect(() => {
+    const element = containerRef.current
+    if (!element) return
+    
+    const handleScroll = () => {
+      saveScrollPosition()
+    }
+    
+    element.addEventListener('scroll', handleScroll, { passive: true })
+    
+    return () => {
+      element.removeEventListener('scroll', handleScroll)
+    }
+  }, [saveScrollPosition])
+
+  // Save scroll position before component unmounts
+  useEffect(() => {
+    return () => {
+      saveScrollPosition()
+    }
+  }, [saveScrollPosition])
 
   // Track if user manually changed pagination to avoid auto-sync conflicts
   const userNavigatedManually = useRef(false)
@@ -553,7 +653,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 h-full overflow-y-auto">
+    <div ref={containerRef} className="space-y-4 sm:space-y-6 p-2 sm:p-4 h-full overflow-y-auto">
       {/* Selection banner when coming from extractive text */}
       {/* {selectedFrom && selectedFrom.index !== null && (
         <div className="flex items-center justify-between p-2 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 text-xs">

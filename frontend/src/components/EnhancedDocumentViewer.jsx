@@ -28,49 +28,235 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
   const tabStateRef = useRef({})
   const tabContentRefs = useRef({})
 
-  // Save current tab state
+  // Find the actual scrollable element within a tab container
+  const findScrollableElement = useCallback((tabElement) => {
+    if (!tabElement) return null
+    
+    // Check if the tab element itself is scrollable
+    const computedStyle = window.getComputedStyle(tabElement)
+    const hasOverflowY = computedStyle.overflowY
+    const hasOverflow = computedStyle.overflow
+    
+    if (hasOverflowY === 'auto' || hasOverflowY === 'scroll' || hasOverflow === 'auto' || hasOverflow === 'scroll') {
+      return tabElement
+    }
+    
+    // For SWOT and other tabs, also check for elements with overflow classes in CSS
+    const scrollableSelectors = [
+      '[style*="overflow-y: auto"]',
+      '[style*="overflow: auto"]', 
+      '.overflow-y-auto',
+      '.overflow-auto',
+      // Additional selectors for nested components
+      '[class*="overflow-y-auto"]',
+      '[class*="overflow-auto"]'
+    ]
+    
+    for (const selector of scrollableSelectors) {
+      const scrollableChild = tabElement.querySelector(selector)
+      if (scrollableChild) {
+        const childStyle = window.getComputedStyle(scrollableChild)
+        if (childStyle.overflowY === 'auto' || childStyle.overflowY === 'scroll' || 
+            childStyle.overflow === 'auto' || childStyle.overflow === 'scroll') {
+          return scrollableChild
+        }
+      }
+    }
+    
+    return tabElement
+  }, [])
+  
+  // Save current tab state with enhanced position tracking
   const saveCurrentTabState = useCallback(() => {
     if (!activeTab || !tabContentRefs.current[activeTab]) return
     
     const tabElement = tabContentRefs.current[activeTab]
-    const scrollPosition = tabElement ? tabElement.scrollTop : 0
+    const scrollableElement = findScrollableElement(tabElement)
     
-    tabStateRef.current[activeTab] = {
+    const scrollPosition = scrollableElement ? scrollableElement.scrollTop : 0
+    const scrollHeight = scrollableElement ? scrollableElement.scrollHeight : 0
+    const clientHeight = scrollableElement ? scrollableElement.clientHeight : 0
+    
+    const scrollData = {
       scrollPosition,
+      scrollHeight,
+      clientHeight,
+      scrollPercentage: scrollHeight > clientHeight ? (scrollPosition / (scrollHeight - clientHeight)) * 100 : 0,
       timestamp: Date.now()
     }
-  }, [activeTab])
+    
+    // Save to both ref and localStorage for persistence
+    tabStateRef.current[activeTab] = scrollData
+    
+    try {
+      const storageKey = `enhancedDocViewer_${activeTab}_scroll`
+      localStorage.setItem(storageKey, JSON.stringify(scrollData))
+    } catch (e) {
+      console.warn('Failed to save scroll position to localStorage:', e)
+    }
+    
+    // Debug logging for SWOT tab
+    if (activeTab === 'swot' && scrollPosition > 0) {
+      console.log(`SWOT scroll saved:`, {
+        tab: activeTab,
+        scrollPosition,
+        scrollHeight,
+        clientHeight,
+        scrollPercentage: scrollData.scrollPercentage,
+        savedToStorage: true
+      })
+    }
+  }, [activeTab, findScrollableElement])
   
-  // Restore tab state
+  // Restore tab state with improved positioning
   const restoreTabState = useCallback((tabId) => {
-    const savedState = tabStateRef.current[tabId]
+    let savedState = tabStateRef.current[tabId]
+    
+    // If no saved state in ref, try localStorage
+    if (!savedState || (!savedState.scrollPosition && !savedState.scrollPercentage)) {
+      try {
+        const storageKey = `enhancedDocViewer_${tabId}_scroll`
+        const storedData = localStorage.getItem(storageKey)
+        if (storedData) {
+          savedState = JSON.parse(storedData)
+          // Update ref with localStorage data
+          tabStateRef.current[tabId] = savedState
+          
+          if (tabId === 'swot') {
+            console.log(`SWOT restored from localStorage:`, savedState)
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load scroll position from localStorage:', e)
+      }
+    }
+    
     if (!savedState) return
     
-    // Only restore if we have recent state (within last 5 minutes)
-    if (Date.now() - savedState.timestamp < 300000) {
-      // Restore scroll position
-      setTimeout(() => {
-        const tabElement = tabContentRefs.current[tabId]
-        if (tabElement && savedState.scrollPosition !== undefined) {
-          tabElement.scrollTop = savedState.scrollPosition
-        }
-      }, 100)
+    // Only restore if we have recent state (within last 10 minutes)
+    if (Date.now() - savedState.timestamp < 600000) {
+      // Use multiple restoration attempts for better reliability
+      const restorePosition = (attempt = 0) => {
+        if (attempt > 4) return // Increased attempts for SWOT tab
+        
+        // Longer delays for SWOT tab to allow content loading
+        const baseDelay = tabId === 'swot' ? 200 : 100
+        const attemptDelay = tabId === 'swot' ? 150 : 100
+        
+        setTimeout(() => {
+          const tabElement = tabContentRefs.current[tabId]
+          if (!tabElement) {
+            restorePosition(attempt + 1)
+            return
+          }
+          
+          const scrollableElement = findScrollableElement(tabElement)
+          if (!scrollableElement) {
+            restorePosition(attempt + 1)
+            return
+          }
+          
+          // Additional check for SWOT tab - ensure content is loaded
+          if (tabId === 'swot') {
+            const hasContent = scrollableElement.scrollHeight > scrollableElement.clientHeight
+            if (!hasContent && attempt < 3) {
+              restorePosition(attempt + 1)
+              return
+            }
+          }
+          
+          // Use both percentage and absolute position for restoration
+          let restoredSuccessfully = false
+          
+          if (savedState.scrollPercentage >= 0) {
+            const maxScroll = scrollableElement.scrollHeight - scrollableElement.clientHeight
+            const targetScroll = Math.max(0, Math.min((savedState.scrollPercentage / 100) * maxScroll, maxScroll))
+            scrollableElement.scrollTop = targetScroll
+            
+            // Verify the restoration worked
+            const actualScroll = scrollableElement.scrollTop
+            restoredSuccessfully = Math.abs(actualScroll - targetScroll) < 5
+            
+            // Debug logging for SWOT tab
+            if (tabId === 'swot') {
+              console.log(`SWOT scroll restore - attempt ${attempt + 1}:`, {
+                savedPercentage: savedState.scrollPercentage,
+                savedAbsolutePosition: savedState.scrollPosition,
+                currentScrollHeight: scrollableElement.scrollHeight,
+                clientHeight: scrollableElement.clientHeight,
+                maxScroll,
+                targetScroll,
+                actualScroll,
+                restoredSuccessfully
+              })
+            }
+          }
+          
+          // Fallback to absolute position if percentage restoration didn't work
+          if (!restoredSuccessfully && savedState.scrollPosition !== undefined) {
+            scrollableElement.scrollTop = Math.min(savedState.scrollPosition, scrollableElement.scrollHeight - scrollableElement.clientHeight)
+            
+            if (tabId === 'swot') {
+              console.log(`SWOT scroll restore - fallback to absolute position:`, {
+                targetPosition: savedState.scrollPosition,
+                actualPosition: scrollableElement.scrollTop
+              })
+            }
+          }
+        }, baseDelay + (attempt * attemptDelay))
+      }
+      
+      restorePosition()
     }
-  }, [])
+  }, [findScrollableElement])
   
   // Handle tab change with persistence
   const handleTabChange = useCallback((newTab) => {
+    // Debug logging for SWOT
+    if (activeTab === 'swot' || newTab === 'swot') {
+      console.log(`Tab change: ${activeTab} -> ${newTab}`, {
+        currentSavedState: tabStateRef.current[activeTab],
+        allSavedStates: {...tabStateRef.current}
+      })
+    }
+    
     // Save current state before switching
     saveCurrentTabState()
+    
+    // Debug after save
+    if (activeTab === 'swot') {
+      console.log(`After saving ${activeTab}:`, tabStateRef.current[activeTab])
+    }
     
     setTabChangeKey(prev => prev + 1)
     setActiveTab(newTab)
     
-    // Restore new tab state after a short delay
-    setTimeout(() => {
-      restoreTabState(newTab)
-    }, 50)
-  }, [saveCurrentTabState, restoreTabState])
+    // Special handling for SWOT tab - longer delays for content loading
+    if (newTab === 'swot') {
+      setTimeout(() => {
+        console.log(`About to restore SWOT, saved state:`, tabStateRef.current['swot'])
+        restoreTabState(newTab)
+      }, 250)
+      
+      // Additional restoration attempts for SWOT
+      setTimeout(() => {
+        restoreTabState(newTab)
+      }, 600)
+      
+      setTimeout(() => {
+        restoreTabState(newTab)
+      }, 1000)
+    } else {
+      // Standard restoration for other tabs
+      setTimeout(() => {
+        restoreTabState(newTab)
+      }, 150)
+      
+      setTimeout(() => {
+        restoreTabState(newTab)
+      }, 500)
+    }
+  }, [activeTab, saveCurrentTabState, restoreTabState])
 
   // PDF Export functionality
   const exportToPDF = async () => {
@@ -600,6 +786,26 @@ This business plan effectively balances growth ambitions with comprehensive risk
     (results?.filename?.endsWith('.docx') && !isDemoMode && !bypassAPI)
   const hasDocumentViewer = isPDF || isDOCX
 
+  // Initialize scroll positions from localStorage on mount
+  useEffect(() => {
+    const tabs = ['analysis', 'swot', 'insights', 'document', 'document-viewer']
+    tabs.forEach(tabId => {
+      try {
+        const storageKey = `enhancedDocViewer_${tabId}_scroll`
+        const storedData = localStorage.getItem(storageKey)
+        if (storedData) {
+          const scrollData = JSON.parse(storedData)
+          // Only restore recent data (within 24 hours)
+          if (Date.now() - scrollData.timestamp < 86400000) {
+            tabStateRef.current[tabId] = scrollData
+          }
+        }
+      } catch (e) {
+        console.warn(`Failed to initialize scroll position for ${tabId}:`, e)
+      }
+    })
+  }, [])
+
   // Set default tab based on document availability
   useEffect(() => {
     if (activeTab === 'analysis' || !activeTab) { // Only set if still on default
@@ -613,6 +819,59 @@ This business plan effectively balances growth ambitions with comprehensive risk
     }
   }, [hasDocumentViewer, isDemoMode, bypassAPI])
   
+  // Add scroll event listeners to track scroll position changes
+  useEffect(() => {
+    if (!activeTab || !tabContentRefs.current[activeTab]) return
+    
+    const tabElement = tabContentRefs.current[activeTab]
+    const scrollableElement = findScrollableElement(tabElement)
+    
+    if (!scrollableElement) return
+    
+    const handleScroll = () => {
+      // Throttle scroll tracking to improve performance
+      clearTimeout(saveCurrentTabState._throttleTimer)
+      saveCurrentTabState._throttleTimer = setTimeout(() => {
+        saveCurrentTabState()
+      }, 100)
+    }
+    
+    scrollableElement.addEventListener('scroll', handleScroll, { passive: true })
+    
+    // Force restoration attempt when tab becomes active and scrollable element is ready
+    if (tabStateRef.current[activeTab] && tabStateRef.current[activeTab].scrollPosition > 0) {
+      const forceRestore = () => {
+        const savedState = tabStateRef.current[activeTab]
+        if (savedState && savedState.scrollPosition > 0) {
+          // Try both percentage and absolute restoration
+          const maxScroll = scrollableElement.scrollHeight - scrollableElement.clientHeight
+          const targetScroll = Math.max(0, Math.min((savedState.scrollPercentage / 100) * maxScroll, maxScroll))
+          
+          if (scrollableElement.scrollTop === 0 && targetScroll > 0) {
+            scrollableElement.scrollTop = targetScroll
+            
+            if (activeTab === 'swot') {
+              console.log(`SWOT force restore on tab activation:`, {
+                targetScroll,
+                actualScroll: scrollableElement.scrollTop
+              })
+            }
+          }
+        }
+      }
+      
+      // Attempt force restoration with delays
+      setTimeout(forceRestore, 100)
+      setTimeout(forceRestore, 300)
+      setTimeout(forceRestore, 600)
+    }
+    
+    return () => {
+      scrollableElement.removeEventListener('scroll', handleScroll)
+      clearTimeout(saveCurrentTabState._throttleTimer)
+    }
+  }, [activeTab, findScrollableElement, saveCurrentTabState])
+
   // Save state when component unmounts
   useEffect(() => {
     return () => {
