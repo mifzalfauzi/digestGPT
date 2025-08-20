@@ -80,10 +80,10 @@ const ModernUploadInterface = forwardRef(({
     }
 
     return (
-      <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium ${getStatusColor()}`}>
-        {/* <Calendar className="h-4 w-4" /> */}
-        <span>
-          Ends in {daysRemaining} days
+      <div className={`inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border text-xs sm:text-sm font-medium ${getStatusColor()}`}>
+        <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+        <span className="whitespace-nowrap">
+          <span className="hidden xs:inline">Ends in </span>{daysRemaining} days
         </span>
       </div>
     )
@@ -353,51 +353,43 @@ const ModernUploadInterface = forwardRef(({
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Professional Header */}
       {/* Subscription Countdown */}
-      <div className="flex justify-center mb-6">
+      <div className="flex justify-center mb-4 sm:mb-6 px-2">
         <SubscriptionCountdown />
       </div>
 
-      <div className="text-center mb-6">
-
+      <div className="text-center mb-4 sm:mb-6 px-2">
         <div className="flex items-center justify-center gap-2">
-          <Sparkles className="h-8 w-8" />
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">
+          <Sparkles className="h-6 w-6 sm:h-8 sm:w-8" />
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white">
             What will you upload?
           </h1>
         </div>
-
-
-        {/* <p className="text-sm sm:text-base text-slate-600 dark:text-gray-300 max-w-2xl mx-auto">
-          Upload documents and get instant AI-powered insights, analysis, and answers
-        </p> */}
-
-
       </div>
 
       {/* Main Upload Card - Compact and Professional */}
       <Card className="shadow-2xl border-0 bg-white/90 dark:bg-[#121212] backdrop-blur-sm animate-fade-in-scale">
         <CardContent className="p-6">
           <Tabs value={inputMode} onValueChange={handleTabSwitch} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6 bg-slate-100 dark:bg-gray-700 p-1 rounded-xl h-auto">
+            <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6 bg-slate-100 dark:bg-gray-700 p-1 rounded-xl h-auto">
               <TabsTrigger
                 value="file"
-                className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:shadow-md rounded-lg py-2.5 px-3 text-sm transition-all duration-200 font-medium"
+                className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:shadow-md rounded-lg py-2 sm:py-2.5 px-2 sm:px-3 text-xs sm:text-sm transition-all duration-200 font-medium"
               >
-                <Upload className="h-4 w-4" />
-                <span className="hidden sm:inline">Single File</span>
-                <span className="sm:hidden">File</span>
-                <Badge variant="secondary" className="ml-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 text-xs px-1.5 py-0.5 hidden sm:block">
+                <Upload className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden xs:inline sm:hidden">Single</span>
+                <span className="xs:hidden sm:inline">Single File</span>
+                <span className="xs:hidden">File</span>
+                <Badge variant="secondary" className="ml-0.5 sm:ml-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 hidden sm:block">
                   PDF
                 </Badge>
               </TabsTrigger>
               <TabsTrigger
                 value="collection"
-                className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:shadow-md rounded-lg py-2.5 px-3 text-sm transition-all duration-200 font-medium"
+                className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:shadow-md rounded-lg py-2 sm:py-2.5 px-2 sm:px-3 text-xs sm:text-sm transition-all duration-200 font-medium"
               >
-                <FileText className="h-4 w-4" />
-                <span className="hidden sm:inline">Collection</span>
-                <span className="sm:hidden">Collection</span>
-                <Badge variant="secondary" className="ml-1 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 text-xs px-1.5 py-0.5 hidden sm:block">
+                <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span>Collection</span>
+                <Badge variant="secondary" className="ml-0.5 sm:ml-1 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 hidden sm:block">
                   Multiple
                 </Badge>
               </TabsTrigger>
@@ -418,7 +410,7 @@ const ModernUploadInterface = forwardRef(({
               <TabsContent value="file" className="space-y-4 animate-tab-enter">
                 <div className="relative group">
                   <div
-                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 touch-manipulation ${loading || hasAnalyzingDocuments
+                    className={`border-2 border-dashed rounded-xl p-4 sm:p-6 lg:p-8 text-center transition-all duration-200 touch-manipulation ${loading || hasAnalyzingDocuments
                       ? 'border-gray-300 bg-gray-50/50 dark:bg-gray-800/50 opacity-60 cursor-not-allowed'
                       : dragActive
                         ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-900/30 scale-[1.02] shadow-lg'
@@ -459,18 +451,18 @@ const ModernUploadInterface = forwardRef(({
                           </div>
 
                           {/* Files list within the upload area */}
-                          <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg border border-slate-200/50 dark:border-gray-600/50 p-3 max-h-32 overflow-y-auto">
+                          <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg border border-slate-200/50 dark:border-gray-600/50 p-2 sm:p-3 max-h-24 sm:max-h-32 overflow-y-auto">
                             <div className="grid gap-2">
                               {/* Show single file if exists */}
                               {file && stagedFiles.length === 0 && (
-                                <div className="flex items-center justify-between p-2 bg-white/80 dark:bg-gray-700/80 rounded border border-slate-200/50 dark:border-gray-600/50 hover:bg-white dark:hover:bg-gray-700 transition-colors">
-                                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                                    <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                                <div className="flex items-center justify-between p-1.5 sm:p-2 bg-white/80 dark:bg-gray-700/80 rounded border border-slate-200/50 dark:border-gray-600/50 hover:bg-white dark:hover:bg-gray-700 transition-colors">
+                                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                                    <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                                     <div className="min-w-0 flex-1">
-                                      <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                                      <p className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white truncate">
                                         {file.name}
                                       </p>
-                                      <p className="text-xs text-slate-500 dark:text-gray-400">
+                                      <p className="text-[10px] sm:text-xs text-slate-500 dark:text-gray-400">
                                         {(file.size / 1024 / 1024).toFixed(1)} MB
                                       </p>
                                     </div>
@@ -483,9 +475,9 @@ const ModernUploadInterface = forwardRef(({
                                     }}
                                     variant="ghost"
                                     size="sm"
-                                    className="h-6 w-6 p-0 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    className="h-5 w-5 sm:h-6 sm:w-6 p-0 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
                                   >
-                                    <X className="h-3 w-3" />
+                                    <X className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                                   </Button>
                                 </div>
                               )}
@@ -495,13 +487,13 @@ const ModernUploadInterface = forwardRef(({
                                   key={index}
                                   className="flex items-center justify-between p-2 bg-white/80 dark:bg-gray-700/80 rounded border border-slate-200/50 dark:border-gray-600/50 hover:bg-white dark:hover:bg-gray-700 transition-colors"
                                 >
-                                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                                    <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                                    <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                                     <div className="min-w-0 flex-1">
-                                      <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                                      <p className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white truncate">
                                         {stagedFile.name}
                                       </p>
-                                      <p className="text-xs text-slate-500 dark:text-gray-400">
+                                      <p className="text-[10px] sm:text-xs text-slate-500 dark:text-gray-400">
                                         {(stagedFile.size / 1024 / 1024).toFixed(1)} MB
                                       </p>
                                     </div>
@@ -529,12 +521,12 @@ const ModernUploadInterface = forwardRef(({
                         </div>
                       ) : (
                         <div className="space-y-3">
-                          <div className="inline-flex items-center justify-center w-12 h-12 bg-slate-100 dark:bg-gray-700 rounded-full group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 transition-colors">
-                            <Upload className="h-6 w-6 text-slate-400 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                          <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 dark:bg-gray-700 rounded-full group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 transition-colors">
+                            <Upload className="h-5 w-5 sm:h-6 sm:w-6 text-slate-400 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
                           </div>
                           <div>
-                            <p className="text-lg font-semibold text-slate-900 dark:text-white">Drop file here</p>
-                            <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">or click to browse • Single file only</p>
+                            <p className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">Drop file here</p>
+                            <p className="text-[10px] sm:text-xs text-slate-500 dark:text-gray-400 mt-1">or click to browse • Single file only</p>
                           </div>
                         </div>
                       )}
@@ -542,17 +534,17 @@ const ModernUploadInterface = forwardRef(({
                   </div>
 
                   {/* Compact File Info */}
-                  <div className="flex items-center justify-center gap-4 mt-3 text-xs text-slate-500 dark:text-gray-400">
+                  <div className="flex items-center justify-center gap-2 sm:gap-4 mt-3 text-[10px] sm:text-xs text-slate-500 dark:text-gray-400">
                     <div className="flex items-center gap-1">
-                      <FileText className="h-3 w-3" />
+                      <FileText className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                       <span>PDF</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      <span>Max 5MB</span>
+                      <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                      <span className="hidden xs:inline">Max </span>5MB
                     </div>
                     <div className="flex items-center gap-1">
-                      <Shield className="h-3 w-3" />
+                      <Shield className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                       <span>Secure</span>
                     </div>
                   </div>
@@ -564,7 +556,7 @@ const ModernUploadInterface = forwardRef(({
               <TabsContent value="collection" className="space-y-4 animate-tab-enter">
                 {/* Collection Name Input */}
                 <div className="space-y-2">
-                  <label htmlFor="collection-name" className="text-sm font-medium text-slate-700 dark:text-gray-300">
+                  <label htmlFor="collection-name" className="text-xs sm:text-sm font-medium text-slate-700 dark:text-gray-300">
                     Collection Name<span className="text-red-500">*</span>
                   </label>
                   <Input
@@ -573,10 +565,10 @@ const ModernUploadInterface = forwardRef(({
                     value={collectionName || ''}
                     onChange={(e) => setCollectionName(e.target.value)}
                     placeholder="e.g., Marketing Plan Docs, Research Project A"
-                    className="bg-white dark:bg-gray-700 border-slate-200 dark:border-gray-600 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-gray-400"
+                    className="bg-white dark:bg-gray-700 border-slate-200 dark:border-gray-600 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-gray-400 text-sm"
                     disabled={loading || hasAnalyzingDocuments || !canUploadDocument()}
                   />
-                  <p className="text-xs text-slate-500 dark:text-gray-400">
+                  <p className="text-[10px] sm:text-xs text-slate-500 dark:text-gray-400">
                     Give your collection a descriptive name
                   </p>
                 </div>
@@ -584,7 +576,7 @@ const ModernUploadInterface = forwardRef(({
                 {/* Collection Upload Area */}
                 <div className="relative group">
                   <div
-                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 touch-manipulation ${loading || hasAnalyzingDocuments
+                    className={`border-2 border-dashed rounded-xl p-4 sm:p-6 lg:p-8 text-center transition-all duration-200 touch-manipulation ${loading || hasAnalyzingDocuments
                       ? 'border-gray-300 bg-gray-50/50 dark:bg-gray-800/50 opacity-60 cursor-not-allowed'
                       : dragActive
                         ? 'border-purple-500 bg-purple-50/70 dark:bg-purple-900/30 scale-[1.02] shadow-lg'
@@ -607,20 +599,20 @@ const ModernUploadInterface = forwardRef(({
                     />
                     <label htmlFor="collection-input" className={`block ${loading || hasAnalyzingDocuments || !canUploadDocument() ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                       {stagedFiles.length > 0 ? (
-                        <div className="space-y-4">
+                        <div className="space-y-3 sm:space-y-4">
                           {/* Header with file count and clear button */}
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="inline-flex items-center justify-center w-10 h-10 bg-purple-100 dark:bg-purple-900/40 rounded-full">
-                                <CheckCircle className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                              <div className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 dark:bg-purple-900/40 rounded-full">
+                                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
                               </div>
                               <div>
-                                <p className="text-lg font-semibold text-slate-900 dark:text-white">
+                                <p className="text-sm sm:text-lg font-semibold text-slate-900 dark:text-white">
                                   {stagedFiles.length} files selected
                                 </p>
-                                <p className="text-xs text-slate-500 dark:text-gray-400">Click to add more or drop files here</p>
+                                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-gray-400">Click to add more or drop files here</p>
                                 {collectionName && (
-                                  <Badge className="mt-1 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 text-xs">
+                                  <Badge className="mt-1 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 text-[10px] sm:text-xs">
                                     {collectionName}
                                   </Badge>
                                 )}
@@ -634,27 +626,28 @@ const ModernUploadInterface = forwardRef(({
                               }}
                               variant="outline"
                               size="sm"
-                              className="text-xs h-7 px-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 border-red-300 hover:border-red-400"
+                              className="text-[10px] sm:text-xs h-6 sm:h-7 px-1.5 sm:px-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 border-red-300 hover:border-red-400"
                             >
-                              Clear All
+                              <span className="hidden xs:inline">Clear All</span>
+                              <span className="xs:hidden">Clear</span>
                             </Button>
                           </div>
 
                           {/* Files list within the upload area */}
-                          <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg border border-purple-200/50 dark:border-purple-600/50 p-3 max-h-32 overflow-y-auto">
-                            <div className="grid gap-2">
+                          <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg border border-purple-200/50 dark:border-purple-600/50 p-2 sm:p-3 max-h-24 sm:max-h-32 overflow-y-auto">
+                            <div className="grid gap-1.5 sm:gap-2">
                               {stagedFiles.map((stagedFile, index) => (
                                 <div
                                   key={index}
-                                  className="flex items-center justify-between p-2 bg-white/80 dark:bg-gray-700/80 rounded border border-purple-200/50 dark:border-purple-600/50 hover:bg-white dark:hover:bg-gray-700 transition-colors"
+                                  className="flex items-center justify-between p-1.5 sm:p-2 bg-white/80 dark:bg-gray-700/80 rounded border border-purple-200/50 dark:border-purple-600/50 hover:bg-white dark:hover:bg-gray-700 transition-colors"
                                 >
-                                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                                    <FileText className="h-4 w-4 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                                    <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600 dark:text-purple-400 flex-shrink-0" />
                                     <div className="min-w-0 flex-1">
-                                      <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                                      <p className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white truncate">
                                         {stagedFile.name}
                                       </p>
-                                      <p className="text-xs text-slate-500 dark:text-gray-400">
+                                      <p className="text-[10px] sm:text-xs text-slate-500 dark:text-gray-400">
                                         {(stagedFile.size / 1024 / 1024).toFixed(1)} MB
                                       </p>
                                     </div>
@@ -667,9 +660,9 @@ const ModernUploadInterface = forwardRef(({
                                     }}
                                     variant="ghost"
                                     size="sm"
-                                    className="h-6 w-6 p-0 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    className="h-5 w-5 sm:h-6 sm:w-6 p-0 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
                                   >
-                                    <X className="h-3 w-3" />
+                                    <X className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                                   </Button>
                                 </div>
                               ))}
@@ -678,12 +671,12 @@ const ModernUploadInterface = forwardRef(({
                         </div>
                       ) : (
                         <div className="space-y-3">
-                          <div className="inline-flex items-center justify-center w-12 h-12 bg-slate-100 dark:bg-gray-700 rounded-full group-hover:bg-purple-100 dark:group-hover:bg-purple-900/40 transition-colors">
-                            <Upload className="h-6 w-6 text-slate-400 dark:text-gray-500 group-hover:text-purple-600 dark:group-hover:text-purple-400" />
+                          <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 dark:bg-gray-700 rounded-full group-hover:bg-purple-100 dark:group-hover:bg-purple-900/40 transition-colors">
+                            <Upload className="h-5 w-5 sm:h-6 sm:w-6 text-slate-400 dark:text-gray-500 group-hover:text-purple-600 dark:group-hover:text-purple-400" />
                           </div>
                           <div>
-                            <p className="text-lg font-semibold text-slate-900 dark:text-white">Upload Collection</p>
-                            <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Select multiple files to create a collection • Multiple files required</p>
+                            <p className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">Upload Collection</p>
+                            <p className="text-[10px] sm:text-xs text-slate-500 dark:text-gray-400 mt-1">Select multiple files to create a collection • Multiple files required</p>
                           </div>
                         </div>
                       )}
@@ -691,17 +684,18 @@ const ModernUploadInterface = forwardRef(({
                   </div>
 
                   {/* Compact File Info */}
-                  <div className="flex items-center justify-center gap-4 mt-3 text-xs text-slate-500 dark:text-gray-400">
+                  <div className="flex items-center justify-center gap-2 sm:gap-4 mt-3 text-[10px] sm:text-xs text-slate-500 dark:text-gray-400">
                     <div className="flex items-center gap-1">
-                      <FileText className="h-3 w-3" />
+                      <FileText className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                       <span>PDF</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      <span>Max 5MB per file, 10MB total</span>
+                      <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                      <span className="hidden sm:inline">Max 5MB per file, 10MB total</span>
+                      <span className="sm:hidden">5MB/file</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Shield className="h-3 w-3" />
+                      <Shield className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                       <span>Organized</span>
                     </div>
                   </div>
@@ -729,18 +723,18 @@ const ModernUploadInterface = forwardRef(({
               </TabsContent>
 
               {/* Professional Submit Button */}
-              <div className="mt-6 pt-4 border-slate-200/50 dark:border-gray-700/50">
+              <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-slate-200/50 dark:border-gray-700/50">
                 <Button
                   type="submit"
                   disabled={loading || hasAnalyzingDocuments || !canUploadDocument() ||
                     (inputMode === 'file' && !file && stagedFiles.length === 0) ||
                     (inputMode === 'collection' && (stagedFiles.length === 0 || !collectionName?.trim())) ||
                     (inputMode === 'text' && !textInput.trim())}
-                  className="w-full h-12 dark:bg-white dark:hover:bg-[#1f1f1f] dark:hover:text-white text-black text-base font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 touch-manipulation"
+                  className="w-full h-10 sm:h-12 dark:bg-white dark:hover:bg-[#1f1f1f] dark:hover:text-white text-black text-sm sm:text-base font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 touch-manipulation"
                 >
                   {loading || hasAnalyzingDocuments ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 animate-spin" />
                       <span>
                         {loading && !hasAnalyzingDocuments
                           ? 'Loading Document...'
@@ -749,22 +743,27 @@ const ModernUploadInterface = forwardRef(({
                             : 'Analyzing Document...'
                         }
                       </span>
-                      <span className="ml-2 px-2 py-1 bg-white/20 rounded text-xs">
+                      <span className="ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-white/20 rounded text-[10px] sm:text-xs">
                         Please wait
                       </span>
                     </>
                   ) : !canUploadDocument() ? (
                     <>
-                      <Shield className="h-4 w-4 mr-2" />
+                      <Shield className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                       <span>Usage Limit Reached</span>
                     </>
                   ) : (
                     <>
-                      {/* <Brain className="h-4 w-4 mr-2" /> */}
                       <span>
-                        {inputMode === 'collection' ? 'Start Collection Analysis' : 'Start Analysis'}
+                        {inputMode === 'collection' ? (
+                          <>
+                            <span className="hidden sm:inline">Start Collection Analysis</span>
+                            <span className="sm:hidden">Start Analysis</span>
+                          </>
+                        ) : (
+                          'Start Analysis'
+                        )}
                       </span>
-                      {/* <Sparkles className="h-4 w-4 ml-2" /> */}
                     </>
                   )}
                 </Button>
