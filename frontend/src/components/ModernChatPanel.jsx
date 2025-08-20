@@ -1027,9 +1027,9 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0 text-xs text-slate-500 dark:text-gray-400">
             <span className="hidden sm:inline">Press Enter to send, Shift+Enter for new line</span>
-            <span className="sm:hidden text-center">Tap Enter to send</span>
+            {/* <span className="sm:hidden text-center">Tap Enter to send</span> */}
             <div className="flex items-center gap-1 justify-center sm:justify-end">
-              <Sparkles className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+              {/* <Sparkles className="h-2 w-2 sm:h-2.5 sm:w-2.5" /> */}
               <span className="hidden sm:inline text-xs">
                 {casualMode ? (
                   <>Powered by <a
@@ -1057,9 +1057,9 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
                   </>
                 )}
               </span>
-              <span className="sm:hidden text-xs">
+              {/* <span className="sm:hidden text-xs">
                 {casualMode ? 'Claude 4 Sonnet' : isDemoMode ? 'Demo Mode' : bypassAPI ? 'Preview' : 'Claude 4 Sonnet'}
-              </span>
+              </span> */}
             </div>
           </div>
         </form>
