@@ -53,10 +53,25 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     lastResultsId: null
   })
 
-  // Touch/swipe handling state
+  // Touch/swipe handling state - separated for insights and risks
   const touchStartRef = useRef({ x: 0, y: 0, time: 0 })
   const touchEndRef = useRef({ x: 0, y: 0, time: 0 })
-  const [isSwipeGesture, setIsSwipeGesture] = useState(false)
+  
+  // Separate states for insights
+  const [insightSwipeState, setInsightSwipeState] = useState({
+    isSwipeGesture: false,
+    swipeDirection: null, // 'left' | 'right' | null
+    isAnimating: false,
+    swipeProgress: 0 // 0 to 1 for animation progress
+  })
+  
+  // Separate states for risks
+  const [riskSwipeState, setRiskSwipeState] = useState({
+    isSwipeGesture: false,
+    swipeDirection: null, // 'left' | 'right' | null
+    isAnimating: false,
+    swipeProgress: 0 // 0 to 1 for animation progress
+  })
   const selectedFrom = useMemo(() => {
     if (!activeHighlight) return null
     if (activeHighlight.startsWith('insight-')) {
@@ -372,20 +387,67 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   }
 
   // Touch/swipe handling functions
-  const handleTouchStart = (e) => {
+  const handleTouchStart = (e, type) => {
     const touch = e.touches[0]
     touchStartRef.current = {
       x: touch.clientX,
       y: touch.clientY,
       time: Date.now()
     }
-    setIsSwipeGesture(false)
+    
+    // Reset the appropriate swipe state
+    if (type === 'insight') {
+      setInsightSwipeState({
+        isSwipeGesture: false,
+        swipeDirection: null,
+        isAnimating: false,
+        swipeProgress: 0
+      })
+    } else {
+      setRiskSwipeState({
+        isSwipeGesture: false,
+        swipeDirection: null,
+        isAnimating: false,
+        swipeProgress: 0
+      })
+    }
   }
 
-  const handleTouchMove = (e) => {
-    // Prevent scrolling during potential swipe
-    if (isSwipeGesture) {
-      e.preventDefault()
+  const handleTouchMove = (e, type) => {
+    const touch = e.touches[0]
+    const deltaX = touch.clientX - touchStartRef.current.x
+    const deltaY = touch.clientY - touchStartRef.current.y
+    
+    // Check if this is a horizontal swipe gesture
+    const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY)
+    const isSignificantMove = Math.abs(deltaX) > 10
+    
+    if (isHorizontalSwipe && isSignificantMove) {
+      e.preventDefault() // Prevent scrolling during swipe
+      
+      // Set swipe direction
+      const direction = deltaX > 0 ? 'right' : 'left'
+      
+      // Calculate progress (0 to 1) based on swipe distance
+      const maxSwipeDistance = 100 // Maximum distance for full animation
+      const progress = Math.min(Math.abs(deltaX) / maxSwipeDistance, 1)
+      
+      // Update the appropriate swipe state
+      if (type === 'insight') {
+        setInsightSwipeState({
+          isSwipeGesture: true,
+          swipeDirection: direction,
+          isAnimating: false,
+          swipeProgress: progress
+        })
+      } else {
+        setRiskSwipeState({
+          isSwipeGesture: true,
+          swipeDirection: direction,
+          isAnimating: false,
+          swipeProgress: progress
+        })
+      }
     }
   }
 
@@ -407,33 +469,87 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     const isLongEnoughSwipe = Math.abs(deltaX) > 50
 
     if (isHorizontalSwipe && isQuickSwipe && isLongEnoughSwipe) {
-      setIsSwipeGesture(true)
+      // Determine if we should change index based on direction and current position
+      let shouldNavigate = false
       
       if (type === 'insight') {
+        // Set animating state for insights
+        setInsightSwipeState(prev => ({ ...prev, isAnimating: true, swipeProgress: 1 }))
+        
         if (deltaX > 0 && currentInsightIndex > 0) {
           // Swipe right - previous insight
-          userNavigatedManually.current = true
-          setCurrentInsightIndex(prev => Math.max(0, prev - 1))
+          shouldNavigate = true
+          setTimeout(() => {
+            userNavigatedManually.current = true
+            setCurrentInsightIndex(prev => Math.max(0, prev - 1))
+          }, 150) // Delay to show animation
         } else if (deltaX < 0 && currentInsightIndex < insights.length - 1) {
           // Swipe left - next insight
-          userNavigatedManually.current = true
-          setCurrentInsightIndex(prev => Math.min(insights.length - 1, prev + 1))
+          shouldNavigate = true
+          setTimeout(() => {
+            userNavigatedManually.current = true
+            setCurrentInsightIndex(prev => Math.min(insights.length - 1, prev + 1))
+          }, 150)
         }
+        
+        // Reset insight animation state
+        setTimeout(() => {
+          setInsightSwipeState({
+            isSwipeGesture: false,
+            swipeDirection: null,
+            isAnimating: false,
+            swipeProgress: 0
+          })
+        }, shouldNavigate ? 300 : 200)
+        
       } else if (type === 'risk') {
+        // Set animating state for risks
+        setRiskSwipeState(prev => ({ ...prev, isAnimating: true, swipeProgress: 1 }))
+        
         if (deltaX > 0 && currentRiskIndex > 0) {
           // Swipe right - previous risk
-          userNavigatedManually.current = true
-          setCurrentRiskIndex(prev => Math.max(0, prev - 1))
+          shouldNavigate = true
+          setTimeout(() => {
+            userNavigatedManually.current = true
+            setCurrentRiskIndex(prev => Math.max(0, prev - 1))
+          }, 150)
         } else if (deltaX < 0 && currentRiskIndex < risks.length - 1) {
           // Swipe left - next risk
-          userNavigatedManually.current = true
-          setCurrentRiskIndex(prev => Math.min(risks.length - 1, prev + 1))
+          shouldNavigate = true
+          setTimeout(() => {
+            userNavigatedManually.current = true
+            setCurrentRiskIndex(prev => Math.min(risks.length - 1, prev + 1))
+          }, 150)
         }
+        
+        // Reset risk animation state
+        setTimeout(() => {
+          setRiskSwipeState({
+            isSwipeGesture: false,
+            swipeDirection: null,
+            isAnimating: false,
+            swipeProgress: 0
+          })
+        }, shouldNavigate ? 300 : 200)
+      }
+    } else {
+      // Reset if swipe wasn't completed
+      if (type === 'insight') {
+        setInsightSwipeState({
+          isSwipeGesture: false,
+          swipeDirection: null,
+          isAnimating: false,
+          swipeProgress: 0
+        })
+      } else {
+        setRiskSwipeState({
+          isSwipeGesture: false,
+          swipeDirection: null,
+          isAnimating: false,
+          swipeProgress: 0
+        })
       }
     }
-
-    // Reset swipe gesture flag after a short delay
-    setTimeout(() => setIsSwipeGesture(false), 100)
   }
 
   return (
@@ -550,17 +666,47 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
           {insights.length > 0 && currentInsight ? (
             <>
               {/* Current Insight Display */}
-              <Card
-                className={`transition-all duration-300 dark:bg-green-900/20 overflow-hidden touch-pan-y select-none ${highlights.find(h => h.id === currentInsight.id) ? 'hover:shadow-lg' : ''
-                  } ${activeHighlight === currentInsight.id
-                    ? 'ring-2 ring-emerald-400 dark:ring-emerald-500 shadow-lg bg-emerald-50/50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700'
-                    : 'border-slate-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-600'
-                  }`}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={(e) => handleTouchEnd(e, 'insight')}
-              >
-                <CardContent className="p-3 sm:p-5">
+              <div className="relative overflow-hidden">
+                <Card
+                  className={`transition-all duration-300 dark:bg-green-900/20 overflow-hidden touch-pan-y select-none ${highlights.find(h => h.id === currentInsight.id) ? 'hover:shadow-lg' : ''
+                    } ${activeHighlight === currentInsight.id
+                      ? 'ring-2 ring-emerald-400 dark:ring-emerald-500 shadow-lg bg-emerald-50/50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700'
+                      : 'border-slate-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-600'
+                    }`}
+                  style={{
+                    transform: insightSwipeState.isSwipeGesture && insightSwipeState.swipeDirection ? 
+                      `translateX(${insightSwipeState.swipeDirection === 'right' ? insightSwipeState.swipeProgress * 20 : -insightSwipeState.swipeProgress * 20}px)` : 
+                      'translateX(0)',
+                    opacity: insightSwipeState.isSwipeGesture ? Math.max(0.7, 1 - insightSwipeState.swipeProgress * 0.3) : 1,
+                    transition: insightSwipeState.isAnimating ? 'all 0.3s ease-out' : 'none'
+                  }}
+                  onTouchStart={(e) => handleTouchStart(e, 'insight')}
+                  onTouchMove={(e) => handleTouchMove(e, 'insight')}
+                  onTouchEnd={(e) => handleTouchEnd(e, 'insight')}
+                >
+                  {/* Swipe indicator overlay */}
+                  {insightSwipeState.isSwipeGesture && insightSwipeState.swipeProgress > 0.2 && (
+                    <div 
+                      className={`absolute inset-0 flex items-center justify-center bg-emerald-500/10 dark:bg-emerald-400/10 pointer-events-none transition-opacity duration-200`}
+                      style={{ opacity: insightSwipeState.swipeProgress }}
+                    >
+                      <div className={`flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-medium`}>
+                        {insightSwipeState.swipeDirection === 'right' ? (
+                          <>
+                            <ChevronLeft className="h-5 w-5" />
+                            <span className="text-sm">Previous</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-sm">Next</span>
+                            <ChevronRight className="h-5 w-5" />
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <CardContent className="p-3 sm:p-5">
                   <div className="flex items-start gap-2 sm:gap-4">
                     <div className={`p-2 sm:p-2.5 ${getCategoryIconClasses(currentInsight.category)} rounded-lg flex-shrink-0`}>
                       {getCategoryIcon(currentInsight.category)}
@@ -665,8 +811,9 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                       )}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
 
               {/* Insights Pagination - Mobile optimized */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 pt-3 border-t border-slate-200 dark:border-gray-700">
@@ -693,9 +840,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                   <p className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white">
                     Insight {currentInsightIndex + 1} of {insights.length}
                   </p>
-                  <p className="text-xs text-slate-500 dark:text-gray-400 sm:hidden mt-0.5">
-                    Swipe left/right to navigate
-                  </p>
+                  
                   <div className="flex gap-1 mt-1 justify-center">
                     {insights.map((_, index) => (
                       <div
@@ -711,6 +856,9 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                       />
                     ))}
                   </div>
+                  <p className="text-xs text-slate-500 dark:text-gray-400 sm:hidden mt-0.5">
+                    Swipe left/right to navigate
+                  </p>
                 </div>
                 <Button
                   variant="outline"
@@ -777,16 +925,45 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
           {risks.length > 0 && currentRisk ? (
             <>
               {/* Current Risk Display */}
-              <Alert
-                className={`transition-all duration-300 overflow-hidden touch-pan-y select-none ${highlights.find(h => h.id === currentRisk.id) ? ' hover:shadow-lg' : ''
-                  } ${activeHighlight === currentRisk.id
-                    ? 'ring-2 ring-red-400 dark:ring-red-500 shadow-lg bg-red-50/50 dark:bg-red-950/30 border-red-300 dark:border-red-600'
-                    : 'border-red-200 dark:border-red-800 hover:border-red-300 dark:hover:border-red-600'
-                  } bg-gradient-to-r from-red-50/80 to-orange-50/80 dark:from-red-950/20 dark:to-orange-950/20`}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={(e) => handleTouchEnd(e, 'risk')}
-              >
+              <div className="relative overflow-hidden">
+                <Alert
+                  className={`transition-all duration-300 overflow-hidden touch-pan-y select-none ${highlights.find(h => h.id === currentRisk.id) ? ' hover:shadow-lg' : ''
+                    } ${activeHighlight === currentRisk.id
+                      ? 'ring-2 ring-red-400 dark:ring-red-500 shadow-lg bg-red-50/50 dark:bg-red-950/30 border-red-300 dark:border-red-600'
+                      : 'border-red-200 dark:border-red-800 hover:border-red-300 dark:hover:border-red-600'
+                    } bg-gradient-to-r from-red-50/80 to-orange-50/80 dark:from-red-950/20 dark:to-orange-950/20`}
+                  style={{
+                    transform: riskSwipeState.isSwipeGesture && riskSwipeState.swipeDirection ? 
+                      `translateX(${riskSwipeState.swipeDirection === 'right' ? riskSwipeState.swipeProgress * 20 : -riskSwipeState.swipeProgress * 20}px)` : 
+                      'translateX(0)',
+                    opacity: riskSwipeState.isSwipeGesture ? Math.max(0.7, 1 - riskSwipeState.swipeProgress * 0.3) : 1,
+                    transition: riskSwipeState.isAnimating ? 'all 0.3s ease-out' : 'none'
+                  }}
+                  onTouchStart={(e) => handleTouchStart(e, 'risk')}
+                  onTouchMove={(e) => handleTouchMove(e, 'risk')}
+                  onTouchEnd={(e) => handleTouchEnd(e, 'risk')}
+                >
+                  {/* Swipe indicator overlay */}
+                  {riskSwipeState.isSwipeGesture && riskSwipeState.swipeProgress > 0.2 && (
+                    <div 
+                      className={`absolute inset-0 flex items-center justify-center bg-red-500/10 dark:bg-red-400/10 pointer-events-none transition-opacity duration-200`}
+                      style={{ opacity: riskSwipeState.swipeProgress }}
+                    >
+                      <div className={`flex items-center gap-2 text-red-600 dark:text-red-400 font-medium`}>
+                        {riskSwipeState.swipeDirection === 'right' ? (
+                          <>
+                            <ChevronLeft className="h-5 w-5" />
+                            <span className="text-sm">Previous</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-sm">Next</span>
+                            <ChevronRight className="h-5 w-5" />
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 <div className="flex items-start gap-2 sm:gap-4 p-3 sm:p-4">
                   <div className={`p-2 sm:p-2.5 ${getSeverityIconClasses(currentRisk.severity)} rounded-lg flex-shrink-0`}>
                     <AlertTriangle className={`h-4 w-4 sm:h-5 sm:w-5 text-${getSeverityColor(currentRisk.severity)}-600 dark:text-${getSeverityColor(currentRisk.severity)}-400`} />
@@ -899,7 +1076,8 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                     )}
                   </div>
                 </div>
-              </Alert>
+                </Alert>
+              </div>
 
               {/* Risks Pagination - Mobile optimized */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 pt-3 border-t border-red-200 dark:border-red-700">
@@ -926,9 +1104,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                   <p className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white">
                     Risk {currentRiskIndex + 1} of {risks.length}
                   </p>
-                  <p className="text-xs text-slate-500 dark:text-gray-400 sm:hidden mt-0.5">
-                    Swipe left/right to navigate
-                  </p>
+                  
                   <div className="flex gap-1 mt-1 justify-center">
                     {risks.map((_, index) => (
                       <div
@@ -944,6 +1120,9 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                       />
                     ))}
                   </div>
+                  <p className="text-xs text-slate-500 dark:text-gray-400 sm:hidden mt-0.5">
+                    Swipe left/right to navigate
+                  </p>
                 </div>
                 <Button
                   variant="outline"
