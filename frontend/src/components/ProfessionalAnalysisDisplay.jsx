@@ -52,6 +52,11 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     isInitialized: false,
     lastResultsId: null
   })
+
+  // Touch/swipe handling state
+  const touchStartRef = useRef({ x: 0, y: 0, time: 0 })
+  const touchEndRef = useRef({ x: 0, y: 0, time: 0 })
+  const [isSwipeGesture, setIsSwipeGesture] = useState(false)
   const selectedFrom = useMemo(() => {
     if (!activeHighlight) return null
     if (activeHighlight.startsWith('insight-')) {
@@ -366,6 +371,71 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     })
   }
 
+  // Touch/swipe handling functions
+  const handleTouchStart = (e) => {
+    const touch = e.touches[0]
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now()
+    }
+    setIsSwipeGesture(false)
+  }
+
+  const handleTouchMove = (e) => {
+    // Prevent scrolling during potential swipe
+    if (isSwipeGesture) {
+      e.preventDefault()
+    }
+  }
+
+  const handleTouchEnd = (e, type) => {
+    const touch = e.changedTouches[0]
+    touchEndRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now()
+    }
+
+    const deltaX = touchEndRef.current.x - touchStartRef.current.x
+    const deltaY = touchEndRef.current.y - touchStartRef.current.y
+    const deltaTime = touchEndRef.current.time - touchStartRef.current.time
+
+    // Check if it's a valid swipe (horizontal movement > vertical, fast enough, long enough)
+    const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY)
+    const isQuickSwipe = deltaTime < 500
+    const isLongEnoughSwipe = Math.abs(deltaX) > 50
+
+    if (isHorizontalSwipe && isQuickSwipe && isLongEnoughSwipe) {
+      setIsSwipeGesture(true)
+      
+      if (type === 'insight') {
+        if (deltaX > 0 && currentInsightIndex > 0) {
+          // Swipe right - previous insight
+          userNavigatedManually.current = true
+          setCurrentInsightIndex(prev => Math.max(0, prev - 1))
+        } else if (deltaX < 0 && currentInsightIndex < insights.length - 1) {
+          // Swipe left - next insight
+          userNavigatedManually.current = true
+          setCurrentInsightIndex(prev => Math.min(insights.length - 1, prev + 1))
+        }
+      } else if (type === 'risk') {
+        if (deltaX > 0 && currentRiskIndex > 0) {
+          // Swipe right - previous risk
+          userNavigatedManually.current = true
+          setCurrentRiskIndex(prev => Math.max(0, prev - 1))
+        } else if (deltaX < 0 && currentRiskIndex < risks.length - 1) {
+          // Swipe left - next risk
+          userNavigatedManually.current = true
+          setCurrentRiskIndex(prev => Math.min(risks.length - 1, prev + 1))
+        }
+      }
+    }
+
+    // Reset swipe gesture flag after a short delay
+    setTimeout(() => setIsSwipeGesture(false), 100)
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 h-full overflow-y-auto">
       {/* Selection banner when coming from extractive text */}
@@ -481,23 +551,22 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
             <>
               {/* Current Insight Display */}
               <Card
-                className={`transition-all duration-300 dark:bg-green-900/20 ${highlights.find(h => h.id === currentInsight.id) ? 'hover:shadow-lg' : ''
+                className={`transition-all duration-300 dark:bg-green-900/20 overflow-hidden touch-pan-y select-none ${highlights.find(h => h.id === currentInsight.id) ? 'hover:shadow-lg' : ''
                   } ${activeHighlight === currentInsight.id
                     ? 'ring-2 ring-emerald-400 dark:ring-emerald-500 shadow-lg bg-emerald-50/50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700'
                     : 'border-slate-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-600'
                   }`}
-              // onClick={() => {
-              //   const hasHighlight = highlights.find(h => h.id === currentInsight.id);
-              //   hasHighlight && onHighlightClick(currentInsight.id);
-              // }}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={(e) => handleTouchEnd(e, 'insight')}
               >
-                <CardContent className="p-5">
-                  <div className="flex items-start gap-4">
-                    <div className={`p-2.5 ${getCategoryIconClasses(currentInsight.category)} rounded-lg flex-shrink-0`}>
+                <CardContent className="p-3 sm:p-5">
+                  <div className="flex items-start gap-2 sm:gap-4">
+                    <div className={`p-2 sm:p-2.5 ${getCategoryIconClasses(currentInsight.category)} rounded-lg flex-shrink-0`}>
                       {getCategoryIcon(currentInsight.category)}
                     </div>
 
-                    <div className="flex-1 space-y-3">
+                    <div className="flex-1 space-y-3 min-w-0">
                       {/* Mobile-first responsive layout */}
                       <div className="space-y-3">
                         {/* Badge and buttons row - mobile stacked, desktop inline */}
@@ -549,8 +618,8 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                           </div>
                         </div>
                         
-                        {/* Content text - full width */}
-                        <div className="text-slate-800 dark:text-slate-100 leading-relaxed font-medium text-sm">
+                        {/* Content text - full width with proper word wrapping */}
+                        <div className="text-slate-800 dark:text-slate-100 leading-relaxed font-medium text-sm break-words overflow-hidden">
                           <MarkdownRenderer content={currentInsight.text} />
                         </div>
                       </div>
@@ -623,6 +692,9 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                 <div className="text-center order-first sm:order-none">
                   <p className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white">
                     Insight {currentInsightIndex + 1} of {insights.length}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-gray-400 sm:hidden mt-0.5">
+                    Swipe left/right to navigate
                   </p>
                   <div className="flex gap-1 mt-1 justify-center">
                     {insights.map((_, index) => (
@@ -706,22 +778,21 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
             <>
               {/* Current Risk Display */}
               <Alert
-                className={`transition-all duration-300 ${highlights.find(h => h.id === currentRisk.id) ? ' hover:shadow-lg' : ''
+                className={`transition-all duration-300 overflow-hidden touch-pan-y select-none ${highlights.find(h => h.id === currentRisk.id) ? ' hover:shadow-lg' : ''
                   } ${activeHighlight === currentRisk.id
                     ? 'ring-2 ring-red-400 dark:ring-red-500 shadow-lg bg-red-50/50 dark:bg-red-950/30 border-red-300 dark:border-red-600'
                     : 'border-red-200 dark:border-red-800 hover:border-red-300 dark:hover:border-red-600'
                   } bg-gradient-to-r from-red-50/80 to-orange-50/80 dark:from-red-950/20 dark:to-orange-950/20`}
-              // onClick={() => {
-              //   const hasHighlight = highlights.find(h => h.id === currentRisk.id);
-              //   hasHighlight && onHighlightClick(currentRisk.id);
-              // }}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={(e) => handleTouchEnd(e, 'risk')}
               >
-                <div className="flex items-start gap-4">
-                  <div className={`p-2.5 ${getSeverityIconClasses(currentRisk.severity)} rounded-lg flex-shrink-0`}>
-                    <AlertTriangle className={`h-5 w-5 text-${getSeverityColor(currentRisk.severity)}-600 dark:text-${getSeverityColor(currentRisk.severity)}-400`} />
+                <div className="flex items-start gap-2 sm:gap-4 p-3 sm:p-4">
+                  <div className={`p-2 sm:p-2.5 ${getSeverityIconClasses(currentRisk.severity)} rounded-lg flex-shrink-0`}>
+                    <AlertTriangle className={`h-4 w-4 sm:h-5 sm:w-5 text-${getSeverityColor(currentRisk.severity)}-600 dark:text-${getSeverityColor(currentRisk.severity)}-400`} />
                   </div>
 
-                  <div className="flex-1 space-y-3">
+                  <div className="flex-1 space-y-3 min-w-0">
                     {/* Mobile-first responsive layout */}
                     <div className="space-y-3">
                       {/* Badges and buttons row - mobile stacked, desktop inline */}
@@ -781,8 +852,8 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                         </div>
                       </div>
                       
-                      {/* Content text - full width */}
-                      <AlertDescription className="text-red-800 dark:text-red-200 leading-relaxed font-medium text-sm">
+                      {/* Content text - full width with proper word wrapping */}
+                      <AlertDescription className="text-red-800 dark:text-red-200 leading-relaxed font-medium text-sm break-words overflow-hidden">
                         <MarkdownRenderer content={currentRisk.text} />
                       </AlertDescription>
                     </div>
@@ -854,6 +925,9 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                 <div className="text-center order-first sm:order-none">
                   <p className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white">
                     Risk {currentRiskIndex + 1} of {risks.length}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-gray-400 sm:hidden mt-0.5">
+                    Swipe left/right to navigate
                   </p>
                   <div className="flex gap-1 mt-1 justify-center">
                     {risks.map((_, index) => (
