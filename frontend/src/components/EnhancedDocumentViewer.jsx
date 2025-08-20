@@ -761,46 +761,53 @@ This business plan effectively balances growth ambitions with comprehensive risk
     <div className="h-full flex flex-col bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800">
       {/* Enhanced Header - Fixed at top */}
       <div className="border-b flex-shrink-0 px-2 sm:px-3 lg:px-4 py-2 sm:py-3 bg-white/80 dark:bg-[#121212] backdrop-blur-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 lg:gap-0">
-          {/* LEFT SIDE */}
-          <div className="flex items-center gap-2">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h2 className="text-xs sm:text-sm lg:text-base font-bold text-slate-900 dark:text-white">
-                  Content Information
-                  {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
-                  {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal">(Preview)</span>}
-                </h2>
-              </div>
-            </div>
-          </div>
-
-          {/* RIGHT SIDE - Export Button */}
-          <div className="flex justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={exportToPDF}
-              disabled={isExporting || (!results?.analysis && !isDemoMode && !bypassAPI)}
-              className="flex items-center gap-2 border bg-black hover:bg-blue-600 text-white hover:text-white shadow-lg hover:shadow-xl transition-all duration-200 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm"
-            >
-              {isExporting ? (
-                <>
-                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span className="hidden sm:inline">Exporting...</span>
-                  <span className="sm:hidden">Exporting</span>
-                </>
-              ) : (
-                <>
-                  <Download className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Export PDF</span>
-                  <span className="sm:hidden">PDF</span>
-                </>
-              )}
-            </Button>
-          </div>
+  <div className="flex flex-row items-center justify-between gap-2">
+    {/* LEFT SIDE */}
+    <div className="flex items-center gap-2">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <h2 className="text-xs sm:text-sm lg:text-base font-bold text-slate-900 dark:text-white">
+            Content Information
+            {isDemoMode && (
+              <span className="text-xs text-orange-500 font-normal">(Demo)</span>
+            )}
+            {bypassAPI && !isDemoMode && (
+              <span className="text-xs text-green-600 font-normal">(Preview)</span>
+            )}
+          </h2>
         </div>
       </div>
+    </div>
+
+    {/* RIGHT SIDE - Export Button */}
+    <div className="flex justify-end flex-shrink-0">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={exportToPDF}
+        disabled={
+          isExporting || (!results?.analysis && !isDemoMode && !bypassAPI)
+        }
+        className="flex items-center gap-2 border bg-black hover:bg-blue-600 text-white hover:text-white shadow-lg hover:shadow-xl transition-all duration-200 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm"
+      >
+        {isExporting ? (
+          <>
+            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            <span className="hidden sm:inline">Exporting...</span>
+            <span className="sm:hidden">Exporting</span>
+          </>
+        ) : (
+          <>
+            <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Export PDF</span>
+            <span className="sm:hidden">PDF</span>
+          </>
+        )}
+      </Button>
+    </div>
+  </div>
+</div>
+
 
 
       {/* Enhanced Content - Scrollable */}
