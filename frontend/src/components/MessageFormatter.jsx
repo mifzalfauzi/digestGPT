@@ -1,5 +1,138 @@
 import React from 'react'
-import { CheckCircle2, ArrowRight, Zap, AlertTriangle, Info, Star, Circle, AlertCircle, ShieldAlert } from 'lucide-react'
+import { CheckCircle2, ArrowRight, Zap, AlertTriangle, Info, Star, Circle, AlertCircle, ShieldAlert, Copy, Check } from 'lucide-react'
+
+// React Table Component for proper event handling
+function TableComponent({ headerCells, bodyRows, className = "" }) {
+  const [copied, setCopied] = React.useState(false)
+  
+  // Helper function to process markdown in cell content
+  const processMarkdownInCell = (cellContent) => {
+    return cellContent
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
+      .replace(/__(.*?)__/g, '<strong class="font-semibold">$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+      .replace(/_(.*?)_/g, '<em class="italic">$1</em>')
+      .replace(/`([^`]+)`/g, '<code class="px-1 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded text-xs font-mono">$1</code>')
+  }
+  
+  const handleCopyTable = () => {
+    // Create CSV content for fallback
+    let csvContent = ''
+    csvContent += headerCells.map(cell => {
+      if (cell.includes(',') || cell.includes('"') || cell.includes('\n')) {
+        return '"' + cell.replace(/"/g, '""') + '"'
+      }
+      return cell
+    }).join(',') + '\n'
+    
+    bodyRows.forEach(row => {
+      const rowData = row.map(cell => {
+        if (cell.includes(',') || cell.includes('"') || cell.includes('\n')) {
+          return '"' + cell.replace(/"/g, '""') + '"'
+        }
+        return cell
+      })
+      csvContent += rowData.join(',') + '\n'
+    })
+    
+    // Create HTML table for rich paste (Google Docs, Word, etc.)
+    let htmlContent = '<table border="1" style="border-collapse: collapse; width: 100%;">'
+    
+    // Header
+    htmlContent += '<thead><tr>'
+    headerCells.forEach(cell => {
+      htmlContent += `<th style="padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5; font-weight: bold; text-align: left;">${cell}</th>`
+    })
+    htmlContent += '</tr></thead>'
+    
+    // Body
+    htmlContent += '<tbody>'
+    bodyRows.forEach(row => {
+      htmlContent += '<tr>'
+      row.forEach(cell => {
+        htmlContent += `<td style="padding: 8px; border: 1px solid #ddd;">${cell}</td>`
+      })
+      htmlContent += '</tr>'
+    })
+    htmlContent += '</tbody></table>'
+    
+    // Copy both HTML and plain text formats
+    const clipboardItem = new ClipboardItem({
+      'text/html': new Blob([htmlContent], { type: 'text/html' }),
+      'text/plain': new Blob([csvContent], { type: 'text/plain' })
+    })
+    
+    navigator.clipboard.write([clipboardItem]).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }).catch(err => {
+      console.error('Failed to copy table with formatting, falling back to text:', err)
+      // Fallback to plain text if HTML copy fails
+      navigator.clipboard.writeText(csvContent).then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }).catch(fallbackErr => {
+        console.error('Failed to copy table:', fallbackErr)
+      })
+    })
+  }
+  
+  return (
+    <div className={`relative group overflow-x-auto my-4 ${className}`}>
+      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+        <button 
+          onClick={handleCopyTable}
+          className={`px-2 py-1 text-white text-xs rounded shadow-md transition-colors flex items-center gap-1 ${
+            copied ? 'bg-green-600' : 'bg-blue-600 hover:bg-blue-700'
+          }`}
+          title="Copy table as CSV"
+        >
+          {copied ? (
+            <>
+              <Check className="w-3 h-3" />
+              
+            </>
+          ) : (
+            <>
+              <Copy className="w-3 h-3" />
+              
+            </>
+          )}
+        </button>
+      </div>
+      <table className="min-w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
+        <thead className="bg-gray-50 dark:bg-gray-900">
+          <tr>
+            {headerCells.map((cell, index) => (
+              <th 
+                key={index}
+                className={`px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ${
+                  index === headerCells.length - 1 ? '' : 'border-r border-gray-200 dark:border-gray-600'
+                }`}
+                dangerouslySetInnerHTML={{ __html: processMarkdownInCell(cell) }}
+              />
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+          {bodyRows.map((row, rowIndex) => (
+            <tr key={rowIndex} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+              {row.map((cell, cellIndex) => (
+                <td 
+                  key={cellIndex}
+                  className={`px-4 py-3 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap ${
+                    cellIndex === row.length - 1 ? '' : 'border-r border-gray-200 dark:border-gray-600'
+                  }`}
+                  dangerouslySetInnerHTML={{ __html: processMarkdownInCell(cell) }}
+                />
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
 
 // Enhanced MarkdownRenderer component that handles all markdown syntax
 function MarkdownRenderer({ content, className = "" }) {
@@ -55,6 +188,43 @@ function MessageFormatter({ content, className = "" }) {
       lines.forEach((line, index) => {
         const trimmedLine = line.trim()
         if (!trimmedLine) return
+
+        // Check for table lines - if we detect a table, handle the entire table as one block
+        if (trimmedLine.includes('|') && lines.length > index + 2) {
+          const nextLine = lines[index + 1]?.trim()
+          const lineAfterNext = lines[index + 2]?.trim()
+          
+          // Check if this looks like a table (current line has |, next line has | and -, third line has |)
+          if (nextLine?.includes('|') && nextLine?.includes('-') && lineAfterNext?.includes('|')) {
+            // Find the full table by looking ahead
+            let tableLines = [trimmedLine, nextLine]
+            let lookAheadIndex = index + 2
+            
+            while (lookAheadIndex < lines.length && lines[lookAheadIndex]?.trim().includes('|')) {
+              tableLines.push(lines[lookAheadIndex].trim())
+              lookAheadIndex++
+            }
+            
+            // Parse the table data for React component
+            const headerCells = trimmedLine.split('|').map(cell => cell.trim()).filter(cell => cell)
+            const bodyRows = tableLines.slice(2).map(row => 
+              row.split('|').map(cell => cell.trim()).filter(cell => cell)
+            )
+            
+            formattedLines.push(
+              <TableComponent
+                key={`${pIndex}-${index}`}
+                headerCells={headerCells}
+                bodyRows={bodyRows}
+                className="text-slate-700 dark:text-slate-200"
+              />
+            )
+            
+            // Skip the processed table lines
+            lines.splice(index + 1, lookAheadIndex - index - 1)
+            return
+          }
+        }
 
         // Check for risk alerts with 🚨 emoji
         if (trimmedLine.includes('🚨')) {
