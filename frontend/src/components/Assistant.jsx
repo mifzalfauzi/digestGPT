@@ -821,6 +821,7 @@ function Assistant() {
             file_url: fullDocumentData.file_url, // Add file URL for PDF viewing
             analysis: {
               summary: fullDocumentData.summary,
+              problem_context: fullDocumentData.problem_context,
               key_points: keyPoints,
               risk_flags: riskFlags,
               key_concepts: keyConcepts,
@@ -828,6 +829,7 @@ function Assistant() {
             },
             // Also include at root level for compatibility
             summary: fullDocumentData.summary,
+            problem_context: fullDocumentData.problem_context,
             key_points: keyPoints,
             risk_flags: riskFlags,
             key_concepts: keyConcepts,
@@ -1824,6 +1826,15 @@ This business plan effectively balances ambitious growth objectives with compreh
     window.history.replaceState({}, document.title, window.location.pathname)
   }
 
+  // Handle document ready - update URL when document becomes available
+  const handleDocumentReady = (documentId) => {
+    if (documentId && !urlDocumentId) {
+      // Only update URL if we're not already on a document URL
+      console.log('Document ready, updating URL to include document ID:', documentId)
+      navigate(`/assistant/document/${documentId}`)
+    }
+  }
+
   return (
     <div className="h-screen dark:bg-[#121212] overflow-hidden">
       {currentView === "upload" ? (
@@ -2409,6 +2420,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                     casualMode={false}
                     onLoadingHistoryChange={setIsChatLoadingHistory}
                     onDocumentDeleted={handleDocumentDeleted}
+                    onDocumentReady={handleDocumentReady}
                   />
                 ) : (
                   <div className="h-full flex items-center justify-center bg-white dark:bg-background p-6">
@@ -2503,6 +2515,7 @@ This business plan effectively balances ambitious growth objectives with compreh
                     casualMode={false}
                     onLoadingHistoryChange={setIsChatLoadingHistory}
                     onDocumentDeleted={handleDocumentDeleted}
+                    onDocumentReady={handleDocumentReady}
                   />
                 ) : (
                   <div className="h-full flex items-center justify-center bg-white dark:bg-background p-12">

@@ -1374,7 +1374,10 @@ This business plan effectively balances growth ambitions with comprehensive risk
                   </div>
 
                   {/* Problem/Context Section - Moved after summary for better UX flow */}
-                  {(results?.problem_context || results?.analysis?.problem_context) && (
+                  {(
+                    (results?.problem_context && results.problem_context.trim()) || 
+                    (results?.analysis?.problem_context && results.analysis.problem_context.trim())
+                  ) && (
                     <div className="mb-3">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="p-1.5 bg-gradient-to-br from-orange-500 to-amber-600 rounded-lg shadow-sm">
@@ -1395,7 +1398,11 @@ This business plan effectively balances growth ambitions with comprehensive risk
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleCopy(results?.problem_context || results?.analysis?.problem_context || '', 'problem_context')}
+                            onClick={() => handleCopy(
+                              (results?.problem_context && results.problem_context.trim()) || 
+                              (results?.analysis?.problem_context && results.analysis.problem_context.trim()) || 
+                              '', 'problem_context'
+                            )}
                             className="h-6 w-6 p-0 hover:bg-orange-100 dark:hover:bg-orange-900/20"
                             title="Copy problem context"
                           >
@@ -1426,7 +1433,11 @@ This business plan effectively balances growth ambitions with comprehensive risk
                         </div>
 
                         <MarkdownRenderer
-                          content={results?.problem_context || results?.analysis?.problem_context}
+                          content={
+                            (results?.problem_context && results.problem_context.trim()) || 
+                            (results?.analysis?.problem_context && results.analysis.problem_context.trim()) || 
+                            'Problem context information not available for this document.'
+                          }
                           className="text-slate-800 dark:text-slate-100 leading-relaxed text-xs font-medium"
                         />
                       </div>

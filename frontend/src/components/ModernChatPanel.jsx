@@ -10,7 +10,7 @@ import { MessageCircle, Send, Bot, User, AlertCircle, Trash2, Sparkles, Brain, Z
 import MessageFormatter from './MessageFormatter'
 import TypewriterText from './TypewriterText'
 
-function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode = false, bypassAPI = false, casualMode = false, isDisabled = false, analyzingStatus = null, onLoadingHistoryChange, onDocumentDeleted }) {
+function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode = false, bypassAPI = false, casualMode = false, isDisabled = false, analyzingStatus = null, onLoadingHistoryChange, onDocumentDeleted, onDocumentReady = null }) {
   // Auth context
   const {
     canSendChat,
@@ -332,6 +332,14 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
       }, 2000) // Add 300ms delay to ensure rendering completes
     }
   }, [isHistoryLoadingComplete])
+
+  // Notify parent when document is ready for URL update
+  useEffect(() => {
+    if (documentId && filename && !casualMode && !isDemoMode && !bypassAPI && onDocumentReady) {
+      // Trigger URL update when document becomes available
+      onDocumentReady(documentId)
+    }
+  }, [documentId, filename, casualMode, isDemoMode, bypassAPI, onDocumentReady])
 
 
   const handleSendMessage = async (e) => {
@@ -673,6 +681,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
               <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white truncate">
                 {filename}
               </p>
+             
             </div>
             <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 text-xs px-2 py-0.5">
               Active

@@ -25,6 +25,9 @@ import {
   ThumbsDown,
   Check,
   BookOpen,
+  Grid3X3,
+  List,
+  MoreHorizontal,
 } from "lucide-react"
 import { Separator } from "./ui/separator"
 import axios from "axios"
@@ -41,6 +44,9 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
   const [activeSwotTab, setActiveSwotTab] = useState('strengths')
   const [copiedItems, setCopiedItems] = useState(new Set())
   const [itemRatings, setItemRatings] = useState({})
+  const [viewMode, setViewMode] = useState('list') // 'list' or 'matrix'
+  const [viewMenuOpen, setViewMenuOpen] = useState(false)
+  const viewMenuRef = useRef(null)
   
   // Simple persistence using ref
   const persistedState = useRef({
@@ -51,6 +57,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       threats: 0,
     },
     activeSwotTab: 'strengths',
+    viewMode: 'list',
     copiedItems: new Set(),
     itemRatings: {},
     isInitialized: false
@@ -63,6 +70,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     if (!persistedState.current.isInitialized) {
       setCurrentPage(persistedState.current.currentPage)
       setActiveSwotTab(persistedState.current.activeSwotTab)
+      setViewMode(persistedState.current.viewMode)
       setCopiedItems(persistedState.current.copiedItems)
       setItemRatings(persistedState.current.itemRatings)
       persistedState.current.isInitialized = true
@@ -76,11 +84,28 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
         ...persistedState.current,
         currentPage,
         activeSwotTab,
+        viewMode,
         copiedItems,
         itemRatings
       }
     }
-  }, [currentPage, activeSwotTab, copiedItems, itemRatings])
+  }, [currentPage, activeSwotTab, viewMode, copiedItems, itemRatings])
+
+  // Handle clicking outside the view menu to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (viewMenuRef.current && !viewMenuRef.current.contains(event.target)) {
+        setViewMenuOpen(false)
+      }
+    }
+
+    if (viewMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }
+  }, [viewMenuOpen])
 
   // Enhanced mock SWOT data
   const mockSWOTData = {
@@ -511,6 +536,121 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     )
   }
 
+  // Matrix View Component
+  const MatrixView = () => {
+    const MatrixQuadrant = ({ title, items, bgColor, borderColor, textColor, icon }) => (
+      <div className={`${bgColor} ${borderColor} border-2 rounded-xl p-4 h-full min-h-[300px] flex flex-col`}>
+        <div className="flex items-center gap-2 mb-4">
+          <div className={`p-2 ${textColor === 'text-green-600' ? 'bg-green-100 dark:bg-green-900/30' : 
+                           textColor === 'text-red-600' ? 'bg-red-100 dark:bg-red-900/30' :
+                           textColor === 'text-blue-600' ? 'bg-blue-100 dark:bg-blue-900/30' :
+                           'bg-amber-100 dark:bg-amber-900/30'} rounded-lg`}>
+            {icon}
+          </div>
+          <h3 className={`font-bold text-lg ${textColor} dark:${textColor.replace('600', '400')}`}>
+            {title}
+          </h3>
+          <Badge variant="outline" className="ml-auto">
+            {items.length}
+          </Badge>
+        </div>
+        <div className="flex-1 space-y-3 overflow-y-auto max-h-64">
+          {items.length > 0 ? items.slice(0, 8).map((item, index) => (
+            <div key={index} className="group">
+              <div className="bg-white/70 dark:bg-gray-800/70 rounded-lg p-3 hover:shadow-md transition-all duration-200">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <h4 className="font-semibold text-sm text-gray-900 dark:text-white line-clamp-2">
+                    {item.title}
+                  </h4>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(item, title.toLowerCase())}
+                      className="h-6 w-6 p-0"
+                      title="Copy"
+                    >
+                      <Copy className="h-3 w-3 text-gray-500" />
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-3 leading-relaxed">
+                  {item.description}
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge className={`text-xs ${getImpactColor(item.impact)}`}>
+                    {item.impact?.toUpperCase() || "MEDIUM"}
+                  </Badge>
+                  {item.category && (
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/60 dark:bg-gray-700/60 text-xs">
+                      {getCategoryIcon(item.category)}
+                      <span className="capitalize text-gray-600 dark:text-gray-300">{item.category}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )) : (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <p className="text-sm">No {title.toLowerCase()} identified</p>
+            </div>
+          )}
+          {items.length > 8 && (
+            <div className="text-center pt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className="text-xs text-gray-500 hover:text-gray-700"
+              >
+                View all {items.length} items
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
+        {/* Top Row - Internal Factors */}
+        <MatrixQuadrant
+          title="Strengths"
+          items={swotData?.strengths || []}
+          bgColor="bg-gradient-to-br from-emerald-50/80 to-teal-50/80 dark:from-emerald-950/20 dark:to-teal-950/20"
+          borderColor="border-emerald-300 dark:border-emerald-700"
+          textColor="text-green-600"
+          icon={<TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />}
+        />
+        <MatrixQuadrant
+          title="Weaknesses"
+          items={swotData?.weaknesses || []}
+          bgColor="bg-gradient-to-br from-red-50/80 to-orange-50/80 dark:from-red-950/20 dark:to-orange-950/20"
+          borderColor="border-red-300 dark:border-red-700"
+          textColor="text-red-600"
+          icon={<AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />}
+        />
+        {/* Bottom Row - External Factors */}
+        <MatrixQuadrant
+          title="Opportunities"
+          items={swotData?.opportunities || []}
+          bgColor="bg-gradient-to-br from-blue-50/80 to-indigo-50/80 dark:from-blue-950/20 dark:to-indigo-950/20"
+          borderColor="border-blue-300 dark:border-blue-700"
+          textColor="text-blue-600"
+          icon={<Target className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+        />
+        <MatrixQuadrant
+          title="Threats"
+          items={swotData?.threats || []}
+          bgColor="bg-gradient-to-br from-amber-50/80 to-yellow-50/80 dark:from-amber-950/20 dark:to-yellow-950/20"
+          borderColor="border-amber-300 dark:border-amber-700"
+          textColor="text-orange-600"
+          icon={<Shield className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
+        />
+      </div>
+    )
+  }
+
   const tabConfigs = {
     strengths: {
       label: "",
@@ -584,7 +724,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
           </div>
         </CardHeader>
         <CardContent className="space-y-2 sm:space-y-3 px-3 sm:px-4">
-          <div className="bg-gradient-to-r from-purple-50/80 to-blue-50/80 dark:from-purple-950/30 dark:to-blue-950/30 rounded-2xl p-3 sm:p-4 border border-purple-200/50 dark:border-purple-800/30">
+          {/* <div className="bg-gradient-to-r from-purple-50/80 to-blue-50/80 dark:from-purple-950/30 dark:to-blue-950/30 rounded-2xl p-3 sm:p-4 border border-purple-200/50 dark:border-purple-800/30">
             <p className="text-slate-800 dark:text-slate-100 leading-relaxed text-sm font-medium">
               {isDemoMode 
                 ? 'Comprehensive strategic analysis showcasing strengths, weaknesses, opportunities, and threats with detailed insights for informed decision-making.'
@@ -593,10 +733,10 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                   : 'Strategic analysis of internal strengths & weaknesses and external opportunities & threats to guide business strategy and decision-making.'
               }
             </p>
-          </div>
+          </div> */}
 
           {/* Quick Stats - Following exact styling pattern */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-3 sm:mt-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
             <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-emerald-200/50 dark:border-emerald-800/30">
               <div className="flex items-center gap-1">
                 <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-emerald-600 dark:text-emerald-400" />
@@ -646,51 +786,127 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       <Card className="dark:bg-black shadow-lg">
         <Tabs value={activeSwotTab} onValueChange={setActiveSwotTab} className="w-full">
           <CardHeader className="pb-3">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
-              <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-white" /> 
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
+                <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-white" /> 
+              </div>
+              <div>
+                <CardTitle className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                  SWOT Insights
+                  {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
+                  {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal"></span>}
+                </CardTitle>
+                <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
+                  Internal strengths & weaknesses and external opportunities & threats
+                </p>
+              </div>
             </div>
-            <div>
-              <CardTitle className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                SWOT Insights
-                {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
-                {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal"></span>}
-              </CardTitle>
-              <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
-                Internal strengths & weaknesses and external opportunities & threats
-              </p>
+            
+            {/* View Mode Menu */}
+            <div className="relative" ref={viewMenuRef}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewMenuOpen(!viewMenuOpen)}
+                className="h-8 w-8 p-0 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+                title="View options"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+              
+              {/* Dropdown Menu */}
+              {viewMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1">
+                  <div className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
+                    View Mode
+                  </div>
+                  
+                  <button
+                    onClick={() => {
+                      setViewMode('list')
+                      setViewMenuOpen(false)
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                      viewMode === 'list' 
+                        ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20' 
+                        : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <List className="h-4 w-4" />
+                    <div className="text-left">
+                      <div className="font-medium">List View</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">Detailed items with tabs</div>
+                    </div>
+                    {viewMode === 'list' && (
+                      <Check className="h-4 w-4 ml-auto" />
+                    )}
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setViewMode('matrix')
+                      setViewMenuOpen(false)
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                      viewMode === 'matrix' 
+                        ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20' 
+                        : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <Grid3X3 className="h-4 w-4" />
+                    <div className="text-left">
+                      <div className="font-medium">2×2 Matrix</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">All quadrants overview</div>
+                    </div>
+                    {viewMode === 'matrix' && (
+                      <Check className="h-4 w-4 ml-auto" />
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-            <TabsList className="grid w-full grid-cols-4 h-auto">
-              {Object.entries(tabConfigs).map(([key, config]) => (
-                <TabsTrigger
-                  key={key}
-                  value={key}
-                  className="flex items-center gap-2 py-2 px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-black"
-                >
-                  <div className={config.color}>{config.icon}</div>
-                  <span className="text-xs sm:text-sm">{config.label}</span>
-                  {/* <Badge variant="secondary" className="text-xs">
-                    {swotData[key]?.length || 0}
-                  </Badge> */}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            {/* Show tabs only in list mode */}
+            {viewMode === 'list' && (
+              <TabsList className="grid w-full grid-cols-4 h-auto">
+                {Object.entries(tabConfigs).map(([key, config]) => (
+                  <TabsTrigger
+                    key={key}
+                    value={key}
+                    className="flex items-center gap-2 py-2 px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-black"
+                  >
+                    <div className={config.color}>{config.icon}</div>
+                    <span className="text-xs sm:text-sm">{config.label}</span>
+                    {/* <Badge variant="secondary" className="text-xs">
+                      {swotData[key]?.length || 0}
+                    </Badge> */}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            )}
           </CardHeader>
 
           <CardContent>
-            {Object.entries(tabConfigs).map(([key, config]) => (
-              <div
-                key={key}
-                className={`mt-0 ${activeSwotTab === key ? 'block' : 'hidden'}`}
-              >
-                <TabContent
-                  items={swotData[key] || []}
-                  category={key}
-                  emptyMessage={config.emptyMessage}
-                />
-              </div>
-            ))}
+            {viewMode === 'matrix' ? (
+              <MatrixView />
+            ) : (
+              // List View - Show tabs only in list mode
+              <>
+                {Object.entries(tabConfigs).map(([key, config]) => (
+                  <div
+                    key={key}
+                    className={`mt-0 ${activeSwotTab === key ? 'block' : 'hidden'}`}
+                  >
+                    <TabContent
+                      items={swotData[key] || []}
+                      category={key}
+                      emptyMessage={config.emptyMessage}
+                    />
+                  </div>
+                ))}
+              </>
+            )}
           </CardContent>
         </Tabs>
       </Card>
