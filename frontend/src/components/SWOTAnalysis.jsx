@@ -5,6 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Badge } from "./ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { Button } from "./ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
+import { Switch } from "./ui/switch"
+import { Label } from "./ui/label"
 import {
   TrendingUp,
   AlertTriangle,
@@ -28,6 +31,13 @@ import {
   Grid3X3,
   List,
   MoreHorizontal,
+  BarChart3,
+  LineChart,
+  Filter,
+  Settings,
+  X,
+  Save,
+  RotateCcw,
 } from "lucide-react"
 import { Separator } from "./ui/separator"
 import axios from "axios"
@@ -47,6 +57,20 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
   const [viewMode, setViewMode] = useState('list') // 'list' or 'matrix'
   const [viewMenuOpen, setViewMenuOpen] = useState(false)
   const viewMenuRef = useRef(null)
+  const [controlsDrawerOpen, setControlsDrawerOpen] = useState(false)
+  const controlsDrawerRef = useRef(null)
+  
+  // Chart and filtering state (declare first)
+  const [chartType, setChartType] = useState('bar') // 'bar' or 'line'
+  const [priorityFilter, setPriorityFilter] = useState('all') // 'all', 'high', 'medium', 'low'
+  const [categoryFilter, setCategoryFilter] = useState('all') // 'all', 'strengths', 'weaknesses', 'opportunities', 'threats'
+  const [showCharts, setShowCharts] = useState(false) // false = show counts, true = show charts
+  
+  // Local state for drawer controls (not applied until saved)
+  const [localChartType, setLocalChartType] = useState('bar')
+  const [localPriorityFilter, setLocalPriorityFilter] = useState('all')
+  const [localCategoryFilter, setLocalCategoryFilter] = useState('all')
+  const [localShowCharts, setLocalShowCharts] = useState(false)
   
   // Simple persistence using ref
   const persistedState = useRef({
@@ -60,6 +84,15 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     viewMode: 'list',
     copiedItems: new Set(),
     itemRatings: {},
+    chartType: 'bar',
+    priorityFilter: 'all',
+    categoryFilter: 'all',
+    showCharts: false,
+    controlsDrawerOpen: false,
+    localChartType: 'bar',
+    localPriorityFilter: 'all',
+    localCategoryFilter: 'all',
+    localShowCharts: false,
     isInitialized: false
   })
 
@@ -73,6 +106,15 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       setViewMode(persistedState.current.viewMode)
       setCopiedItems(persistedState.current.copiedItems)
       setItemRatings(persistedState.current.itemRatings)
+      setChartType(persistedState.current.chartType)
+      setPriorityFilter(persistedState.current.priorityFilter)
+      setCategoryFilter(persistedState.current.categoryFilter)
+      setShowCharts(persistedState.current.showCharts)
+      setControlsDrawerOpen(persistedState.current.controlsDrawerOpen)
+      setLocalChartType(persistedState.current.localChartType)
+      setLocalPriorityFilter(persistedState.current.localPriorityFilter)
+      setLocalCategoryFilter(persistedState.current.localCategoryFilter)
+      setLocalShowCharts(persistedState.current.localShowCharts)
       persistedState.current.isInitialized = true
     }
   }, [])
@@ -86,10 +128,19 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
         activeSwotTab,
         viewMode,
         copiedItems,
-        itemRatings
+        itemRatings,
+        chartType,
+        priorityFilter,
+        categoryFilter,
+        showCharts,
+        controlsDrawerOpen,
+        localChartType,
+        localPriorityFilter,
+        localCategoryFilter,
+        localShowCharts
       }
     }
-  }, [currentPage, activeSwotTab, viewMode, copiedItems, itemRatings])
+  }, [currentPage, activeSwotTab, viewMode, copiedItems, itemRatings, chartType, priorityFilter, categoryFilter, showCharts, controlsDrawerOpen, localChartType, localPriorityFilter, localCategoryFilter, localShowCharts])
 
   // Handle clicking outside the view menu to close it
   useEffect(() => {
@@ -106,6 +157,32 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       }
     }
   }, [viewMenuOpen])
+
+  // Handle clicking outside the controls drawer to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (controlsDrawerRef.current && !controlsDrawerRef.current.contains(event.target)) {
+        setControlsDrawerOpen(false)
+      }
+    }
+
+    if (controlsDrawerOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }
+  }, [controlsDrawerOpen])
+
+  // Update local state when drawer opens or main state changes
+  useEffect(() => {
+    if (controlsDrawerOpen) {
+      setLocalChartType(chartType)
+      setLocalPriorityFilter(priorityFilter)
+      setLocalCategoryFilter(categoryFilter)
+      setLocalShowCharts(showCharts)
+    }
+  }, [controlsDrawerOpen, chartType, priorityFilter, categoryFilter, showCharts])
 
   // Enhanced mock SWOT data
   const mockSWOTData = {
@@ -252,6 +329,58 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
   }
 
   const swotData = isDemoMode || bypassAPI ? mockSWOTData : swot || mockSWOTData
+
+  // Filter data based on current filters
+  const getFilteredData = (data) => {
+    if (!data) return { strengths: [], weaknesses: [], opportunities: [], threats: [] }
+    
+    const categories = ['strengths', 'weaknesses', 'opportunities', 'threats']
+    const filtered = {}
+    
+    categories.forEach(category => {
+      let items = data[category] || []
+      
+      // Apply priority filter
+      if (priorityFilter !== 'all') {
+        items = items.filter(item => item.impact?.toLowerCase() === priorityFilter)
+      }
+      
+      // Apply category filter (for SWOT categories)
+      if (categoryFilter !== 'all' && categoryFilter !== category) {
+        items = []
+      }
+      
+      filtered[category] = items
+    })
+    
+    return filtered
+  }
+  
+  const filteredSwotData = getFilteredData(swotData)
+  
+  // Get chart data for visualization
+  const getChartData = () => {
+    const categories = ['strengths', 'weaknesses', 'opportunities', 'threats']
+    const data = []
+    
+    categories.forEach(category => {
+      const items = filteredSwotData[category] || []
+      const highCount = items.filter(item => item.impact?.toLowerCase() === 'high').length
+      const mediumCount = items.filter(item => item.impact?.toLowerCase() === 'medium').length
+      const lowCount = items.filter(item => item.impact?.toLowerCase() === 'low').length
+      const totalCount = items.length
+      
+      data.push({
+        category: category.charAt(0).toUpperCase() + category.slice(1),
+        high: highCount,
+        medium: mediumCount,
+        low: lowCount,
+        total: totalCount
+      })
+    })
+    
+    return data
+  }
 
   const getImpactColor = (impact) => {
     switch (impact?.toLowerCase()) {
@@ -616,7 +745,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
         {/* Top Row - Internal Factors */}
         <MatrixQuadrant
           title="Strengths"
-          items={swotData?.strengths || []}
+          items={filteredSwotData?.strengths || []}
           bgColor="bg-gradient-to-br from-emerald-50/80 to-teal-50/80 dark:from-emerald-950/20 dark:to-teal-950/20"
           borderColor="border-emerald-300 dark:border-emerald-700"
           textColor="text-green-600"
@@ -624,7 +753,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
         />
         <MatrixQuadrant
           title="Weaknesses"
-          items={swotData?.weaknesses || []}
+          items={filteredSwotData?.weaknesses || []}
           bgColor="bg-gradient-to-br from-red-50/80 to-orange-50/80 dark:from-red-950/20 dark:to-orange-950/20"
           borderColor="border-red-300 dark:border-red-700"
           textColor="text-red-600"
@@ -633,7 +762,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
         {/* Bottom Row - External Factors */}
         <MatrixQuadrant
           title="Opportunities"
-          items={swotData?.opportunities || []}
+          items={filteredSwotData?.opportunities || []}
           bgColor="bg-gradient-to-br from-blue-50/80 to-indigo-50/80 dark:from-blue-950/20 dark:to-indigo-950/20"
           borderColor="border-blue-300 dark:border-blue-700"
           textColor="text-blue-600"
@@ -641,7 +770,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
         />
         <MatrixQuadrant
           title="Threats"
-          items={swotData?.threats || []}
+          items={filteredSwotData?.threats || []}
           bgColor="bg-gradient-to-br from-amber-50/80 to-yellow-50/80 dark:from-amber-950/20 dark:to-yellow-950/20"
           borderColor="border-amber-300 dark:border-amber-700"
           textColor="text-orange-600"
@@ -649,6 +778,193 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
         />
       </div>
     )
+  }
+
+  // Chart Display Component
+  const ChartDisplay = ({ chartData, chartType }) => {
+    const maxValue = Math.max(...chartData.map(item => Math.max(item.high, item.medium, item.low, item.total)))
+    
+    if (chartType === 'bar') {
+      return (
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">SWOT Analysis Distribution</h3>
+              <div className="flex items-center gap-4 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-red-500 rounded-sm"></div>
+                  <span className="text-gray-600 dark:text-gray-400">High</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-yellow-500 rounded-sm"></div>
+                  <span className="text-gray-600 dark:text-gray-400">Medium</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-green-500 rounded-sm"></div>
+                  <span className="text-gray-600 dark:text-gray-400">Low</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              {chartData.map((item, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{item.category}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Total: {item.total}</span>
+                  </div>
+                  <div className="flex gap-1 h-6 bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden">
+                    <div 
+                      className="bg-red-500 transition-all duration-300"
+                      style={{ width: `${maxValue > 0 ? (item.high / maxValue) * 100 : 0}%` }}
+                      title={`High: ${item.high}`}
+                    />
+                    <div 
+                      className="bg-yellow-500 transition-all duration-300"
+                      style={{ width: `${maxValue > 0 ? (item.medium / maxValue) * 100 : 0}%` }}
+                      title={`Medium: ${item.medium}`}
+                    />
+                    <div 
+                      className="bg-green-500 transition-all duration-300"
+                      style={{ width: `${maxValue > 0 ? (item.low / maxValue) * 100 : 0}%` }}
+                      title={`Low: ${item.low}`}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                    <span>High: {item.high}</span>
+                    <span>Medium: {item.medium}</span>
+                    <span>Low: {item.low}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )
+    } else {
+      // Line Chart
+      const chartHeight = 200
+      const chartWidth = 400
+      const padding = { top: 20, right: 20, bottom: 40, left: 40 }
+      const innerWidth = chartWidth - padding.left - padding.right
+      const innerHeight = chartHeight - padding.top - padding.bottom
+      
+      const xStep = innerWidth / (chartData.length - 1)
+      const yScale = innerHeight / maxValue
+      
+      const createPath = (values) => {
+        return chartData.map((item, index) => {
+          const x = padding.left + (index * xStep)
+          const y = padding.top + (innerHeight - (values[index] * yScale))
+          return `${index === 0 ? 'M' : 'L'} ${x} ${y}`
+        }).join(' ')
+      }
+      
+      const highPath = createPath(chartData.map(item => item.high))
+      const mediumPath = createPath(chartData.map(item => item.medium))
+      const lowPath = createPath(chartData.map(item => item.low))
+      
+      return (
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">SWOT Analysis Trends</h3>
+              <div className="flex items-center gap-4 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-0.5 bg-red-500"></div>
+                  <span className="text-gray-600 dark:text-gray-400">High</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-0.5 bg-yellow-500"></div>
+                  <span className="text-gray-600 dark:text-gray-400">Medium</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-0.5 bg-green-500"></div>
+                  <span className="text-gray-600 dark:text-gray-400">Low</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-center">
+              <svg width={chartWidth} height={chartHeight} className="overflow-visible">
+                {/* Grid lines */}
+                <defs>
+                  <pattern id="grid" width="40" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 20" fill="none" stroke="rgba(156, 163, 175, 0.3)" strokeWidth="0.5"/>
+                  </pattern>
+                </defs>
+                <rect width={chartWidth} height={chartHeight} fill="url(#grid)" />
+                
+                {/* Lines */}
+                <path d={highPath} fill="none" stroke="#ef4444" strokeWidth="2" className="drop-shadow-sm" />
+                <path d={mediumPath} fill="none" stroke="#eab308" strokeWidth="2" className="drop-shadow-sm" />
+                <path d={lowPath} fill="none" stroke="#22c55e" strokeWidth="2" className="drop-shadow-sm" />
+                
+                {/* Data points */}
+                {chartData.map((item, index) => {
+                  const x = padding.left + (index * xStep)
+                  const highY = padding.top + (innerHeight - (item.high * yScale))
+                  const mediumY = padding.top + (innerHeight - (item.medium * yScale))
+                  const lowY = padding.top + (innerHeight - (item.low * yScale))
+                  
+                  return (
+                    <g key={index}>
+                      <circle cx={x} cy={highY} r="3" fill="#ef4444" className="drop-shadow-sm" />
+                      <circle cx={x} cy={mediumY} r="3" fill="#eab308" className="drop-shadow-sm" />
+                      <circle cx={x} cy={lowY} r="3" fill="#22c55e" className="drop-shadow-sm" />
+                    </g>
+                  )
+                })}
+                
+                {/* X-axis labels */}
+                {chartData.map((item, index) => {
+                  const x = padding.left + (index * xStep)
+                  return (
+                    <text 
+                      key={index}
+                      x={x} 
+                      y={chartHeight - 10}
+                      textAnchor="middle"
+                      className="text-xs fill-gray-600 dark:fill-gray-400"
+                    >
+                      {item.category.charAt(0)}
+                    </text>
+                  )
+                })}
+                
+                {/* Y-axis labels */}
+                {[0, Math.ceil(maxValue/2), maxValue].map((value, index) => {
+                  const y = padding.top + (innerHeight - (value * yScale))
+                  return (
+                    <text 
+                      key={index}
+                      x={padding.left - 10} 
+                      y={y + 4}
+                      textAnchor="end"
+                      className="text-xs fill-gray-600 dark:fill-gray-400"
+                    >
+                      {value}
+                    </text>
+                  )
+                })}
+              </svg>
+            </div>
+            
+            {/* Summary */}
+            <div className="grid grid-cols-4 gap-2 text-center">
+              {chartData.map((item, index) => (
+                <div key={index} className="space-y-1">
+                  <div className="text-xs font-medium text-gray-700 dark:text-gray-300">{item.category}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    H:{item.high} M:{item.medium} L:{item.low}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )
+    }
   }
 
   const tabConfigs = {
@@ -694,16 +1010,207 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     },
   }
 
+  // Save controls function
+  const saveControls = () => {
+    setChartType(localChartType)
+    setPriorityFilter(localPriorityFilter)
+    setCategoryFilter(localCategoryFilter)
+    setShowCharts(localShowCharts)
+    setControlsDrawerOpen(false)
+  }
+
+  // Reset controls function
+  const resetControls = () => {
+    setLocalChartType(chartType)
+    setLocalPriorityFilter(priorityFilter)
+    setLocalCategoryFilter(categoryFilter)
+    setLocalShowCharts(showCharts)
+  }
+
+  // Controls Drawer Component
+  const ControlsDrawer = () => (
+    <>
+      {/* Overlay */}
+      {controlsDrawerOpen && (
+        <div 
+          className={`fixed inset-0 bg-black z-40 transition-all duration-300 ease-in-out ${
+            controlsDrawerOpen ? 'bg-opacity-50' : 'bg-opacity-0'
+          }`}
+          onClick={() => setControlsDrawerOpen(false)}
+        />
+      )}
+      
+      {/* Drawer */}
+      <div 
+        ref={controlsDrawerRef}
+        className={`fixed top-0 right-0 h-full w-80 bg-white dark:bg-[#121212] shadow-xl z-50 transform transition-all duration-300 ease-in-out ${
+          controlsDrawerOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+        }`}
+        style={{ transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out' }}
+      >
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
+                <Settings className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  SWOT Controls
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Customize charts and filters
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setControlsDrawerOpen(false)}
+              className="h-8 w-8 p-0 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            {/* Display Mode - FIRST */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Display Mode</Label>
+              <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                <Switch
+                  id="show-charts-drawer"
+                  checked={localShowCharts}
+                  onCheckedChange={setLocalShowCharts}
+                  className="data-[state=checked]:bg-blue-600"
+                />
+                <Label htmlFor="show-charts-drawer" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer font-medium">
+                  {localShowCharts ? 'Show Charts' : 'Show Counts'}
+                </Label>
+          </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Toggle between statistical counts and visual charts
+              </p>
+            </div>
+            
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Filters & Charts</h3>
+              
+              {/* Chart Type Selection */}
+              <div className="space-y-3 mb-6">
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Chart Type</Label>
+                <Select value={localChartType} onValueChange={setLocalChartType}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-[60]">
+                    <SelectItem value="bar">
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4" />
+                        Bar Chart
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="line">
+                      <div className="flex items-center gap-2">
+                        <LineChart className="h-4 w-4" />
+                        Line Chart
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Choose how to visualize the analysis data
+                </p>
+              </div>
+              
+              {/* Priority Filter */}
+              <div className="space-y-3 mb-6">
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Priority Level</Label>
+                <Select value={localPriorityFilter} onValueChange={setLocalPriorityFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-[60]">
+                    <SelectItem value="all">All Priorities</SelectItem>
+                    <SelectItem value="high">High Impact</SelectItem>
+                    <SelectItem value="medium">Medium Impact</SelectItem>
+                    <SelectItem value="low">Low Impact</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Filter items by their impact level
+                </p>
+              </div>
+              
+              {/* Category Filter */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">SWOT Category</Label>
+                <Select value={localCategoryFilter} onValueChange={setLocalCategoryFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-[60]">
+                    <SelectItem value="all">All Categories</SelectItem>
+                    <SelectItem value="strengths">Strengths Only</SelectItem>
+                    <SelectItem value="weaknesses">Weaknesses Only</SelectItem>
+                    <SelectItem value="opportunities">Opportunities Only</SelectItem>
+                    <SelectItem value="threats">Threats Only</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Focus on specific SWOT categories
+                </p>
+              </div>
+            </div>
+              </div>
+              
+          {/* Action Buttons */}
+          <div className="border-t mb-6 border-gray-200 dark:border-gray-700 p-4 space-y-3">
+            <div className="flex gap-2">
+              <Button
+                onClick={saveControls}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                size="sm"
+              >
+                <Save className="h-3 w-3" />
+                Save Changes
+              </Button>
+              <Button
+                onClick={resetControls}
+                variant="outline"
+                size="sm"
+                className="flex-1 flex items-center gap-2"
+              >
+                <RotateCcw className="h-3 w-3" />
+                Reset
+              </Button>
+            </div>
+            {/* <Button
+              onClick={() => setControlsDrawerOpen(false)}
+              variant="ghost"
+              size="sm"
+              className="w-full text-gray-600 dark:text-gray-400"
+            >
+              Cancel
+            </Button> */}
+          </div>
+        </div>
+      </div>
+    </>
+  )
+
   return (
     <div className="max-w-6xl mx-auto space-y-4">
       {/* Professional Header Card - Following exact styling */}
       <Card className="border-0 shadow-lg dark:bg-black">
         <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
               <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl shadow-lg">
                 <Target className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-              </div>
+                </div>
               <div className="min-w-0">
                 <CardTitle className="text-sm sm:text-base lg:text-lg font-bold text-slate-900 dark:text-white">
                   SWOT Analysis
@@ -718,9 +1225,17 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                 </p>
               </div>
             </div>
-
-            {/* Demo/Bypass Status Badge */}
             
+            {/* Analysis Controls Button - Far Right */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setControlsDrawerOpen(true)}
+              className="h-8 w-8 p-0 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
+              title="SWOT Controls"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-2 sm:space-y-3 px-3 sm:px-4">
@@ -735,48 +1250,54 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
             </p>
           </div> */}
 
-          {/* Quick Stats - Following exact styling pattern */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-emerald-200/50 dark:border-emerald-800/30">
-              <div className="flex items-center gap-1">
-                <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-emerald-600 dark:text-emerald-400" />
-                <span className="text-xs font-medium text-emerald-800 dark:text-emerald-200">Strengths</span>
-              </div>
-              <p className="text-sm sm:text-base lg:text-lg font-bold text-emerald-900 dark:text-emerald-100 mt-1">
-                {isDemoMode ? '6' : bypassAPI ? '6' : (swotData?.strengths?.length || 0)}
-              </p>
-            </div>
 
-            <div className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-red-200/50 dark:border-red-800/30">
-              <div className="flex items-center gap-1">
-                <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-red-600 dark:text-red-400" />
-                <span className="text-xs font-medium text-red-800 dark:text-red-200">Weaknesses</span>
-              </div>
-              <p className="text-sm sm:text-base lg:text-lg font-bold text-red-900 dark:text-red-100 mt-1">
-                {isDemoMode ? '5' : bypassAPI ? '5' : (swotData?.weaknesses?.length || 0)}
-              </p>
-            </div>
 
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-blue-200/50 dark:border-blue-800/30">
-              <div className="flex items-center gap-1">
-                <Target className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-blue-600 dark:text-blue-400" />
-                <span className="text-xs font-medium text-blue-800 dark:text-blue-200">Opportunities</span>
+          {/* Quick Stats or Chart Display */}
+          {showCharts ? (
+            <ChartDisplay chartData={getChartData()} chartType={chartType} />
+          ) : (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-emerald-200/50 dark:border-emerald-800/30">
+                <div className="flex items-center gap-1">
+                  <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs font-medium text-emerald-800 dark:text-emerald-200">Strengths</span>
+                </div>
+                <p className="text-sm sm:text-base lg:text-lg font-bold text-emerald-900 dark:text-emerald-100 mt-1">
+                  {filteredSwotData?.strengths?.length || 0}
+                </p>
               </div>
-              <p className="text-sm sm:text-base lg:text-lg font-bold text-blue-900 dark:text-blue-100 mt-1">
-                {isDemoMode ? '6' : bypassAPI ? '6' : (swotData?.opportunities?.length || 0)}
-              </p>
-            </div>
 
-            <div className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-amber-200/50 dark:border-amber-800/30">
-              <div className="flex items-center gap-1">
-                <Shield className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-amber-600 dark:text-amber-400" />
-                <span className="text-xs font-medium text-amber-800 dark:text-amber-200">Threats</span>
+              <div className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-red-200/50 dark:border-red-800/30">
+                <div className="flex items-center gap-1">
+                  <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-red-600 dark:text-red-400" />
+                  <span className="text-xs font-medium text-red-800 dark:text-red-200">Weaknesses</span>
+                </div>
+                <p className="text-sm sm:text-base lg:text-lg font-bold text-red-900 dark:text-red-100 mt-1">
+                  {filteredSwotData?.weaknesses?.length || 0}
+                </p>
               </div>
-              <p className="text-sm sm:text-base lg:text-lg font-bold text-amber-900 dark:text-amber-100 mt-1">
-                {isDemoMode ? '5' : bypassAPI ? '5' : (swotData?.threats?.length || 0)}
-              </p>
+
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-blue-200/50 dark:border-blue-800/30">
+                <div className="flex items-center gap-1">
+                  <Target className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-blue-600 dark:text-blue-400" />
+                  <span className="text-xs font-medium text-blue-800 dark:text-blue-200">Opportunities</span>
+                </div>
+                <p className="text-sm sm:text-base lg:text-lg font-bold text-blue-900 dark:text-blue-100 mt-1">
+                  {filteredSwotData?.opportunities?.length || 0}
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-amber-200/50 dark:border-amber-800/30">
+                <div className="flex items-center gap-1">
+                  <Shield className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-amber-600 dark:text-amber-400" />
+                  <span className="text-xs font-medium text-amber-800 dark:text-amber-200">Threats</span>
+                </div>
+                <p className="text-sm sm:text-base lg:text-lg font-bold text-amber-900 dark:text-amber-100 mt-1">
+                  {filteredSwotData?.threats?.length || 0}
+                </p>
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
@@ -817,7 +1338,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
               
               {/* Dropdown Menu */}
               {viewMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1">
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1">
                   <div className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
                     View Mode
                   </div>
@@ -878,9 +1399,9 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                   >
                     <div className={config.color}>{config.icon}</div>
                     <span className="text-xs sm:text-sm">{config.label}</span>
-                    {/* <Badge variant="secondary" className="text-xs">
-                      {swotData[key]?.length || 0}
-                    </Badge> */}
+                    <Badge variant="secondary" className="text-xs">
+                      {filteredSwotData[key]?.length || 0}
+                    </Badge>
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -899,7 +1420,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                     className={`mt-0 ${activeSwotTab === key ? 'block' : 'hidden'}`}
                   >
                     <TabContent
-                      items={swotData[key] || []}
+                      items={filteredSwotData[key] || []}
                       category={key}
                       emptyMessage={config.emptyMessage}
                     />
@@ -910,6 +1431,9 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
           </CardContent>
         </Tabs>
       </Card>
+      
+      {/* Controls Drawer */}
+      <ControlsDrawer />
       
     </div>
   )
