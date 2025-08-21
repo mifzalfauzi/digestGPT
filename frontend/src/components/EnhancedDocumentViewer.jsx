@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Separator } from './ui/separator'
-import { Eye, FileText, Brain, TrendingUp, Clock, Sparkles, Target, AlertTriangle, CheckCircle2, BookOpen, Key, ArrowBigDown, Download, Copy, ThumbsUp, ThumbsDown, Info } from 'lucide-react'
+import { Eye, FileText, Brain, TrendingUp, Clock, Sparkles, Target, AlertTriangle, CheckCircle2, BookOpen, Key, ArrowBigDown, Download, Copy, ThumbsUp, ThumbsDown, Info, Menu, ExternalLink } from 'lucide-react'
 import ProfessionalAnalysisDisplay from './ProfessionalAnalysisDisplay'
 import KeyConceptsDisplay from './KeyConceptsDisplay'
 import HighlightableText from './HighlightableText'
@@ -23,6 +23,8 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
   const [docxContent, setDocxContent] = useState(null)
   const [docxLoading, setDocxLoading] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const menuRef = useRef(null)
   const BASE_URL = import.meta.env.VITE_API_BASE_URL
   // Tab state storage for persistence
   const tabStateRef = useRef({})
@@ -31,52 +33,52 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
   // Find the actual scrollable element within a tab container
   const findScrollableElement = useCallback((tabElement) => {
     if (!tabElement) return null
-    
+
     // Check if the tab element itself is scrollable
     const computedStyle = window.getComputedStyle(tabElement)
     const hasOverflowY = computedStyle.overflowY
     const hasOverflow = computedStyle.overflow
-    
+
     if (hasOverflowY === 'auto' || hasOverflowY === 'scroll' || hasOverflow === 'auto' || hasOverflow === 'scroll') {
       return tabElement
     }
-    
+
     // For SWOT and other tabs, also check for elements with overflow classes in CSS
     const scrollableSelectors = [
       '[style*="overflow-y: auto"]',
-      '[style*="overflow: auto"]', 
+      '[style*="overflow: auto"]',
       '.overflow-y-auto',
       '.overflow-auto',
       // Additional selectors for nested components
       '[class*="overflow-y-auto"]',
       '[class*="overflow-auto"]'
     ]
-    
+
     for (const selector of scrollableSelectors) {
       const scrollableChild = tabElement.querySelector(selector)
       if (scrollableChild) {
         const childStyle = window.getComputedStyle(scrollableChild)
-        if (childStyle.overflowY === 'auto' || childStyle.overflowY === 'scroll' || 
-            childStyle.overflow === 'auto' || childStyle.overflow === 'scroll') {
+        if (childStyle.overflowY === 'auto' || childStyle.overflowY === 'scroll' ||
+          childStyle.overflow === 'auto' || childStyle.overflow === 'scroll') {
           return scrollableChild
         }
       }
     }
-    
+
     return tabElement
   }, [])
-  
+
   // Save current tab state with enhanced position tracking
   const saveCurrentTabState = useCallback(() => {
     if (!activeTab || !tabContentRefs.current[activeTab]) return
-    
+
     const tabElement = tabContentRefs.current[activeTab]
     const scrollableElement = findScrollableElement(tabElement)
-    
+
     const scrollPosition = scrollableElement ? scrollableElement.scrollTop : 0
     const scrollHeight = scrollableElement ? scrollableElement.scrollHeight : 0
     const clientHeight = scrollableElement ? scrollableElement.clientHeight : 0
-    
+
     const scrollData = {
       scrollPosition,
       scrollHeight,
@@ -84,17 +86,17 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
       scrollPercentage: scrollHeight > clientHeight ? (scrollPosition / (scrollHeight - clientHeight)) * 100 : 0,
       timestamp: Date.now()
     }
-    
+
     // Save to both ref and localStorage for persistence
     tabStateRef.current[activeTab] = scrollData
-    
+
     try {
       const storageKey = `enhancedDocViewer_${activeTab}_scroll`
       localStorage.setItem(storageKey, JSON.stringify(scrollData))
     } catch (e) {
       console.warn('Failed to save scroll position to localStorage:', e)
     }
-    
+
     // Debug logging for SWOT tab
     if (activeTab === 'swot' && scrollPosition > 0) {
       console.log(`SWOT scroll saved:`, {
@@ -107,11 +109,11 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
       })
     }
   }, [activeTab, findScrollableElement])
-  
+
   // Restore tab state with improved positioning
   const restoreTabState = useCallback((tabId) => {
     let savedState = tabStateRef.current[tabId]
-    
+
     // If no saved state in ref, try localStorage
     if (!savedState || (!savedState.scrollPosition && !savedState.scrollPercentage)) {
       try {
@@ -121,7 +123,7 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
           savedState = JSON.parse(storedData)
           // Update ref with localStorage data
           tabStateRef.current[tabId] = savedState
-          
+
           if (tabId === 'swot') {
             console.log(`SWOT restored from localStorage:`, savedState)
           }
@@ -130,32 +132,32 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
         console.warn('Failed to load scroll position from localStorage:', e)
       }
     }
-    
+
     if (!savedState) return
-    
+
     // Only restore if we have recent state (within last 10 minutes)
     if (Date.now() - savedState.timestamp < 600000) {
       // Use multiple restoration attempts for better reliability
       const restorePosition = (attempt = 0) => {
         if (attempt > 4) return // Increased attempts for SWOT tab
-        
+
         // Longer delays for SWOT tab to allow content loading
         const baseDelay = tabId === 'swot' ? 200 : 100
         const attemptDelay = tabId === 'swot' ? 150 : 100
-        
+
         setTimeout(() => {
           const tabElement = tabContentRefs.current[tabId]
           if (!tabElement) {
             restorePosition(attempt + 1)
             return
           }
-          
+
           const scrollableElement = findScrollableElement(tabElement)
           if (!scrollableElement) {
             restorePosition(attempt + 1)
             return
           }
-          
+
           // Additional check for SWOT tab - ensure content is loaded
           if (tabId === 'swot') {
             const hasContent = scrollableElement.scrollHeight > scrollableElement.clientHeight
@@ -164,19 +166,19 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
               return
             }
           }
-          
+
           // Use both percentage and absolute position for restoration
           let restoredSuccessfully = false
-          
+
           if (savedState.scrollPercentage >= 0) {
             const maxScroll = scrollableElement.scrollHeight - scrollableElement.clientHeight
             const targetScroll = Math.max(0, Math.min((savedState.scrollPercentage / 100) * maxScroll, maxScroll))
             scrollableElement.scrollTop = targetScroll
-            
+
             // Verify the restoration worked
             const actualScroll = scrollableElement.scrollTop
             restoredSuccessfully = Math.abs(actualScroll - targetScroll) < 5
-            
+
             // Debug logging for SWOT tab
             if (tabId === 'swot') {
               console.log(`SWOT scroll restore - attempt ${attempt + 1}:`, {
@@ -191,11 +193,11 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
               })
             }
           }
-          
+
           // Fallback to absolute position if percentage restoration didn't work
           if (!restoredSuccessfully && savedState.scrollPosition !== undefined) {
             scrollableElement.scrollTop = Math.min(savedState.scrollPosition, scrollableElement.scrollHeight - scrollableElement.clientHeight)
-            
+
             if (tabId === 'swot') {
               console.log(`SWOT scroll restore - fallback to absolute position:`, {
                 targetPosition: savedState.scrollPosition,
@@ -205,44 +207,44 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
           }
         }, baseDelay + (attempt * attemptDelay))
       }
-      
+
       restorePosition()
     }
   }, [findScrollableElement])
-  
+
   // Handle tab change with persistence
   const handleTabChange = useCallback((newTab) => {
     // Debug logging for SWOT
     if (activeTab === 'swot' || newTab === 'swot') {
       console.log(`Tab change: ${activeTab} -> ${newTab}`, {
         currentSavedState: tabStateRef.current[activeTab],
-        allSavedStates: {...tabStateRef.current}
+        allSavedStates: { ...tabStateRef.current }
       })
     }
-    
+
     // Save current state before switching
     saveCurrentTabState()
-    
+
     // Debug after save
     if (activeTab === 'swot') {
       console.log(`After saving ${activeTab}:`, tabStateRef.current[activeTab])
     }
-    
+
     setTabChangeKey(prev => prev + 1)
     setActiveTab(newTab)
-    
+
     // Special handling for SWOT tab - longer delays for content loading
     if (newTab === 'swot') {
       setTimeout(() => {
         console.log(`About to restore SWOT, saved state:`, tabStateRef.current['swot'])
         restoreTabState(newTab)
       }, 250)
-      
+
       // Additional restoration attempts for SWOT
       setTimeout(() => {
         restoreTabState(newTab)
       }, 600)
-      
+
       setTimeout(() => {
         restoreTabState(newTab)
       }, 1000)
@@ -251,7 +253,7 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
       setTimeout(() => {
         restoreTabState(newTab)
       }, 150)
-      
+
       setTimeout(() => {
         restoreTabState(newTab)
       }, 500)
@@ -818,16 +820,16 @@ This business plan effectively balances growth ambitions with comprehensive risk
       }
     }
   }, [hasDocumentViewer, isDemoMode, bypassAPI])
-  
+
   // Add scroll event listeners to track scroll position changes
   useEffect(() => {
     if (!activeTab || !tabContentRefs.current[activeTab]) return
-    
+
     const tabElement = tabContentRefs.current[activeTab]
     const scrollableElement = findScrollableElement(tabElement)
-    
+
     if (!scrollableElement) return
-    
+
     const handleScroll = () => {
       // Throttle scroll tracking to improve performance
       clearTimeout(saveCurrentTabState._throttleTimer)
@@ -835,9 +837,9 @@ This business plan effectively balances growth ambitions with comprehensive risk
         saveCurrentTabState()
       }, 100)
     }
-    
+
     scrollableElement.addEventListener('scroll', handleScroll, { passive: true })
-    
+
     // Force restoration attempt when tab becomes active and scrollable element is ready
     if (tabStateRef.current[activeTab] && tabStateRef.current[activeTab].scrollPosition > 0) {
       const forceRestore = () => {
@@ -846,10 +848,10 @@ This business plan effectively balances growth ambitions with comprehensive risk
           // Try both percentage and absolute restoration
           const maxScroll = scrollableElement.scrollHeight - scrollableElement.clientHeight
           const targetScroll = Math.max(0, Math.min((savedState.scrollPercentage / 100) * maxScroll, maxScroll))
-          
+
           if (scrollableElement.scrollTop === 0 && targetScroll > 0) {
             scrollableElement.scrollTop = targetScroll
-            
+
             if (activeTab === 'swot') {
               console.log(`SWOT force restore on tab activation:`, {
                 targetScroll,
@@ -859,13 +861,13 @@ This business plan effectively balances growth ambitions with comprehensive risk
           }
         }
       }
-      
+
       // Attempt force restoration with delays
       setTimeout(forceRestore, 100)
       setTimeout(forceRestore, 300)
       setTimeout(forceRestore, 600)
     }
-    
+
     return () => {
       scrollableElement.removeEventListener('scroll', handleScroll)
       clearTimeout(saveCurrentTabState._throttleTimer)
@@ -878,6 +880,37 @@ This business plan effectively balances growth ambitions with comprehensive risk
       saveCurrentTabState()
     }
   }, [saveCurrentTabState])
+
+  // Handle clicking outside the menu to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false)
+      }
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsMenuOpen(false)
+      }
+    }
+
+    const handleScroll = () => {
+      setIsMenuOpen(false)
+    }
+
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('keydown', handleKeyDown)
+      window.addEventListener('scroll', handleScroll, true) // Use capture to catch all scroll events
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('scroll', handleScroll, true)
+    }
+  }, [isMenuOpen])
 
   // Generate highlights from analysis results
   useEffect(() => {
@@ -963,7 +996,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
     try {
       const arrayBuffer = await file.arrayBuffer()
       const result = await mammoth.extractRawText({ arrayBuffer })
-      
+
       setDocxContent({
         text: result.value,
         messages: result.messages
@@ -1020,52 +1053,99 @@ This business plan effectively balances growth ambitions with comprehensive risk
     <div className="h-full flex flex-col bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800">
       {/* Enhanced Header - Fixed at top */}
       <div className="border-b flex-shrink-0 px-2 sm:px-3 lg:px-4 py-2 sm:py-3 bg-white/80 dark:bg-[#121212] backdrop-blur-sm">
-  <div className="flex flex-row items-center justify-between gap-2">
-    {/* LEFT SIDE */}
-    <div className="flex items-center gap-2">
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <h2 className="text-xs sm:text-sm lg:text-base font-bold text-slate-900 dark:text-white">
-            Content Information
-            {isDemoMode && (
-              <span className="text-xs text-orange-500 font-normal">(Demo)</span>
+        <div className="flex flex-row items-center justify-between gap-2">
+          {/* LEFT SIDE */}
+          <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h2 className="text-xs sm:text-sm lg:text-base font-bold text-slate-900 dark:text-white">
+                  Content Information
+                  {isDemoMode && (
+                    <span className="text-xs text-orange-500 font-normal">(Demo)</span>
+                  )}
+                  {bypassAPI && !isDemoMode && (
+                    <span className="text-xs text-green-600 font-normal">(Preview)</span>
+                  )}
+                </h2>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT SIDE - Hamburger Menu */}
+          <div className="flex justify-end flex-shrink-0 relative" ref={menuRef}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              title="Document options"
+            >
+              <Menu className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+            </Button>
+
+            {/* Dropdown Menu */}
+            {isMenuOpen && (
+              <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-black border shadow-lg z-50 py-1">
+                {/* Open PDF Option - Only show if PDF is available */}
+                {getFileUrl() && (
+                  <a
+                  href={getFileUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  <ExternalLink className="h-4 w-4 text-blue-500" />
+                  <span>Open Original PDF</span>
+                </a>
+                
+                )}
+
+                {/* Export Analysis to PDF Option */}
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false)
+                    exportToPDF()
+                  }}
+                  disabled={isExporting || (!results?.analysis && !isDemoMode && !bypassAPI)}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  {isExporting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                      <span>Exporting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 text-green-500" />
+                      <span>Analysis to PDF</span>
+                    </>
+                  )}
+                </button>
+
+
+                {/* Divider */}
+                {getFileUrl() && (
+                  <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div>
+                )}
+
+                {/* Additional info item */}
+                <div className="px-4 py-2">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {isDemoMode ? (
+                      "Demo mode - sample data only"
+                    ) : bypassAPI ? (
+                      "Preview mode - mock responses"
+                    ) : (
+                      `${results?.word_count || 0} words analyzed`
+                    )}
+                  </div>
+                </div>
+              </div>
             )}
-            {bypassAPI && !isDemoMode && (
-              <span className="text-xs text-green-600 font-normal">(Preview)</span>
-            )}
-          </h2>
+          </div>
         </div>
       </div>
-    </div>
-
-    {/* RIGHT SIDE - Export Button */}
-    <div className="flex justify-end flex-shrink-0">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={exportToPDF}
-        disabled={
-          isExporting || (!results?.analysis && !isDemoMode && !bypassAPI)
-        }
-        className="flex items-center gap-2 border bg-black hover:bg-blue-600 text-white hover:text-white shadow-lg hover:shadow-xl transition-all duration-200 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm"
-      >
-        {isExporting ? (
-          <>
-            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            <span className="hidden sm:inline">Exporting...</span>
-            <span className="sm:hidden">Exporting</span>
-          </>
-        ) : (
-          <>
-            <Download className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Export PDF</span>
-            <span className="sm:hidden">PDF</span>
-          </>
-        )}
-      </Button>
-    </div>
-  </div>
-</div>
 
 
 
@@ -1106,13 +1186,12 @@ This business plan effectively balances growth ambitions with comprehensive risk
 
           <div className="flex-1 overflow-hidden dark:bg-[#121212]">
             {/* Render all tabs but only show the active one */}
-            
+
             {/* Document Viewer Tab (PDF or DOCX) */}
             {hasDocumentViewer && (
-              <div 
-                className={`h-full mt-1 sm:mt-2 px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter ${
-                  activeTab === 'document-viewer' ? 'block' : 'hidden'
-                }`}
+              <div
+                className={`h-full mt-1 sm:mt-2 px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter ${activeTab === 'document-viewer' ? 'block' : 'hidden'
+                  }`}
                 ref={el => tabContentRefs.current['document-viewer'] = el}
               >
                 {isPDF ? (
@@ -1185,10 +1264,9 @@ This business plan effectively balances growth ambitions with comprehensive risk
             )}
 
             {/* SWOT Tab */}
-            <div 
-              className={`h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter ${
-                activeTab === 'swot' ? 'block' : 'hidden'
-              }`}
+            <div
+              className={`h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter ${activeTab === 'swot' ? 'block' : 'hidden'
+                }`}
               ref={el => tabContentRefs.current['swot'] = el}
             >
               <SWOTAnalysis
@@ -1208,10 +1286,9 @@ This business plan effectively balances growth ambitions with comprehensive risk
             </div>
 
             {/* AI Analysis Summary Tab */}
-            <div 
-              className={`h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter ${
-                activeTab === 'analysis' ? 'block' : 'hidden'
-              }`}
+            <div
+              className={`h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter ${activeTab === 'analysis' ? 'block' : 'hidden'
+                }`}
               ref={el => tabContentRefs.current['analysis'] = el}
             >
               <Card className="border-0 shadow-lg dark:bg-black">
@@ -1270,27 +1347,23 @@ This business plan effectively balances growth ambitions with comprehensive risk
                         variant="ghost"
                         size="sm"
                         onClick={() => handleFeedback('summary', 'positive')}
-                        className={`h-7 w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${
-                          feedbackGiven['summary'] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
-                        }`}
+                        className={`h-7 w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${feedbackGiven['summary'] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
+                          }`}
                         title="Helpful summary"
                       >
-                        <ThumbsUp className={`h-3 w-3 ${
-                          feedbackGiven['summary'] === 'positive' ? 'text-green-600' : 'text-gray-500'
-                        }`} />
+                        <ThumbsUp className={`h-3 w-3 ${feedbackGiven['summary'] === 'positive' ? 'text-green-600' : 'text-gray-500'
+                          }`} />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleFeedback('summary', 'negative')}
-                        className={`h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${
-                          feedbackGiven['summary'] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
-                        }`}
+                        className={`h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${feedbackGiven['summary'] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
+                          }`}
                         title="Not helpful"
                       >
-                        <ThumbsDown className={`h-3 w-3 ${
-                          feedbackGiven['summary'] === 'negative' ? 'text-red-600' : 'text-gray-500'
-                        }`} />
+                        <ThumbsDown className={`h-3 w-3 ${feedbackGiven['summary'] === 'negative' ? 'text-red-600' : 'text-gray-500'
+                          }`} />
                       </Button>
                     </div>
 
@@ -1332,27 +1405,23 @@ This business plan effectively balances growth ambitions with comprehensive risk
                             variant="ghost"
                             size="sm"
                             onClick={() => handleFeedback('problem_context', 'positive')}
-                            className={`h-6 w-6 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${
-                              feedbackGiven['problem_context'] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
-                            }`}
+                            className={`h-6 w-6 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${feedbackGiven['problem_context'] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
+                              }`}
                             title="Helpful context"
                           >
-                            <ThumbsUp className={`h-2.5 w-2.5 ${
-                              feedbackGiven['problem_context'] === 'positive' ? 'text-green-600' : 'text-gray-500'
-                            }`} />
+                            <ThumbsUp className={`h-2.5 w-2.5 ${feedbackGiven['problem_context'] === 'positive' ? 'text-green-600' : 'text-gray-500'
+                              }`} />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleFeedback('problem_context', 'negative')}
-                            className={`h-6 w-6 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${
-                              feedbackGiven['problem_context'] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
-                            }`}
+                            className={`h-6 w-6 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${feedbackGiven['problem_context'] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
+                              }`}
                             title="Not helpful"
                           >
-                            <ThumbsDown className={`h-2.5 w-2.5 ${
-                              feedbackGiven['problem_context'] === 'negative' ? 'text-red-600' : 'text-gray-500'
-                            }`} />
+                            <ThumbsDown className={`h-2.5 w-2.5 ${feedbackGiven['problem_context'] === 'negative' ? 'text-red-600' : 'text-gray-500'
+                              }`} />
                           </Button>
                         </div>
 
@@ -1409,7 +1478,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                 </CardContent>
               </Card>
 
-              <Separator className="my-4" />  
+              <Separator className="my-4" />
 
               {/* Key Concepts Section */}
               <div className="mt-3 sm:mt-4">
@@ -1423,10 +1492,9 @@ This business plan effectively balances growth ambitions with comprehensive risk
             </div>
 
             {/* Insights & Risks Tab */}
-            <div 
-              className={`h-full mt-1 sm:mt-2 overflow-y-auto animate-tab-enter ${
-                activeTab === 'insights' ? 'block' : 'hidden'
-              }`}
+            <div
+              className={`h-full mt-1 sm:mt-2 overflow-y-auto animate-tab-enter ${activeTab === 'insights' ? 'block' : 'hidden'
+                }`}
               ref={el => tabContentRefs.current['insights'] = el}
             >
               <ProfessionalAnalysisDisplay
@@ -1439,10 +1507,9 @@ This business plan effectively balances growth ambitions with comprehensive risk
             </div>
 
             {/* Interactive Document Text Tab */}
-            <div 
-              className={`h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter ${
-                activeTab === 'document' ? 'block' : 'hidden'
-              }`}
+            <div
+              className={`h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter ${activeTab === 'document' ? 'block' : 'hidden'
+                }`}
               ref={el => tabContentRefs.current['document'] = el}
             >
               <Card className="border-0 shadow-xl">
