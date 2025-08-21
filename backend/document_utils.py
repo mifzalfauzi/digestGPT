@@ -177,11 +177,12 @@ async def analyze_document_with_claude(text: str, retry_count: int = 0) -> dict:
     if retry_count == 0:
         prompt = f"""You are an AI assistant that helps explain documents clearly. 
 Given this document, do the following:
-1. Explain what the document is about in 1–2 sentences.
-2. Summarize key important points as bullet points.
-3. Highlight any risky or confusing parts with 🚩 emoji and explain why.
-4. Identify key concepts/terms that are central to understanding this document.
-5. Perform a comprehensive SWOT analysis with MINIMUM 3 items in each category.
+1. Identify the problem or context - Why was this document created? What need does it address? What triggered its creation?
+2. Explain what the document is about in 1–2 sentences.
+3. Summarize key important points as bullet points.
+4. Highlight any risky or confusing parts with 🚩 emoji and explain why.
+5. Identify key concepts/terms that are central to understanding this document.
+6. Perform a comprehensive SWOT analysis with MINIMUM 3 items in each category.
 
 For each key point and risk flag, please also include a short quote (5-15 words) from the original document that supports your analysis.
 
@@ -211,6 +212,7 @@ CRITICAL: You must respond with ONLY valid JSON. Follow these strict rules:
 
 Use this exact JSON structure:
 {{
+    "problem_context": "Why was this document created? What problem does it solve or need does it address?",
     "summary": "Brief explanation of what the document is about",
     "key_points": [
         {{
@@ -334,6 +336,7 @@ Document text:
 IMPORTANT: Each SWOT category MUST have 3-5 items (minimum 3, maximum 5).
 
 {{
+    "problem_context": "Why document was created or what need it addresses",
     "summary": "Brief explanation",
     "key_points": [{{"text": "point", "quote": "quote"}}],
     "risk_flags": [{{"text": "🚩 risk", "quote": "quote"}}],
@@ -486,6 +489,7 @@ def ensure_minimum_swot_items(swot_analysis: dict) -> dict:
 def get_fallback_response_with_minimum_swot() -> dict:
     """Return fallback response with minimum 3 items per SWOT category"""
     return {
+        "problem_context": "Document analysis requested to extract insights and identify key information for review and decision-making purposes.",
         "summary": "Document analysis completed successfully.",
         "key_points": [
             {
@@ -557,6 +561,7 @@ def aggregate_chunk_analyses(chunk_analyses: List[dict]) -> dict:
     """
     if not chunk_analyses:
         return {
+            "problem_context": "Document analysis requested to extract insights and identify key information for comprehensive review.",
             "summary": "This is a comprehensive analysis of your document.",
             "key_points": [],
             "risk_flags": [],
@@ -617,11 +622,15 @@ def aggregate_chunk_analyses(chunk_analyses: List[dict]) -> dict:
     unique_weaknesses = remove_swot_duplicates(all_weaknesses)[:10]
     unique_opportunities = remove_swot_duplicates(all_opportunities)[:10]
     unique_threats = remove_swot_duplicates(all_threats)[:10]
-    # Create combined summary
+    # Create combined summary and problem context
     chunk_count = len(chunk_analyses)
     combined_summary = f"This is a comprehensive analysis of a {chunk_count}-section document covering multiple topics."
     
+    # Use the first analysis's problem_context or create a combined one
+    combined_problem_context = chunk_analyses[0].get("problem_context", "Document analysis requested to extract insights and identify key information from this multi-section document.")
+    
     return {
+        "problem_context": combined_problem_context,
         "summary": combined_summary,
         "key_points": unique_key_points,
         "risk_flags": unique_risk_flags,

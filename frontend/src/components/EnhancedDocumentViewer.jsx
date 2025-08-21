@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Separator } from './ui/separator'
-import { Eye, FileText, Brain, TrendingUp, Clock, Sparkles, Target, AlertTriangle, CheckCircle2, BookOpen, Key, ArrowBigDown, Download, Copy, ThumbsUp, ThumbsDown } from 'lucide-react'
+import { Eye, FileText, Brain, TrendingUp, Clock, Sparkles, Target, AlertTriangle, CheckCircle2, BookOpen, Key, ArrowBigDown, Download, Copy, ThumbsUp, ThumbsDown, Info } from 'lucide-react'
 import ProfessionalAnalysisDisplay from './ProfessionalAnalysisDisplay'
 import KeyConceptsDisplay from './KeyConceptsDisplay'
 import HighlightableText from './HighlightableText'
@@ -1299,6 +1299,70 @@ This business plan effectively balances growth ambitions with comprehensive risk
                       className="text-slate-800 dark:text-slate-100 leading-relaxed text-sm font-medium"
                     />
                   </div>
+
+                  {/* Problem/Context Section - Moved after summary for better UX flow */}
+                  {(results?.problem_context || results?.analysis?.problem_context) && (
+                    <div className="mb-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="p-1.5 bg-gradient-to-br from-orange-500 to-amber-600 rounded-lg shadow-sm">
+                          <Info className="h-3 w-3 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                            Problem / Context
+                          </h3>
+                          <p className="text-xs text-slate-600 dark:text-gray-400">
+                            Why are we analyzing this? What triggered the need?
+                          </p>
+                        </div>
+                      </div>
+                      <div className="bg-gradient-to-r from-orange-50/80 to-amber-50/80 dark:from-orange-950/30 dark:to-amber-950/30 rounded-xl p-3 border border-orange-200/50 dark:border-orange-800/30 relative">
+                        {/* Add action buttons at top right */}
+                        <div className="absolute bottom-2 right-2 flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCopy(results?.problem_context || results?.analysis?.problem_context || '', 'problem_context')}
+                            className="h-6 w-6 p-0 hover:bg-orange-100 dark:hover:bg-orange-900/20"
+                            title="Copy problem context"
+                          >
+                            <Copy className={`h-2.5 w-2.5 ${copiedItem === 'problem_context' ? 'text-orange-600' : 'text-gray-500'}`} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleFeedback('problem_context', 'positive')}
+                            className={`h-6 w-6 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${
+                              feedbackGiven['problem_context'] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
+                            }`}
+                            title="Helpful context"
+                          >
+                            <ThumbsUp className={`h-2.5 w-2.5 ${
+                              feedbackGiven['problem_context'] === 'positive' ? 'text-green-600' : 'text-gray-500'
+                            }`} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleFeedback('problem_context', 'negative')}
+                            className={`h-6 w-6 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${
+                              feedbackGiven['problem_context'] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
+                            }`}
+                            title="Not helpful"
+                          >
+                            <ThumbsDown className={`h-2.5 w-2.5 ${
+                              feedbackGiven['problem_context'] === 'negative' ? 'text-red-600' : 'text-gray-500'
+                            }`} />
+                          </Button>
+                        </div>
+
+                        <MarkdownRenderer
+                          content={results?.problem_context || results?.analysis?.problem_context}
+                          className="text-slate-800 dark:text-slate-100 leading-relaxed text-xs font-medium"
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   {/* Quick Stats - Responsive Grid */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-3 sm:mt-4">

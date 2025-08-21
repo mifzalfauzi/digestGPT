@@ -445,16 +445,15 @@ function HistoryDrawer({
                     </div>
                   ) : (
                     <div className="text-center py-12">
-                      <div className="p-4 rounded-full bg-gray-100 dark:bg-gray-800 w-16 h-16 flex items-center justify-center mx-auto mb-4 animate-pulse">
-                        <div className="h-8 w-8 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
+                      <div className="p-4 rounded-full bg-gray-100 dark:bg-gray-800 w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                        <FolderOpen className="h-8 w-8 text-gray-400" />
                       </div>
                       <div className="space-y-2">
-                        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-32 mx-auto animate-pulse"></div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Loading collections...
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          No past collections
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          This may take a while if there are multiple collections.
+                          Your collections will appear here after creating them
                         </p>
                       </div>
                     </div>
@@ -583,13 +582,15 @@ function HistoryDrawer({
                     </div>
                   ) : (
                     <div className="text-center py-12">
-                      <div className="p-4 rounded-full bg-gray-100 dark:bg-gray-800 w-16 h-16 flex items-center justify-center mx-auto mb-4 animate-pulse">
-                        <div className="h-8 w-8 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
+                      <div className="p-4 rounded-full bg-gray-100 dark:bg-gray-800 w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                        <FileText className="h-8 w-8 text-gray-400" />
                       </div>
                       <div className="space-y-2">
-                        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-32 mx-auto animate-pulse"></div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          No past documents
+                        </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Loading documents...
+                          Your analyzed documents will appear here
                         </p>
                       </div>
                     </div>

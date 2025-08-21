@@ -60,12 +60,14 @@ class Document(Base):
     filesize = Column(Integer)
     document_text = Column(Text)
     summary = Column(Text)
+    problem_context = Column(Text)
     key_points = Column(Text)
     risk_flags = Column(Text)
     swot_analysis = Column(Text)
     key_concepts = Column(Text)
     word_count = Column(Integer)
     analysis_method = Column(String)
+    recommendations = Column(Text)
     file_url = Column(String, nullable=True)  # Add file URL for PDF viewing
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
 

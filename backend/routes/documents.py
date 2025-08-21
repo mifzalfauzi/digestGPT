@@ -9,7 +9,7 @@ from database import supabase
 import uuid
 
 from database import get_db
-from models import User, Document, ChatHistory, Collection
+from models import User, Document, ChatHistory, Collection, PublicChatShare, PublicChatView
 from dependencies import (
     get_current_active_user, 
     check_document_limit,
@@ -215,6 +215,7 @@ async def upload_and_analyze_document(
             filesize=len(file_bytes),
             document_text=text,
             summary=analysis.get("summary", ""),
+            problem_context=analysis.get("problem_context", ""),
             key_points=json.dumps(analysis.get("key_points", [])),
             risk_flags=json.dumps(analysis.get("risk_flags", [])),
             key_concepts=json.dumps(analysis.get("key_concepts", [])),
@@ -324,6 +325,7 @@ async def analyze_text_direct(
             filesize=len(text.encode('utf-8')),
             document_text=text,
             summary=analysis.get("summary", ""),
+            problem_context=analysis.get("problem_context", ""),
             key_points=json.dumps(analysis.get("key_points", [])),
             risk_flags=json.dumps(analysis.get("risk_flags", [])),
             key_concepts=json.dumps(analysis.get("key_concepts", [])),
@@ -492,6 +494,7 @@ async def get_document(
         "filesize": document.filesize,
         "word_count": document.word_count,
         "summary": document.summary,
+        "problem_context": document.problem_context,
         "analysis_method": document.analysis_method,
         "uploaded_at": document.uploaded_at.isoformat(),
         "document_text": document.document_text,
@@ -502,6 +505,7 @@ async def get_document(
         "swot_analysis": swot_analysis,  # ✅ FIXED - Now properly structured
         "analysis": {
             "summary": document.summary,
+            "problem_context": document.problem_context,
             "key_points": key_points,
             "risk_flags": risk_flags,
             "key_concepts": key_concepts,
@@ -642,7 +646,32 @@ async def delete_all_user_data(
         deletion_summary["chat_history_deleted"] = chat_deleted
         print(f"Deleted {chat_deleted} chat history records")
         
-        # Step 4: Delete all collections for the user
+        # Step 4: Delete all public chat views for the user (must be before public_chat_shares due to foreign key)
+        public_views_deleted = db.query(PublicChatView).filter(
+            PublicChatView.share_id.in_(
+                db.query(PublicChatShare.id).filter(PublicChatShare.user_id == current_user.id)
+            )
+        ).delete(synchronize_session=False)
+        
+        deletion_summary["public_views_deleted"] = public_views_deleted
+        print(f"Deleted {public_views_deleted} public chat views")
+        
+        # Step 5: Delete all public chat shares for the user (must be before documents due to foreign key)
+        public_shares_deleted = db.query(PublicChatShare).filter(
+            PublicChatShare.user_id == current_user.id
+        ).delete(synchronize_session=False)
+        
+        deletion_summary["public_shares_deleted"] = public_shares_deleted
+        print(f"Deleted {public_shares_deleted} public chat shares")
+        
+        # Step 6: Delete all documents for the user (must be before collections due to foreign key)
+        documents_deleted = db.query(Document).filter(
+            Document.user_id == current_user.id
+        ).delete(synchronize_session=False)
+        
+        print(f"Deleted {documents_deleted} documents from database")
+        
+        # Step 7: Delete all collections for the user (after documents)
         collections_deleted = db.query(Collection).filter(
             Collection.user_id == current_user.id
         ).delete(synchronize_session=False)
@@ -650,18 +679,11 @@ async def delete_all_user_data(
         deletion_summary["collections_deleted"] = collections_deleted
         print(f"Deleted {collections_deleted} collections")
         
-        # Step 5: Delete all documents for the user
-        documents_deleted = db.query(Document).filter(
-            Document.user_id == current_user.id
-        ).delete(synchronize_session=False)
-        
-        print(f"Deleted {documents_deleted} documents from database")
-        
         # Commit all deletions
         db.commit()
         
         # Build response message
-        message = f"Successfully deleted all user data: {deletion_summary['documents_deleted']} documents, {deletion_summary['chat_history_deleted']} chat messages, {deletion_summary['collections_deleted']} collections"
+        message = f"Successfully deleted all user data: {deletion_summary['documents_deleted']} documents, {deletion_summary['chat_history_deleted']} chat messages, {deletion_summary['public_views_deleted']} public views, {deletion_summary['public_shares_deleted']} public shares, {deletion_summary['collections_deleted']} collections"
         
         if deletion_summary["storage_files_deleted"] > 0:
             message += f", {deletion_summary['storage_files_deleted']} files from storage"
@@ -712,10 +734,24 @@ async def get_deletion_preview(
             Document.file_url.isnot(None)
         ).count()
         
+        # Count public chat shares
+        public_shares_count = db.query(PublicChatShare).filter(
+            PublicChatShare.user_id == current_user.id
+        ).count()
+        
+        # Count public chat views
+        public_views_count = db.query(PublicChatView).filter(
+            PublicChatView.share_id.in_(
+                db.query(PublicChatShare.id).filter(PublicChatShare.user_id == current_user.id)
+            )
+        ).count()
+        
         return {
             "preview": {
                 "documents_to_delete": documents_count,
                 "chat_messages_to_delete": chat_count,
+                "public_views_to_delete": public_views_count,
+                "public_shares_to_delete": public_shares_count,
                 "collections_to_delete": collections_count,
                 "storage_files_to_delete": storage_files_count
             },

@@ -688,6 +688,31 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Problem/Context Section */}
+            {(results?.problem_context || results?.analysis?.problem_context) && (
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-2 bg-gradient-to-br from-orange-500 to-amber-600 rounded-lg shadow-sm">
+                    <Info className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                      Problem / Context
+                    </h3>
+                    <p className="text-xs text-slate-600 dark:text-gray-400">
+                      Why are we analyzing this? What triggered the need?
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-gradient-to-r from-orange-50/80 to-amber-50/80 dark:from-orange-950/30 dark:to-amber-950/30 rounded-2xl p-4 border border-orange-200/50 dark:border-orange-800/30">
+                  <MarkdownRenderer 
+                    content={results?.problem_context || results?.analysis?.problem_context} 
+                    className="text-slate-800 dark:text-slate-100 leading-relaxed text-sm font-medium"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="bg-gradient-to-r from-purple-50/80 to-blue-50/80 dark:from-purple-950/30 dark:to-blue-950/30 rounded-2xl p-6 border border-purple-200/50 dark:border-purple-800/30">
               <p className="text-slate-800 dark:text-slate-100 leading-relaxed text-base font-medium">
                 {summary || 'Comprehensive analysis will appear here after document processing...'}
