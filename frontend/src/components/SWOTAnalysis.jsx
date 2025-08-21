@@ -59,18 +59,20 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
   const viewMenuRef = useRef(null)
   const [controlsDrawerOpen, setControlsDrawerOpen] = useState(false)
   const controlsDrawerRef = useRef(null)
+  const [controlsKey, setControlsKey] = useState(0) // Force re-render key
+  const [isResetting, setIsResetting] = useState(false) // Reset feedback state
   
   // Chart and filtering state (declare first)
-  const [chartType, setChartType] = useState('bar') // 'bar' or 'line'
+  const [chartType, setChartType] = useState('line') // 'bar' or 'line'
   const [priorityFilter, setPriorityFilter] = useState('all') // 'all', 'high', 'medium', 'low'
   const [categoryFilter, setCategoryFilter] = useState('all') // 'all', 'strengths', 'weaknesses', 'opportunities', 'threats'
-  const [showCharts, setShowCharts] = useState(false) // false = show counts, true = show charts
+  const [showCharts, setShowCharts] = useState(true) // false = show counts, true = show charts
   
   // Local state for drawer controls (not applied until saved)
-  const [localChartType, setLocalChartType] = useState('bar')
+  const [localChartType, setLocalChartType] = useState('line')
   const [localPriorityFilter, setLocalPriorityFilter] = useState('all')
   const [localCategoryFilter, setLocalCategoryFilter] = useState('all')
-  const [localShowCharts, setLocalShowCharts] = useState(false)
+  const [localShowCharts, setLocalShowCharts] = useState(true)
   
   // Simple persistence using ref
   const persistedState = useRef({
@@ -84,15 +86,16 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     viewMode: 'list',
     copiedItems: new Set(),
     itemRatings: {},
-    chartType: 'bar',
+    chartType: 'line',
     priorityFilter: 'all',
     categoryFilter: 'all',
-    showCharts: false,
+    showCharts: true,
     controlsDrawerOpen: false,
-    localChartType: 'bar',
+    localChartType: 'line',
     localPriorityFilter: 'all',
     localCategoryFilter: 'all',
-    localShowCharts: false,
+    localShowCharts: true,
+    controlsKey: 0,
     isInitialized: false
   })
 
@@ -115,6 +118,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       setLocalPriorityFilter(persistedState.current.localPriorityFilter)
       setLocalCategoryFilter(persistedState.current.localCategoryFilter)
       setLocalShowCharts(persistedState.current.localShowCharts)
+      setControlsKey(persistedState.current.controlsKey)
       persistedState.current.isInitialized = true
     }
   }, [])
@@ -137,10 +141,11 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
         localChartType,
         localPriorityFilter,
         localCategoryFilter,
-        localShowCharts
+        localShowCharts,
+        controlsKey
       }
     }
-  }, [currentPage, activeSwotTab, viewMode, copiedItems, itemRatings, chartType, priorityFilter, categoryFilter, showCharts, controlsDrawerOpen, localChartType, localPriorityFilter, localCategoryFilter, localShowCharts])
+  }, [currentPage, activeSwotTab, viewMode, copiedItems, itemRatings, chartType, priorityFilter, categoryFilter, showCharts, controlsDrawerOpen, localChartType, localPriorityFilter, localCategoryFilter, localShowCharts, controlsKey])
 
   // Handle clicking outside the view menu to close it
   useEffect(() => {
@@ -161,7 +166,13 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
   // Handle clicking outside the controls drawer to close it
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (controlsDrawerRef.current && !controlsDrawerRef.current.contains(event.target)) {
+      // Don't close drawer if clicking on select dropdown content or other portal elements
+      const isSelectContent = event.target.closest('[data-radix-popper-content-wrapper]') ||
+                             event.target.closest('.radix-select-content') ||
+                             event.target.closest('[role="listbox"]') ||
+                             event.target.closest('[data-radix-select-content]')
+      
+      if (controlsDrawerRef.current && !controlsDrawerRef.current.contains(event.target) && !isSelectContent) {
         setControlsDrawerOpen(false)
       }
     }
@@ -1019,12 +1030,23 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     setControlsDrawerOpen(false)
   }
 
-  // Reset controls function
+  // Reset controls function - Reset to first/default selections
   const resetControls = () => {
-    setLocalChartType(chartType)
-    setLocalPriorityFilter(priorityFilter)
-    setLocalCategoryFilter(categoryFilter)
-    setLocalShowCharts(showCharts)
+    setIsResetting(true)
+    
+    // Reset all local state to first/default options
+    setLocalChartType('line') // First option: Line Chart
+    setLocalPriorityFilter('all') // First option: All Priorities
+    setLocalCategoryFilter('all') // First option: All Categories
+    setLocalShowCharts(true) // First option: Show Counts
+    
+    // Force re-render of Select components to ensure they display correctly
+    setControlsKey(prev => prev + 1)
+    
+    // Remove reset feedback after a short delay
+    setTimeout(() => {
+      setIsResetting(false)
+    }, 800)
   }
 
   // Controls Drawer Component
@@ -1075,7 +1097,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
             </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          <div key={controlsKey} className="flex-1 overflow-y-auto p-4 space-y-6">
             {/* Display Mode - FIRST */}
             <div className="space-y-3">
               <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Display Mode</Label>
@@ -1095,8 +1117,10 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
               </p>
             </div>
             
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Filters & Charts</h3>
+            {/* Conditional Chart & Filter Options - Only show when charts are enabled */}
+            {localShowCharts && (
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Charts & Filters</h3>
               
               {/* Chart Type Selection */}
               <div className="space-y-3 mb-6">
@@ -1162,8 +1186,24 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   Focus on specific SWOT categories
                 </p>
+                </div>
               </div>
-            </div>
+            )}
+            
+            {/* Show message when charts are disabled */}
+            {!localShowCharts && (
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                <div className="text-center p-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <BarChart3 className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    Chart Options Hidden
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-500">
+                    Enable "Show Charts" to access chart types and filters
+                  </p>
+                </div>
+              </div>
+            )}
               </div>
               
           {/* Action Buttons */}
@@ -1181,10 +1221,13 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                 onClick={resetControls}
                 variant="outline"
                 size="sm"
-                className="flex-1 flex items-center gap-2"
+                disabled={isResetting}
+                className={`flex-1 flex items-center gap-2 transition-colors ${
+                  isResetting ? 'bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800' : ''
+                }`}
               >
-                <RotateCcw className="h-3 w-3" />
-                Reset
+                <RotateCcw className={`h-3 w-3 ${isResetting ? 'animate-spin' : ''}`} />
+                {isResetting ? 'Reset!' : 'Reset'}
               </Button>
             </div>
             {/* <Button
@@ -1399,9 +1442,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                   >
                     <div className={config.color}>{config.icon}</div>
                     <span className="text-xs sm:text-sm">{config.label}</span>
-                    <Badge variant="secondary" className="text-xs">
-                      {filteredSwotData[key]?.length || 0}
-                    </Badge>
+             
                   </TabsTrigger>
                 ))}
               </TabsList>
