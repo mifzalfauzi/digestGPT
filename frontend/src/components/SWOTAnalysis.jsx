@@ -899,12 +899,40 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
             <div className="flex justify-center">
               <svg width={chartWidth} height={chartHeight} className="overflow-visible">
                 {/* Grid lines */}
-                <defs>
-                  <pattern id="grid" width="40" height="20" patternUnits="userSpaceOnUse">
-                    <path d="M 40 0 L 0 0 0 20" fill="none" stroke="rgba(156, 163, 175, 0.3)" strokeWidth="0.5"/>
-                  </pattern>
-                </defs>
-                <rect width={chartWidth} height={chartHeight} fill="url(#grid)" />
+                <g>
+                  {/* Vertical grid lines - align with data points */}
+                  {chartData.map((_, i) => {
+                    const x = padding.left + (i * xStep)
+                    return (
+                      <line
+                        key={`v-${i}`}
+                        x1={x}
+                        y1={padding.top}
+                        x2={x}
+                        y2={chartHeight - padding.bottom}
+                        stroke="rgba(156, 163, 175, 0.3)"
+                        strokeWidth="1"
+                        strokeDasharray="3,3"
+                      />
+                    )
+                  })}
+                  {/* Horizontal grid lines */}
+                  {[0, Math.ceil(maxValue/4), Math.ceil(maxValue/2), Math.ceil(maxValue*3/4), maxValue].map((value, i) => {
+                    const y = padding.top + (innerHeight - (value * yScale))
+                    return (
+                      <line
+                        key={`h-${i}`}
+                        x1={padding.left}
+                        y1={y}
+                        x2={chartWidth - padding.right}
+                        y2={y}
+                        stroke="rgba(156, 163, 175, 0.3)"
+                        strokeWidth="1"
+                        strokeDasharray="3,3"
+                      />
+                    )
+                  })}
+                </g>
                 
                 {/* Lines */}
                 <path d={highPath} fill="none" stroke="#ef4444" strokeWidth="2" className="drop-shadow-sm" />
