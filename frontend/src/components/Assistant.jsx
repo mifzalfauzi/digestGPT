@@ -1226,16 +1226,24 @@ function Assistant() {
         });
       }
 
+      const backendDocumentId = response.data.document_id || documentId;
+      
       updateDocument(documentId, {
+        id: backendDocumentId,
         status: 'completed',
         results: {
           ...response.data,
           // Ensure document_text is available at the results level
           document_text: response.data.document_text || response.data.text || response.data.analysis?.document_text || textContent
         },
-        documentId: response.data.document_id || documentId,
+        documentId: backendDocumentId,
         analysisEndTime: new Date().toISOString()
       })
+      
+      // If the backend returned a different ID, update the selected document ID
+      if (response.data.document_id && response.data.document_id !== documentId) {
+        setSelectedDocumentId(backendDocumentId);
+      }
 
       // Refresh user data to update usage statistics
       await refreshUserData()
