@@ -52,7 +52,7 @@ function KeyConceptsDisplay({ concepts = [], onExplainConcept, isDemoMode = fals
                 ? 'Demo concepts would appear here in the full version.' 
                 : bypassAPI
                 ? 'Preview concepts loaded with mock data.'
-                : 'No key concepts identified yet. Upload a document to begin analysis.'
+                : 'No key concepts identified yet.'
               }
             </p>
           </div>

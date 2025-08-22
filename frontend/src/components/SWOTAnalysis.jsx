@@ -76,7 +76,8 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
           categoryFilter: parsed.categoryFilter || 'all',
           itemCategoryFilter: parsed.itemCategoryFilter || 'all',
           showCharts: parsed.showCharts !== undefined ? parsed.showCharts : true,
-          activeSwotTab: parsed.activeSwotTab || 'strengths'
+          activeSwotTab: parsed.activeSwotTab || 'strengths',
+          viewMode: parsed.viewMode || 'list'
         }
       }
     } catch (error) {
@@ -88,7 +89,8 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       categoryFilter: 'all',
       itemCategoryFilter: 'all',
       showCharts: true,
-      activeSwotTab: 'strengths'
+      activeSwotTab: 'strengths',
+      viewMode: 'list'
     }
   }
 
@@ -113,7 +115,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       threats: 0,
     },
     activeSwotTab: storedSettings.activeSwotTab,
-    viewMode: 'list',
+    viewMode: storedSettings.viewMode,
     copiedItems: new Set(),
     itemRatings: {},
     chartType: storedSettings.chartType,
@@ -215,7 +217,8 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
         categoryFilter: 'all',
         itemCategoryFilter: 'all',
         showCharts: true,
-        activeSwotTab: 'strengths'
+        activeSwotTab: 'strengths',
+        viewMode: 'list'
       }
       
       setChartType(defaults.chartType)
@@ -224,6 +227,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       setItemCategoryFilter(defaults.itemCategoryFilter)
       setShowCharts(defaults.showCharts)
       setActiveSwotTab(defaults.activeSwotTab)
+      setViewMode(defaults.viewMode)
       
       setLocalChartType(defaults.chartType)
       setLocalPriorityFilter(defaults.priorityFilter)
@@ -246,6 +250,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
         setItemCategoryFilter(stored.itemCategoryFilter)
         setShowCharts(stored.showCharts)
         setActiveSwotTab(stored.activeSwotTab)
+        setViewMode(stored.viewMode)
         
         setLocalChartType(stored.chartType)
         setLocalPriorityFilter(stored.priorityFilter)
@@ -255,6 +260,28 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       }
     }
   }, [swot, currentDocumentKey])
+
+  // Auto-save activeSwotTab to localStorage when it changes
+  useEffect(() => {
+    if (currentDocumentKey) {
+      const currentSettings = loadFromStorage()
+      saveToStorage({
+        ...currentSettings,
+        activeSwotTab: activeSwotTab
+      })
+    }
+  }, [activeSwotTab, currentDocumentKey])
+
+  // Auto-save viewMode to localStorage when it changes
+  useEffect(() => {
+    if (currentDocumentKey) {
+      const currentSettings = loadFromStorage()
+      saveToStorage({
+        ...currentSettings,
+        viewMode: viewMode
+      })
+    }
+  }, [viewMode, currentDocumentKey])
 
   // Update local state when drawer opens or main state changes
   useEffect(() => {
@@ -276,14 +303,15 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     setItemCategoryFilter(localItemCategoryFilter)
     setShowCharts(localShowCharts)
     
-    // Save to localStorage for persistence across refreshes
+    // Save to localStorage for persistence across refreshes (only controls, not UI state)
     saveToStorage({
       chartType: localChartType,
       priorityFilter: localPriorityFilter,
       categoryFilter: localCategoryFilter,
       itemCategoryFilter: localItemCategoryFilter,
       showCharts: localShowCharts,
-      activeSwotTab: activeSwotTab
+      activeSwotTab: activeSwotTab,  // Keep current active tab
+      viewMode: viewMode  // Keep current view mode
     })
     
     setControlsDrawerOpen(false)
