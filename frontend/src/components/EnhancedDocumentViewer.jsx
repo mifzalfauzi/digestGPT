@@ -1154,20 +1154,74 @@ This business plan effectively balances growth ambitions with comprehensive risk
         <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
           <div className="flex-shrink-0 px-2 sm:px-3 lg:px-4 pt-2 sm:pt-3 dark:bg-[#121212]">
             <TabsList className={`grid w-full ${hasDocumentViewer ? 'grid-cols-5' : 'grid-cols-5'} bg-transparent border-none h-auto`}>
-              <TabsTrigger value="analysis" className="flex items-center justify-center gap-1 bg-transparent border-none rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-all duration-200 py-2 sm:py-3 px-2 sm:px-3 text-xs">
+              <TabsTrigger value="analysis" className="
+                  relative
+                  flex items-center justify-center gap-1
+                  bg-transparent border-none rounded-none
+                  text-xs py-2 sm:py-3 px-2 sm:px-3
+                  transition-all duration-200
+                  hover:text-blue-500 dark:hover:text-blue-300
+
+                  data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400
+                  before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-[2px]
+                  before:w-0 before:bg-blue-500 before:transition-all before:duration-300
+                  data-[state=active]:before:w-full
+                ">
                 <Brain className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
                 <span className="hidden md:inline">Overview</span>
-                <span className="md:hidden">Overview</span>
+                <span className="md:hidden"></span>
               </TabsTrigger>
-              <TabsTrigger value="swot" className="flex items-center justify-center gap-1 bg-transparent border-none rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-all duration-200 py-2 sm:py-3 px-2 sm:px-3 text-xs">
+                <TabsTrigger value="swot" className="
+    relative
+    flex items-center justify-center gap-1
+  bg-transparent border-none rounded-none
+  text-xs py-2 sm:py-3 px-2 sm:px-3
+  transition-all duration-200
+  hover:text-blue-500 dark:hover:text-blue-300
+
+  data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400
+  before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-[2px]
+  before:w-0 before:bg-blue-500 before:transition-all before:duration-300
+  data-[state=active]:before:w-full
+">
                 <Key className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
                 <span className="hidden md:inline">SWOT</span>
-                <span className="md:hidden">SWOT</span>
+                <span className="md:hidden"></span>
               </TabsTrigger>
-              <TabsTrigger value="insights" className="flex items-center justify-center gap-1 bg-transparent border-none rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-all duration-200 py-2 sm:py-3 px-2 sm:px-3 text-xs">
+
+              <TabsTrigger value="recommendations" className="
+  relative
+  flex items-center justify-center gap-1
+  bg-transparent border-none rounded-none
+  text-xs py-2 sm:py-3 px-2 sm:px-3
+  transition-all duration-200
+  hover:text-blue-500 dark:hover:text-blue-300
+
+  data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400
+  before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-[2px]
+  before:w-0 before:bg-blue-500 before:transition-all before:duration-300
+  data-[state=active]:before:w-full
+">
+                  <Lightbulb className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                <span className="hidden md:inline">Recommendations</span>
+                <span className="md:hidden"></span>
+              </TabsTrigger>
+              <TabsTrigger value="insights" className="
+  relative
+  flex items-center justify-center gap-1
+  bg-transparent border-none rounded-none
+  text-xs py-2 sm:py-3 px-2 sm:px-3
+  transition-all duration-200
+  hover:text-blue-500 dark:hover:text-blue-300
+
+  data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400
+  before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-[2px]
+  before:w-0 before:bg-blue-500 before:transition-all before:duration-300
+  data-[state=active]:before:w-full
+">
                 <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
                 <span className="hidden md:inline">Analysis</span>
-                <span className="md:hidden">Analysis</span>
+                <span className="md:hidden"></span>
               </TabsTrigger>
               {/* {hasDocumentViewer && (
                 <TabsTrigger value="document-viewer" className="flex items-center justify-center gap-1 bg-transparent border-none rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-all duration-200 py-2 sm:py-3 px-2 sm:px-3 text-xs">
@@ -1177,20 +1231,30 @@ This business plan effectively balances growth ambitions with comprehensive risk
                 </TabsTrigger>
               )} */}
 
-              <TabsTrigger value="recommendations" className="flex items-center justify-center gap-1 bg-transparent border-none rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-all duration-200 py-2 sm:py-3 px-2 sm:px-3 text-xs">
-                  <Lightbulb className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
-                <span className="hidden md:inline">Recommendations</span>
-                <span className="md:hidden">Recommendations</span>
-              </TabsTrigger>
+              
 
-              <TabsTrigger value="document" className="flex items-center justify-center gap-1 bg-transparent border-none rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-all duration-200 py-2 sm:py-3 px-2 sm:px-3 text-xs">
+              <TabsTrigger value="document" className="
+  relative
+  flex items-center justify-center gap-1
+  bg-transparent border-none rounded-none
+  text-xs py-2 sm:py-3 px-2 sm:px-3
+  transition-all duration-200
+  hover:text-blue-500 dark:hover:text-blue-300
+
+  data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400
+  before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-[2px]
+  before:w-0 before:bg-blue-500 before:transition-all before:duration-300
+  data-[state=active]:before:w-full
+">
                 <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
                 <span className="hidden md:inline">Extractive Text</span>
-                <span className="md:hidden">Text</span>
+                <span className="md:hidden"></span>
               </TabsTrigger>
+              {/* <Separator className="col-span-full border-b border-gray-200 dark:border-gray-800" /> */}
+              {/* <div className="w-full border-b border-gray-200 dark:border-gray-700"></div> */}
             </TabsList>
             {/* Separator */}
-            <div className="border-b border-gray-200 dark:border-gray-700 mt-1"></div>
+            
           </div>
 
           <div className="flex-1 overflow-hidden dark:bg-[#121212]">
@@ -1274,7 +1338,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
 
             {/* SWOT Tab */}
             <div
-              className={`h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter ${activeTab === 'swot' ? 'block' : 'hidden'
+              className={`h-full overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4  ${activeTab === 'swot' ? 'block' : 'hidden'
                 }`}
               ref={el => tabContentRefs.current['swot'] = el}
             >
@@ -1296,11 +1360,11 @@ This business plan effectively balances growth ambitions with comprehensive risk
 
             {/* AI Analysis Summary Tab */}
             <div
-              className={`h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter ${activeTab === 'analysis' ? 'block' : 'hidden'
+              className={`h-full overflow-y-auto lg:px-4 pb-2 sm:pb-4 ${activeTab === 'analysis' ? 'block' : 'hidden'
                 }`}
               ref={el => tabContentRefs.current['analysis'] = el}
             >
-              <Card className="border-0 shadow-lg dark:bg-black">
+              <Card className="border-0 dark:bg-[#121212]">
                 <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <div className="flex items-center gap-2">
@@ -1454,7 +1518,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                     )}
 
                   {/* Quick Stats - Responsive Grid */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-3 sm:mt-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-3 sm:mt-3">
                     <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-emerald-200/50 dark:border-emerald-800/30">
                       <div className="flex items-center gap-1">
                         <Target className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-emerald-600 dark:text-emerald-400" />
@@ -1498,7 +1562,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                 </CardContent>
               </Card>
 
-              <Separator className="my-4" />
+              <Separator className="my-4 dark:bg-gray-700" />
 
               {/* Key Concepts Section */}
               <div className="mt-3 sm:mt-4">

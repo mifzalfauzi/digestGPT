@@ -24,7 +24,7 @@ function KeyConceptsDisplay({ concepts = [], onExplainConcept, isDemoMode = fals
 
   if (!concepts || concepts.length === 0) {
     return (
-      <Card className="border-0 shadow-lg">
+      <Card className="dark:bg-[#121212]">
         <CardHeader>
           <div className="flex items-center gap-2">
             <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
@@ -62,7 +62,7 @@ function KeyConceptsDisplay({ concepts = [], onExplainConcept, isDemoMode = fals
   }
 
   return (
-    <Card className="border shadow-2xl dark:bg-[#000000]">
+    <Card className="border-0 dark:bg-[#121212]">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -109,7 +109,7 @@ function KeyConceptsDisplay({ concepts = [], onExplainConcept, isDemoMode = fals
                 {/* Concept Term Button */}
                 <div
                   onClick={() => handleConceptClick(concept, index)}
-                  className={`w-full flex items-center justify-between text-left cursor-pointer p-3 transition-all duration-200 border rounded-lg ${
+                  className={`w-full flex items-center justify-between text-left cursor-pointer p-3 transition-all duration-200 border rounded-lg dark:bg-black ${
                     isExpanded 
                       ? isDemoMode
                         ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700 shadow-md'

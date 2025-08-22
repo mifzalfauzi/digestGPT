@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from './ui/button'
 import { Card } from './ui/card'
@@ -49,9 +49,11 @@ function ModernSidebar({
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, usage, getUsagePercentages, logout, loading_logout } = useAuth()
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const dropdownRef = useRef(null)
+  const lastDocumentPageRef = useRef(null) // Track last document page for auto-collapse
 
   // Combined loading state for document switching
   const isDocumentLoadingOrSwitching = isChatLoadingHistory || isDocumentSwitching
@@ -89,6 +91,22 @@ function ModernSidebar({
       setShowLoadingOverlay(false)
     }
   }, [isDocumentLoadingOrSwitching])
+
+  // Track collapse state in a more sophisticated way
+const [hasAutoCollapsed, setHasAutoCollapsed] = useState(false);
+
+useEffect(() => {
+  const isDocumentPage = location.pathname.match(/^\/assistant\/document\/[^/]+$/);
+  
+  if (isDocumentPage && !hasAutoCollapsed && !collapsed && onToggleCollapse && window.innerWidth >= 1024) {
+    const timeoutId = setTimeout(() => {
+      onToggleCollapse();
+      setHasAutoCollapsed(true);
+    }, 150);
+    
+    return () => clearTimeout(timeoutId);
+  }
+}, [location.pathname, collapsed, onToggleCollapse, hasAutoCollapsed]);
 
   // Format date for display
   const formatDate = (dateString) => {

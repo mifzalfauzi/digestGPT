@@ -54,32 +54,37 @@
 @layer base {
   * {
     @apply border-border;
+    /* Remove any global scrolling overrides that can conflict with Opera GX */
   }
 
   html {
+    /* Simplified and more compatible approach for Opera GX */
     height: 100%;
     overflow-x: hidden;
     scroll-behavior: auto;
-    -webkit-overflow-scrolling: touch; /* Changed from auto to touch for smooth scrolling */
-    /* Removed overscroll-behavior: none to allow pull-to-refresh */
-    touch-action: pan-x pan-y;
+    /* Remove webkit-specific properties that can cause issues in Opera GX */
+    /* Set consistent viewport handling */
   }
 
   body {
-    height: 100%;
     @apply bg-background text-foreground;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    
+    /* Fixed height and overflow settings for Opera GX compatibility */
+    height: 100vh; /* Use viewport height instead of 100% */
+    width: 100vw;
     overflow-x: hidden;
-    scroll-behavior: auto;
-    -webkit-overflow-scrolling: touch; /* Changed from auto to touch */
-    /* Removed overscroll-behavior: none to allow pull-to-refresh */
-    touch-action: pan-x pan-y;
+    overflow-y: auto; /* Explicit auto for vertical scrolling */
+    
+    /* Remove problematic webkit properties */
+    margin: 0;
+    padding: 0;
+    
+    /* Use standard viewport units that Opera GX handles better */
     min-height: 100vh;
-    min-height: -webkit-fill-available;
-    min-height: -moz-available;
-    min-height: fill-available;
+    position: relative;
   }
 
   .marcellus-regular {
@@ -123,32 +128,36 @@
     scrollbar-color: hsl(0, 0%, 25%) hsl(var(--background));
   }
 
-  /* Fix scrolling for root container */
+  /* Simplified root container for Opera GX compatibility */
   #root {
-    height: 100%;
-    overflow-x: hidden;
-    scroll-behavior: auto;
-    -webkit-overflow-scrolling: touch; /* Changed from auto to touch */
-    /* Allow vertical overscroll for pull-to-refresh */
-    overscroll-behavior-x: none; /* Prevent horizontal overscroll only */
-    overscroll-behavior-y: auto; /* Allow vertical overscroll for pull-to-refresh */
+    width: 100%;
     min-height: 100vh;
-    min-height: -webkit-fill-available;
-    min-height: -moz-available;
-    min-height: fill-available;
-    display: flex;
-    flex-direction: column;
+    overflow-x: hidden;
+    
+    /* Remove complex flexbox and positioning that can cause issues */
+    display: block; /* Changed from flex to block */
     position: relative;
+    
+    /* Ensure proper scrolling in Opera GX */
+    overflow-y: visible; /* Let content flow naturally */
+    
+    /* Remove webkit-specific properties that cause Opera GX issues */
+    margin: 0;
+    padding: 0;
   }
 
   /* Smooth scrolling only for specific elements that need it */
   .smooth-scroll {
     scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
   }
 
-  /* REMOVED: Global overscroll-behavior blocking that was preventing pull-to-refresh */
-  /* The old * selector with overscroll-behavior: auto was the main culprit */
+  /* Opera GX specific fixes */
+  @supports (-webkit-appearance: none) {
+    /* Only apply to WebKit browsers, but not Opera GX specifically */
+    body {
+      -webkit-overflow-scrolling: touch;
+    }
+  }
 }
 
 @layer utilities {
@@ -272,5 +281,11 @@
 
   .animate-scroll-indicator {
     animation: bounce-down 2s ease-in-out infinite;
+  }
+
+  /* Opera GX specific utility classes */
+  .opera-gx-fix {
+    transform: translateZ(0); /* Force hardware acceleration */
+    will-change: auto; /* Reset will-change property */
   }
 }

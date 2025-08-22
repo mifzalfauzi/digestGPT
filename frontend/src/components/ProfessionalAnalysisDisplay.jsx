@@ -654,119 +654,10 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
 
   return (
     <div ref={containerRef} className="space-y-4 sm:space-y-6 p-2 sm:p-4 h-full overflow-y-auto">
-      {/* Selection banner when coming from extractive text */}
-      {/* {selectedFrom && selectedFrom.index !== null && (
-        <div className="flex items-center justify-between p-2 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 text-xs">
-          <span>
-            Selected from Extractive Text: {selectedFrom.type === 'insight' ? 'Insight' : 'Risk'} #{selectedFrom.index + 1}
-          </span>
-          {onActiveHighlightChange && (
-            <button
-              className="underline hover:opacity-80"
-              onClick={() => onActiveHighlightChange(null)}
-            >
-              Clear
-            </button>
-          )}
-        </div>
-      )} */}
-      {/* Executive Summary - Only show if showSummary is true */}
-      {showSummary && (
-        <Card className="border-0 shadow-xl dark:bg-black">
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-
-              <div>
-                <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
-                  Executive Summary
-                </CardTitle>
-                <p className="text-sm text-slate-600 dark:text-gray-400 mt-1">
-                  Summary by Claude
-                </p>
-              </div>
-
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Problem/Context Section */}
-            {(results?.problem_context || results?.analysis?.problem_context) && (
-              <div className="mb-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 bg-gradient-to-br from-orange-500 to-amber-600 rounded-lg shadow-sm">
-                    <Info className="h-4 w-4 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                      Problem / Context
-                    </h3>
-                    <p className="text-xs text-slate-600 dark:text-gray-400">
-                      Why are we analyzing this? What triggered the need?
-                    </p>
-                  </div>
-                </div>
-                <div className="bg-gradient-to-r from-orange-50/80 to-amber-50/80 dark:from-orange-950/30 dark:to-amber-950/30 rounded-2xl p-4 border border-orange-200/50 dark:border-orange-800/30">
-                  <MarkdownRenderer 
-                    content={results?.problem_context || results?.analysis?.problem_context} 
-                    className="text-slate-800 dark:text-slate-100 leading-relaxed text-sm font-medium"
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="bg-gradient-to-r from-purple-50/80 to-blue-50/80 dark:from-purple-950/30 dark:to-blue-950/30 rounded-2xl p-6 border border-purple-200/50 dark:border-purple-800/30">
-              <p className="text-slate-800 dark:text-slate-100 leading-relaxed text-base font-medium">
-                {summary || 'Comprehensive analysis will appear here after document processing...'}
-              </p>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-4 gap-3 mt-6">
-              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-4 border border-emerald-200/50 dark:border-emerald-800/30">
-                <div className="flex items-center gap-2">
-                  <Target className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                  <span className="text-xs font-medium text-emerald-800 dark:text-emerald-200">Insights</span>
-                </div>
-                <p className="text-xl font-bold text-emerald-900 dark:text-emerald-100 mt-1">
-                  {insights.length}
-                </p>
-              </div>
-
-              <div className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 rounded-xl p-4 border border-red-200/50 dark:border-red-800/30">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                  <span className="text-xs font-medium text-red-800 dark:text-red-200">Risks</span>
-                </div>
-                <p className="text-xl font-bold text-red-900 dark:text-red-100 mt-1">
-                  {risks.length}
-                </p>
-              </div>
-
-              <div className=" dark:bg-black rounded-xl p-4 border border-amber-200/50 dark:border-amber-800/30">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                  <span className="text-xs font-medium text-amber-800 dark:text-amber-200">Concepts</span>
-                </div>
-                <p className="text-xl font-bold text-amber-900 dark:text-amber-100 mt-1">
-                  {keyConcepts.length}
-                </p>
-              </div>
-
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/30">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                  <span className="text-xs font-medium text-blue-800 dark:text-blue-200">Status</span>
-                </div>
-                <p className="text-xl font-bold text-blue-900 dark:text-blue-100 mt-1">
-                  Done
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+   
 
       {/* Key Insights Section */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border-0 dark:bg-transparent">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -1012,7 +903,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                 <Target className="h-8 w-8 text-slate-400 dark:text-gray-500" />
               </div>
               <p className="text-slate-600 dark:text-gray-400">
-                No strategic insights identified yet. Upload a document to begin analysis.
+                No strategic insights identified yet.
               </p>
             </div>
           )}
@@ -1022,7 +913,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       <Separator className="my-4" />
 
       {/* Risk Assessment Section */}
-      <Card className="border-0 shadow-lg">
+      <Card className="border-0 shadow-lg dark:bg-transparent">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

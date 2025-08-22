@@ -1272,7 +1272,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
   return (
     <div className="max-w-6xl mx-auto space-y-4">
       {/* Professional Header Card - Following exact styling */}
-      <Card className="border-0 shadow-lg dark:bg-black">
+      <Card className="border-0 dark:bg-transparent">
         <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -1369,10 +1369,10 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
         </CardContent>
       </Card>
 
-      <Separator className="my-4" />
+      <Separator className="my-4 dark:bg-gray-700" />
 
       {/* SWOT Tabs */}
-      <Card className="dark:bg-black shadow-lg">
+      <Card className="dark:bg-transparent border-0 mt-3 sm:mt-4">
         <Tabs value={activeSwotTab} onValueChange={setActiveSwotTab} className="w-full">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between mb-2">
