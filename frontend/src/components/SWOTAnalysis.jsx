@@ -45,6 +45,7 @@ import axios from "axios"
 
 export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = false }) {
   const BASE_URL = import.meta.env.VITE_API_BASE_URL
+  
   const [currentPage, setCurrentPage] = useState({
     strengths: 0,
     weaknesses: 0,
@@ -63,15 +64,17 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
   const [isResetting, setIsResetting] = useState(false) // Reset feedback state
 
   // Chart and filtering state (declare first)
-  const [chartType, setChartType] = useState('line') // 'bar' or 'line'
+  const [chartType, setChartType] = useState('line') // 'bar', 'line', or 'bubble'
   const [priorityFilter, setPriorityFilter] = useState('all') // 'all', 'high', 'medium', 'low'
   const [categoryFilter, setCategoryFilter] = useState('all') // 'all', 'strengths', 'weaknesses', 'opportunities', 'threats'
+  const [itemCategoryFilter, setItemCategoryFilter] = useState('all') // 'all', 'technology', 'competitive', etc.
   const [showCharts, setShowCharts] = useState(true) // false = show counts, true = show charts
 
   // Local state for drawer controls (not applied until saved)
   const [localChartType, setLocalChartType] = useState('line')
   const [localPriorityFilter, setLocalPriorityFilter] = useState('all')
   const [localCategoryFilter, setLocalCategoryFilter] = useState('all')
+  const [localItemCategoryFilter, setLocalItemCategoryFilter] = useState('all')
   const [localShowCharts, setLocalShowCharts] = useState(true)
 
   // Simple persistence using ref
@@ -89,11 +92,13 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     chartType: 'line',
     priorityFilter: 'all',
     categoryFilter: 'all',
+    itemCategoryFilter: 'all',
     showCharts: true,
     controlsDrawerOpen: false,
     localChartType: 'line',
     localPriorityFilter: 'all',
     localCategoryFilter: 'all',
+    localItemCategoryFilter: 'all',
     localShowCharts: true,
     controlsKey: 0,
     isInitialized: false
@@ -112,11 +117,13 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       setChartType(persistedState.current.chartType)
       setPriorityFilter(persistedState.current.priorityFilter)
       setCategoryFilter(persistedState.current.categoryFilter)
+      setItemCategoryFilter(persistedState.current.itemCategoryFilter)
       setShowCharts(persistedState.current.showCharts)
       setControlsDrawerOpen(persistedState.current.controlsDrawerOpen)
       setLocalChartType(persistedState.current.localChartType)
       setLocalPriorityFilter(persistedState.current.localPriorityFilter)
       setLocalCategoryFilter(persistedState.current.localCategoryFilter)
+      setLocalItemCategoryFilter(persistedState.current.localItemCategoryFilter)
       setLocalShowCharts(persistedState.current.localShowCharts)
       setControlsKey(persistedState.current.controlsKey)
       persistedState.current.isInitialized = true
@@ -136,16 +143,18 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
         chartType,
         priorityFilter,
         categoryFilter,
+        itemCategoryFilter,
         showCharts,
         controlsDrawerOpen,
         localChartType,
         localPriorityFilter,
         localCategoryFilter,
+        localItemCategoryFilter,
         localShowCharts,
         controlsKey
       }
     }
-  }, [currentPage, activeSwotTab, viewMode, copiedItems, itemRatings, chartType, priorityFilter, categoryFilter, showCharts, controlsDrawerOpen, localChartType, localPriorityFilter, localCategoryFilter, localShowCharts, controlsKey])
+  }, [currentPage, activeSwotTab, viewMode, copiedItems, itemRatings, chartType, priorityFilter, categoryFilter, itemCategoryFilter, showCharts, controlsDrawerOpen, localChartType, localPriorityFilter, localCategoryFilter, localItemCategoryFilter, localShowCharts, controlsKey])
 
   // Handle clicking outside the view menu to close it
   useEffect(() => {
@@ -164,26 +173,8 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
   }, [viewMenuOpen])
 
   // Handle clicking outside the controls drawer to close it
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      // Don't close drawer if clicking on select dropdown content or other portal elements
-      const isSelectContent = event.target.closest('[data-radix-popper-content-wrapper]') ||
-        event.target.closest('.radix-select-content') ||
-        event.target.closest('[role="listbox"]') ||
-        event.target.closest('[data-radix-select-content]')
-
-      if (controlsDrawerRef.current && !controlsDrawerRef.current.contains(event.target) && !isSelectContent) {
-        setControlsDrawerOpen(false)
-      }
-    }
-
-    if (controlsDrawerOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside)
-      }
-    }
-  }, [controlsDrawerOpen])
+  // DISABLED: Only allow manual closing via X button, Save, or overlay click
+  // This prevents accidental closure when using dropdowns inside the drawer
 
   // Update local state when drawer opens or main state changes
   useEffect(() => {
@@ -191,9 +182,10 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       setLocalChartType(chartType)
       setLocalPriorityFilter(priorityFilter)
       setLocalCategoryFilter(categoryFilter)
+      setLocalItemCategoryFilter(itemCategoryFilter)
       setLocalShowCharts(showCharts)
     }
-  }, [controlsDrawerOpen, chartType, priorityFilter, categoryFilter, showCharts])
+  }, [controlsDrawerOpen, chartType, priorityFilter, categoryFilter, itemCategoryFilter, showCharts])
 
   // Enhanced mock SWOT data
   const mockSWOTData = {
@@ -359,6 +351,11 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       // Apply category filter (for SWOT categories)
       if (categoryFilter !== 'all' && categoryFilter !== category) {
         items = []
+      }
+
+      // Apply item category filter (for technology, competitive, etc.)
+      if (itemCategoryFilter !== 'all') {
+        items = items.filter(item => item.category?.toLowerCase() === itemCategoryFilter)
       }
 
       filtered[category] = items
@@ -793,7 +790,148 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
   const ChartDisplay = ({ chartData, chartType }) => {
     const maxValue = Math.max(...chartData.map(item => Math.max(item.high, item.medium, item.low, item.total)))
 
-    if (chartType === 'bar') {
+    if (chartType === 'bubble') {
+      return (
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">SWOT Bubble Analysis</h3>
+              <div className="flex items-center gap-4 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <span className="text-gray-600 dark:text-gray-400">High</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <span className="text-gray-600 dark:text-gray-400">Medium</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <span className="text-gray-600 dark:text-gray-400">Low</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-center">
+              <svg width={400} height={300} className="overflow-visible">
+                {/* Grid lines */}
+                <defs>
+                  <pattern id="grid" width="40" height="30" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 30" fill="none" stroke="rgba(156, 163, 175, 0.2)" strokeWidth="1"/>
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid)" />
+                
+                {/* Quadrant labels - positioned to avoid overlap */}
+                <text x={100} y={15} textAnchor="middle" className="text-xs fill-gray-500 dark:fill-gray-400 font-medium">
+                  Internal Strengths
+                </text>
+                <text x={300} y={15} textAnchor="middle" className="text-xs fill-gray-500 dark:fill-gray-400 font-medium">
+                  Internal Weaknesses
+                </text>
+                <text x={100} y={295} textAnchor="middle" className="text-xs fill-gray-500 dark:fill-gray-400 font-medium">
+                  External Opportunities
+                </text>
+                <text x={300} y={295} textAnchor="middle" className="text-xs fill-gray-500 dark:fill-gray-400 font-medium">
+                  External Threats
+                </text>
+
+                {/* Center lines */}
+                <line x1={200} y1={30} x2={200} y2={270} stroke="rgba(156, 163, 175, 0.5)" strokeWidth="2" strokeDasharray="5,5" />
+                <line x1={50} y1={150} x2={350} y2={150} stroke="rgba(156, 163, 175, 0.5)" strokeWidth="2" strokeDasharray="5,5" />
+
+                {/* Bubbles */}
+                {chartData.map((item, index) => {
+                  const x = index === 0 ? 100 : // Strengths
+                           index === 1 ? 300 : // Weaknesses  
+                           index === 2 ? 100 : // Opportunities
+                           300; // Threats
+                  const y = index < 2 ? 80 : 220; // Top row vs bottom row
+                  
+                  const highRadius = Math.max(8, (item.high / Math.max(maxValue, 1)) * 25)
+                  const mediumRadius = Math.max(6, (item.medium / Math.max(maxValue, 1)) * 20)
+                  const lowRadius = Math.max(4, (item.low / Math.max(maxValue, 1)) * 15)
+
+                  return (
+                    <g key={index}>
+                      {/* High impact bubble */}
+                      {item.high > 0 && (
+                        <circle
+                          cx={x}
+                          cy={y - 15}
+                          r={highRadius}
+                          fill="#ef4444"
+                          fillOpacity={0.7}
+                          stroke="#dc2626"
+                          strokeWidth={2}
+                        >
+                          <title>{`${item.category} High Impact: ${item.high}`}</title>
+                        </circle>
+                      )}
+                      
+                      {/* Medium impact bubble */}
+                      {item.medium > 0 && (
+                        <circle
+                          cx={x + (item.high > 0 ? 20 : 0)}
+                          cy={y}
+                          r={mediumRadius}
+                          fill="#eab308"
+                          fillOpacity={0.7}
+                          stroke="#ca8a04"
+                          strokeWidth={2}
+                        >
+                          <title>{`${item.category} Medium Impact: ${item.medium}`}</title>
+                        </circle>
+                      )}
+                      
+                      {/* Low impact bubble */}
+                      {item.low > 0 && (
+                        <circle
+                          cx={x - (item.high > 0 ? 20 : 0)}
+                          cy={y + 15}
+                          r={lowRadius}
+                          fill="#22c55e"
+                          fillOpacity={0.7}
+                          stroke="#16a34a"
+                          strokeWidth={2}
+                        >
+                          <title>{`${item.category} Low Impact: ${item.low}`}</title>
+                        </circle>
+                      )}
+
+                      {/* Category label - positioned to avoid overlap with quadrant labels */}
+                      <text
+                        x={x}
+                        y={index < 2 ? y + 45 : y + 40} // Different positioning for top/bottom rows
+                        textAnchor="middle"
+                        className="text-xs font-medium fill-gray-700 dark:fill-gray-300"
+                      >
+                        {item.category}
+                      </text>
+                      
+                      {/* Count text with impact breakdown */}
+                      <text
+                        x={x}
+                        y={index < 2 ? y + 57 : y + 52} // Different positioning for top/bottom rows
+                        textAnchor="middle"
+                        className="text-xs fill-gray-500 dark:fill-gray-400"
+                      >
+                        {item.total} ({item.high}H {item.medium}M {item.low}L)
+                      </text>
+                    </g>
+                  )
+                })}
+              </svg>
+            </div>
+
+            {/* Legend */}
+            <div className="text-center text-xs text-gray-500 dark:text-gray-400">
+              Bubble size represents count • Position shows SWOT category
+            </div>
+          </div>
+        </div>
+      )
+    } else if (chartType === 'bar') {
       return (
         <div className="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
           <div className="space-y-4">
@@ -843,6 +981,9 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                     <span>High: {item.high}</span>
                     <span>Medium: {item.medium}</span>
                     <span>Low: {item.low}</span>
+                  </div>
+                  <div className="text-center text-xs text-gray-600 dark:text-gray-300 font-medium mt-1">
+                    Total: {item.total} items
                   </div>
                 </div>
               ))}
@@ -987,13 +1128,16 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
               </svg>
             </div>
 
-            {/* Summary */}
+            {/* Summary with totals */}
             <div className="grid grid-cols-4 gap-2 text-center">
               {chartData.map((item, index) => (
                 <div key={index} className="space-y-1">
                   <div className="text-xs font-medium text-gray-700 dark:text-gray-300">{item.category}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
                     H:{item.high} M:{item.medium} L:{item.low}
+                  </div>
+                  <div className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                    Total: {item.total}
                   </div>
                 </div>
               ))}
@@ -1052,6 +1196,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     setChartType(localChartType)
     setPriorityFilter(localPriorityFilter)
     setCategoryFilter(localCategoryFilter)
+    setItemCategoryFilter(localItemCategoryFilter)
     setShowCharts(localShowCharts)
     setControlsDrawerOpen(false)
   }
@@ -1064,6 +1209,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     setLocalChartType('line') // First option: Line Chart
     setLocalPriorityFilter('all') // First option: All Priorities
     setLocalCategoryFilter('all') // First option: All Categories
+    setLocalItemCategoryFilter('all') // First option: All Item Types
     setLocalShowCharts(true) // First option: Show Counts
 
     // Force re-render of Select components to ensure they display correctly
@@ -1078,22 +1224,35 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
   // Controls Drawer Component
   const ControlsDrawer = () => (
     <>
-      {/* Overlay */}
+      {/* Overlay - No click to close, only visual background */}
       {controlsDrawerOpen && (
-        <div
-          className={`fixed inset-0 bg-black z-40 transition-all duration-300 ease-in-out ${controlsDrawerOpen ? 'bg-opacity-50' : 'bg-opacity-0'
-            }`}
-          onClick={() => setControlsDrawerOpen(false)}
-        />
-      )}
+  <div
+    className={`fixed bg-black z-40 transition-opacity duration-300 ease-in-out ${controlsDrawerOpen ? 'opacity-50' : 'opacity-0'}`}
+    style={{
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+      margin: 0,
+      padding: 0
+    }}
+  />
+)}
 
       {/* Drawer */}
       <div
-        ref={controlsDrawerRef}
-        className={`fixed top-0 right-0 h-full w-80 bg-white dark:bg-[#121212] shadow-xl z-50 transform transition-all duration-300 ease-in-out ${controlsDrawerOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
-          }`}
-        style={{ transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out' }}
-      >
+  ref={controlsDrawerRef}
+  className={`fixed right-0 w-80 bg-white dark:bg-[#121212] shadow-xl z-50 transform transition-all duration-300 ease-in-out ${controlsDrawerOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+    }`}
+  style={{ 
+    top: '-1px',  // Slight negative margin to overcome browser gaps
+    bottom: '-1px',
+    height: 'calc(100vh + 2px)',
+    margin: 0,
+    padding: 0,
+    transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out' 
+  }}
+>
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
@@ -1156,16 +1315,23 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="z-[60]">
+                    <SelectItem value="line">
+                        <div className="flex items-center gap-2">
+                          <LineChart className="h-4 w-4" />
+                          Line Chart
+                        </div>
+                      </SelectItem>
                       <SelectItem value="bar">
                         <div className="flex items-center gap-2">
                           <BarChart3 className="h-4 w-4" />
                           Bar Chart
                         </div>
                       </SelectItem>
-                      <SelectItem value="line">
+                      
+                      <SelectItem value="bubble">
                         <div className="flex items-center gap-2">
-                          <LineChart className="h-4 w-4" />
-                          Line Chart
+                          <Target className="h-4 w-4" />
+                          Bubble Chart
                         </div>
                       </SelectItem>
                     </SelectContent>
@@ -1195,7 +1361,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                 </div>
 
                 {/* Category Filter */}
-                <div className="space-y-3">
+                <div className="space-y-3 mb-6">
                   <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">SWOT Category</Label>
                   <Select value={localCategoryFilter} onValueChange={setLocalCategoryFilter}>
                     <SelectTrigger className="w-full">
@@ -1211,6 +1377,31 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                   </Select>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Focus on specific SWOT categories
+                  </p>
+                </div>
+
+                {/* Item Category Filter */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Item Category</Label>
+                  <Select value={localItemCategoryFilter} onValueChange={setLocalItemCategoryFilter}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-[60]">
+                      <SelectItem value="all">All Item Types</SelectItem>
+                      <SelectItem value="technology">Technology</SelectItem>
+                      <SelectItem value="competitive">Competitive</SelectItem>
+                      <SelectItem value="financial">Financial</SelectItem>
+                      <SelectItem value="market">Market</SelectItem>
+                      <SelectItem value="business">Business</SelectItem>
+                      <SelectItem value="operational">Operational</SelectItem>
+                      <SelectItem value="regulatory">Regulatory</SelectItem>
+                      <SelectItem value="industry">Industry</SelectItem>
+                      <SelectItem value="product">Product</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Filter by business domain categories
                   </p>
                 </div>
               </div>
