@@ -46,38 +46,65 @@ import axios from "axios"
 export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = false }) {
   const BASE_URL = import.meta.env.VITE_API_BASE_URL
   
-  const [currentPage, setCurrentPage] = useState({
-    strengths: 0,
-    weaknesses: 0,
-    opportunities: 0,
-    threats: 0,
-  })
-  const [activeSwotTab, setActiveSwotTab] = useState('strengths')
-  const [copiedItems, setCopiedItems] = useState(new Set())
-  const [itemRatings, setItemRatings] = useState({})
-  const [viewMode, setViewMode] = useState('list') // 'list' or 'matrix'
-  const [viewMenuOpen, setViewMenuOpen] = useState(false)
-  const viewMenuRef = useRef(null)
-  const [controlsDrawerOpen, setControlsDrawerOpen] = useState(false)
-  const controlsDrawerRef = useRef(null)
-  const [controlsKey, setControlsKey] = useState(0) // Force re-render key
-  const [isResetting, setIsResetting] = useState(false) // Reset feedback state
+  // Generate document-specific storage key
+  const generateDocumentKey = (swotData) => {
+    if (!swotData) return 'swot-controls-default'
+    
+    // Create a simple hash from the SWOT data to identify unique documents
+    const dataString = JSON.stringify(swotData)
+    let hash = 0
+    for (let i = 0; i < dataString.length; i++) {
+      const char = dataString.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // Convert to 32-bit integer
+    }
+    return `swot-controls-${Math.abs(hash)}`
+  }
+  
+  const STORAGE_KEY = generateDocumentKey(swot)
+  const [currentDocumentKey, setCurrentDocumentKey] = useState(STORAGE_KEY)
 
-  // Chart and filtering state (declare first)
-  const [chartType, setChartType] = useState('line') // 'bar', 'line', or 'bubble'
-  const [priorityFilter, setPriorityFilter] = useState('all') // 'all', 'high', 'medium', 'low'
-  const [categoryFilter, setCategoryFilter] = useState('all') // 'all', 'strengths', 'weaknesses', 'opportunities', 'threats'
-  const [itemCategoryFilter, setItemCategoryFilter] = useState('all') // 'all', 'technology', 'competitive', etc.
-  const [showCharts, setShowCharts] = useState(true) // false = show counts, true = show charts
+  // Load settings from localStorage for current document
+  const loadFromStorage = () => {
+    try {
+      const stored = localStorage.getItem(currentDocumentKey)
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        return {
+          chartType: parsed.chartType || 'line',
+          priorityFilter: parsed.priorityFilter || 'all',
+          categoryFilter: parsed.categoryFilter || 'all',
+          itemCategoryFilter: parsed.itemCategoryFilter || 'all',
+          showCharts: parsed.showCharts !== undefined ? parsed.showCharts : true,
+          activeSwotTab: parsed.activeSwotTab || 'strengths'
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load SWOT settings from localStorage:', error)
+    }
+    return {
+      chartType: 'line',
+      priorityFilter: 'all',
+      categoryFilter: 'all',
+      itemCategoryFilter: 'all',
+      showCharts: true,
+      activeSwotTab: 'strengths'
+    }
+  }
 
-  // Local state for drawer controls (not applied until saved)
-  const [localChartType, setLocalChartType] = useState('line')
-  const [localPriorityFilter, setLocalPriorityFilter] = useState('all')
-  const [localCategoryFilter, setLocalCategoryFilter] = useState('all')
-  const [localItemCategoryFilter, setLocalItemCategoryFilter] = useState('all')
-  const [localShowCharts, setLocalShowCharts] = useState(true)
+  // Save settings to localStorage for current document
+  const saveToStorage = (settings) => {
+    try {
+      localStorage.setItem(currentDocumentKey, JSON.stringify(settings))
+    } catch (error) {
+      console.warn('Failed to save SWOT settings to localStorage:', error)
+    }
+  }
 
-  // Simple persistence using ref
+  // Initialize with stored values
+  const storedSettings = loadFromStorage()
+
+  // Simple persistence using ref with default values
   const persistedState = useRef({
     currentPage: {
       strengths: 0,
@@ -85,76 +112,77 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       opportunities: 0,
       threats: 0,
     },
-    activeSwotTab: 'strengths',
+    activeSwotTab: storedSettings.activeSwotTab,
     viewMode: 'list',
     copiedItems: new Set(),
     itemRatings: {},
-    chartType: 'line',
-    priorityFilter: 'all',
-    categoryFilter: 'all',
-    itemCategoryFilter: 'all',
-    showCharts: true,
-    controlsDrawerOpen: false,
-    localChartType: 'line',
-    localPriorityFilter: 'all',
-    localCategoryFilter: 'all',
-    localItemCategoryFilter: 'all',
-    localShowCharts: true,
+    chartType: storedSettings.chartType,
+    priorityFilter: storedSettings.priorityFilter,
+    categoryFilter: storedSettings.categoryFilter,
+    itemCategoryFilter: storedSettings.itemCategoryFilter,
+    showCharts: storedSettings.showCharts,
+    localChartType: storedSettings.chartType,
+    localPriorityFilter: storedSettings.priorityFilter,
+    localCategoryFilter: storedSettings.categoryFilter,
+    localItemCategoryFilter: storedSettings.itemCategoryFilter,
+    localShowCharts: storedSettings.showCharts,
     controlsKey: 0,
     isInitialized: false
   })
 
+  // FIXED: Initialize states with persisted values
+  const [currentPage, setCurrentPage] = useState(persistedState.current.currentPage)
+  const [activeSwotTab, setActiveSwotTab] = useState(persistedState.current.activeSwotTab)
+  const [copiedItems, setCopiedItems] = useState(persistedState.current.copiedItems)
+  const [itemRatings, setItemRatings] = useState(persistedState.current.itemRatings)
+  const [viewMode, setViewMode] = useState(persistedState.current.viewMode)
+  const [viewMenuOpen, setViewMenuOpen] = useState(false) // Always start closed
+  const [controlsDrawerOpen, setControlsDrawerOpen] = useState(false) // Always start closed
+  const controlsDrawerRef = useRef(null)
+  const viewMenuRef = useRef(null)
+  const [controlsKey, setControlsKey] = useState(persistedState.current.controlsKey)
+  const [isResetting, setIsResetting] = useState(false) // Always start false
+
+  // FIXED: Chart and filtering state - Initialize with persisted values
+  const [chartType, setChartType] = useState(persistedState.current.chartType)
+  const [priorityFilter, setPriorityFilter] = useState(persistedState.current.priorityFilter)
+  const [categoryFilter, setCategoryFilter] = useState(persistedState.current.categoryFilter)
+  const [itemCategoryFilter, setItemCategoryFilter] = useState(persistedState.current.itemCategoryFilter)
+  const [showCharts, setShowCharts] = useState(persistedState.current.showCharts)
+
+  // FIXED: Local state for drawer controls - Initialize with persisted values
+  const [localChartType, setLocalChartType] = useState(persistedState.current.localChartType)
+  const [localPriorityFilter, setLocalPriorityFilter] = useState(persistedState.current.localPriorityFilter)
+  const [localCategoryFilter, setLocalCategoryFilter] = useState(persistedState.current.localCategoryFilter)
+  const [localItemCategoryFilter, setLocalItemCategoryFilter] = useState(persistedState.current.localItemCategoryFilter)
+  const [localShowCharts, setLocalShowCharts] = useState(persistedState.current.localShowCharts)
+
   const ITEMS_PER_PAGE = 3
 
-  // Load persisted state on mount only once
+  // Persist state changes (but exclude temporary UI states)
   useEffect(() => {
-    if (!persistedState.current.isInitialized) {
-      setCurrentPage(persistedState.current.currentPage)
-      setActiveSwotTab(persistedState.current.activeSwotTab)
-      setViewMode(persistedState.current.viewMode)
-      setCopiedItems(persistedState.current.copiedItems)
-      setItemRatings(persistedState.current.itemRatings)
-      setChartType(persistedState.current.chartType)
-      setPriorityFilter(persistedState.current.priorityFilter)
-      setCategoryFilter(persistedState.current.categoryFilter)
-      setItemCategoryFilter(persistedState.current.itemCategoryFilter)
-      setShowCharts(persistedState.current.showCharts)
-      setControlsDrawerOpen(persistedState.current.controlsDrawerOpen)
-      setLocalChartType(persistedState.current.localChartType)
-      setLocalPriorityFilter(persistedState.current.localPriorityFilter)
-      setLocalCategoryFilter(persistedState.current.localCategoryFilter)
-      setLocalItemCategoryFilter(persistedState.current.localItemCategoryFilter)
-      setLocalShowCharts(persistedState.current.localShowCharts)
-      setControlsKey(persistedState.current.controlsKey)
-      persistedState.current.isInitialized = true
+    persistedState.current = {
+      ...persistedState.current,
+      currentPage,
+      activeSwotTab,
+      viewMode,
+      copiedItems,
+      itemRatings,
+      chartType,           // ✅ Persist user's chart choice
+      priorityFilter,      // ✅ Persist user's filter choice
+      categoryFilter,      // ✅ Persist user's category choice
+      itemCategoryFilter,  // ✅ Persist user's item category choice
+      showCharts,          // ✅ Persist user's display preference
+      localChartType,      // ✅ Persist drawer state
+      localPriorityFilter, // ✅ Persist drawer state
+      localCategoryFilter, // ✅ Persist drawer state
+      localItemCategoryFilter, // ✅ Persist drawer state
+      localShowCharts,     // ✅ Persist drawer state
+      controlsKey,
+      isInitialized: true
+      // Note: controlsDrawerOpen is NOT persisted - drawer always starts closed
     }
-  }, [])
-
-  // Persist state changes
-  useEffect(() => {
-    if (persistedState.current.isInitialized) {
-      persistedState.current = {
-        ...persistedState.current,
-        currentPage,
-        activeSwotTab,
-        viewMode,
-        copiedItems,
-        itemRatings,
-        chartType,
-        priorityFilter,
-        categoryFilter,
-        itemCategoryFilter,
-        showCharts,
-        controlsDrawerOpen,
-        localChartType,
-        localPriorityFilter,
-        localCategoryFilter,
-        localItemCategoryFilter,
-        localShowCharts,
-        controlsKey
-      }
-    }
-  }, [currentPage, activeSwotTab, viewMode, copiedItems, itemRatings, chartType, priorityFilter, categoryFilter, itemCategoryFilter, showCharts, controlsDrawerOpen, localChartType, localPriorityFilter, localCategoryFilter, localItemCategoryFilter, localShowCharts, controlsKey])
+  }, [currentPage, activeSwotTab, viewMode, copiedItems, itemRatings, chartType, priorityFilter, categoryFilter, itemCategoryFilter, showCharts, localChartType, localPriorityFilter, localCategoryFilter, localItemCategoryFilter, localShowCharts, controlsKey])
 
   // Handle clicking outside the view menu to close it
   useEffect(() => {
@@ -172,9 +200,61 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     }
   }, [viewMenuOpen])
 
-  // Handle clicking outside the controls drawer to close it
-  // DISABLED: Only allow manual closing via X button, Save, or overlay click
-  // This prevents accidental closure when using dropdowns inside the drawer
+  // Handle document changes - reset state only for truly new documents
+  useEffect(() => {
+    const newDocumentKey = generateDocumentKey(swot)
+    
+    // Only reset if this is a genuinely different document
+    if (newDocumentKey !== currentDocumentKey) {
+      console.log('New document detected, resetting SWOT drawer state')
+      
+      // Reset all settings to defaults for new document
+      const defaults = {
+        chartType: 'line',
+        priorityFilter: 'all',
+        categoryFilter: 'all',
+        itemCategoryFilter: 'all',
+        showCharts: true,
+        activeSwotTab: 'strengths'
+      }
+      
+      setChartType(defaults.chartType)
+      setPriorityFilter(defaults.priorityFilter)
+      setCategoryFilter(defaults.categoryFilter)
+      setItemCategoryFilter(defaults.itemCategoryFilter)
+      setShowCharts(defaults.showCharts)
+      setActiveSwotTab(defaults.activeSwotTab)
+      
+      setLocalChartType(defaults.chartType)
+      setLocalPriorityFilter(defaults.priorityFilter)
+      setLocalCategoryFilter(defaults.categoryFilter)
+      setLocalItemCategoryFilter(defaults.itemCategoryFilter)
+      setLocalShowCharts(defaults.showCharts)
+      
+      // Close controls drawer if open
+      setControlsDrawerOpen(false)
+      
+      // Update current document key
+      setCurrentDocumentKey(newDocumentKey)
+    } else {
+      // Same document - load persisted settings if available
+      const stored = loadFromStorage()
+      if (stored) {
+        setChartType(stored.chartType)
+        setPriorityFilter(stored.priorityFilter)
+        setCategoryFilter(stored.categoryFilter)
+        setItemCategoryFilter(stored.itemCategoryFilter)
+        setShowCharts(stored.showCharts)
+        setActiveSwotTab(stored.activeSwotTab)
+        
+        setLocalChartType(stored.chartType)
+        setLocalPriorityFilter(stored.priorityFilter)
+        setLocalCategoryFilter(stored.categoryFilter)
+        setLocalItemCategoryFilter(stored.itemCategoryFilter)
+        setLocalShowCharts(stored.showCharts)
+      }
+    }
+  }, [swot, currentDocumentKey])
 
   // Update local state when drawer opens or main state changes
   useEffect(() => {
@@ -186,6 +266,48 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       setLocalShowCharts(showCharts)
     }
   }, [controlsDrawerOpen, chartType, priorityFilter, categoryFilter, itemCategoryFilter, showCharts])
+
+  // Save controls function
+  const saveControls = () => {
+    // Update main state
+    setChartType(localChartType)
+    setPriorityFilter(localPriorityFilter)
+    setCategoryFilter(localCategoryFilter)
+    setItemCategoryFilter(localItemCategoryFilter)
+    setShowCharts(localShowCharts)
+    
+    // Save to localStorage for persistence across refreshes
+    saveToStorage({
+      chartType: localChartType,
+      priorityFilter: localPriorityFilter,
+      categoryFilter: localCategoryFilter,
+      itemCategoryFilter: localItemCategoryFilter,
+      showCharts: localShowCharts,
+      activeSwotTab: activeSwotTab
+    })
+    
+    setControlsDrawerOpen(false)
+  }
+
+  // Reset controls function - Resets to defaults
+  const resetControls = () => {
+    setIsResetting(true)
+
+    // Reset all local state to default options
+    setLocalChartType('line')
+    setLocalPriorityFilter('all')
+    setLocalCategoryFilter('all')
+    setLocalItemCategoryFilter('all')
+    setLocalShowCharts(true)
+
+    // Force re-render of Select components
+    setControlsKey(prev => prev + 1)
+
+    // Remove reset feedback after a short delay
+    setTimeout(() => {
+      setIsResetting(false)
+    }, 800)
+  }
 
   // Enhanced mock SWOT data
   const mockSWOTData = {
@@ -791,12 +913,16 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     const maxValue = Math.max(...chartData.map(item => Math.max(item.high, item.medium, item.low, item.total)))
 
     if (chartType === 'bubble') {
+      // Responsive bubble chart dimensions
+      const bubbleWidth = 400
+      const bubbleHeight = 300
+      
       return (
-        <div className="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-2 sm:p-4 border border-gray-200 dark:border-gray-700">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">SWOT Bubble Analysis</h3>
-              <div className="flex items-center gap-4 text-xs">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200">SWOT Bubble Analysis</h3>
+              <div className="hidden sm:flex items-center gap-4 text-xs">
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                   <span className="text-gray-600 dark:text-gray-400">High</span>
@@ -812,15 +938,21 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
               </div>
             </div>
 
-            <div className="flex justify-center">
-              <svg width={400} height={300} className="overflow-visible">
-                {/* Grid lines */}
-                <defs>
-                  <pattern id="grid" width="40" height="30" patternUnits="userSpaceOnUse">
-                    <path d="M 40 0 L 0 0 0 30" fill="none" stroke="rgba(156, 163, 175, 0.2)" strokeWidth="1"/>
-                  </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#grid)" />
+            <div className="w-full overflow-x-auto">
+              <div className="flex justify-center min-w-fit">
+                <svg 
+                  width={bubbleWidth} 
+                  height={bubbleHeight} 
+                  className="overflow-visible max-w-full h-auto"
+                  viewBox={`0 0 ${bubbleWidth} ${bubbleHeight}`}
+                >
+                  {/* Grid lines with unique ID */}
+                  <defs>
+                    <pattern id={`bubble-grid-${currentDocumentKey}`} width="40" height="30" patternUnits="userSpaceOnUse">
+                      <path d="M 40 0 L 0 0 0 30" fill="none" stroke="rgba(156, 163, 175, 0.2)" strokeWidth="1"/>
+                    </pattern>
+                  </defs>
+                  <rect width="100%" height="100%" fill={`url(#bubble-grid-${currentDocumentKey})`} />
                 
                 {/* Quadrant labels - positioned to avoid overlap */}
                 <text x={100} y={15} textAnchor="middle" className="text-xs fill-gray-500 dark:fill-gray-400 font-medium">
@@ -921,9 +1053,26 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                     </g>
                   )
                 })}
-              </svg>
+                </svg>
+              </div>
             </div>
 
+            {/* Mobile legend */}
+            <div className="sm:hidden flex items-center justify-center gap-3 text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                <span className="text-gray-600 dark:text-gray-400">H</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                <span className="text-gray-600 dark:text-gray-400">M</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-gray-600 dark:text-gray-400">L</span>
+              </div>
+            </div>
+            
             {/* Legend */}
             <div className="text-center text-xs text-gray-500 dark:text-gray-400">
               Bubble size represents count • Position shows SWOT category
@@ -933,11 +1082,11 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       )
     } else if (chartType === 'bar') {
       return (
-        <div className="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-2 sm:p-4 border border-gray-200 dark:border-gray-700">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">SWOT Analysis Distribution</h3>
-              <div className="flex items-center gap-4 text-xs">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200">SWOT Analysis Distribution</h3>
+              <div className="hidden sm:flex items-center gap-4 text-xs">
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-red-500 rounded-sm"></div>
                   <span className="text-gray-600 dark:text-gray-400">High</span>
@@ -957,7 +1106,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
               {chartData.map((item, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{item.category}</span>
+                    <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">{item.category}</span>
                     <span className="text-xs text-gray-500 dark:text-gray-400">Total: {item.total}</span>
                   </div>
                   <div className="flex gap-1 h-6 bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden">
@@ -992,7 +1141,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
         </div>
       )
     } else {
-      // Line Chart
+      // Line Chart - Responsive dimensions
       const chartHeight = 200
       const chartWidth = 400
       const padding = { top: 20, right: 20, bottom: 40, left: 40 }
@@ -1015,11 +1164,11 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       const lowPath = createPath(chartData.map(item => item.low))
 
       return (
-        <div className="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-2 sm:p-4 border border-gray-200 dark:border-gray-700">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">SWOT Analysis Trends</h3>
-              <div className="flex items-center gap-4 text-xs">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200">SWOT Analysis Trends</h3>
+              <div className="hidden sm:flex items-center gap-4 text-xs">
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-0.5 bg-red-500"></div>
                   <span className="text-gray-600 dark:text-gray-400">High</span>
@@ -1035,8 +1184,14 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
               </div>
             </div>
 
-            <div className="flex justify-center">
-              <svg width={chartWidth} height={chartHeight} className="overflow-visible">
+            <div className="w-full overflow-x-auto">
+              <div className="flex justify-center min-w-fit">
+                <svg 
+                  width={chartWidth} 
+                  height={chartHeight} 
+                  className="overflow-visible max-w-full h-auto"
+                  viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+                >
                 {/* Grid lines */}
                 <g>
                   {/* Vertical grid lines - align with data points */}
@@ -1125,11 +1280,28 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                     </text>
                   )
                 })}
-              </svg>
+                </svg>
+              </div>
+            </div>
+
+            {/* Mobile legend */}
+            <div className="sm:hidden flex items-center justify-center gap-3 text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-0.5 bg-red-500"></div>
+                <span className="text-gray-600 dark:text-gray-400">H</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-0.5 bg-yellow-500"></div>
+                <span className="text-gray-600 dark:text-gray-400">M</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-0.5 bg-green-500"></div>
+                <span className="text-gray-600 dark:text-gray-400">L</span>
+              </div>
             </div>
 
             {/* Summary with totals */}
-            <div className="grid grid-cols-4 gap-2 text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
               {chartData.map((item, index) => (
                 <div key={index} className="space-y-1">
                   <div className="text-xs font-medium text-gray-700 dark:text-gray-300">{item.category}</div>
@@ -1191,35 +1363,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     },
   }
 
-  // Save controls function
-  const saveControls = () => {
-    setChartType(localChartType)
-    setPriorityFilter(localPriorityFilter)
-    setCategoryFilter(localCategoryFilter)
-    setItemCategoryFilter(localItemCategoryFilter)
-    setShowCharts(localShowCharts)
-    setControlsDrawerOpen(false)
-  }
-
-  // Reset controls function - Reset to first/default selections
-  const resetControls = () => {
-    setIsResetting(true)
-
-    // Reset all local state to first/default options
-    setLocalChartType('line') // First option: Line Chart
-    setLocalPriorityFilter('all') // First option: All Priorities
-    setLocalCategoryFilter('all') // First option: All Categories
-    setLocalItemCategoryFilter('all') // First option: All Item Types
-    setLocalShowCharts(true) // First option: Show Counts
-
-    // Force re-render of Select components to ensure they display correctly
-    setControlsKey(prev => prev + 1)
-
-    // Remove reset feedback after a short delay
-    setTimeout(() => {
-      setIsResetting(false)
-    }, 800)
-  }
+ 
 
   // Controls Drawer Component
   const ControlsDrawer = () => (
@@ -1321,6 +1465,13 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                           Line Chart
                         </div>
                       </SelectItem>
+
+                      <SelectItem value="bubble">
+                        <div className="flex items-center gap-2">
+                          <Target className="h-4 w-4" />
+                          Bubble Chart
+                        </div>
+                      </SelectItem>
                       <SelectItem value="bar">
                         <div className="flex items-center gap-2">
                           <BarChart3 className="h-4 w-4" />
@@ -1328,12 +1479,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                         </div>
                       </SelectItem>
                       
-                      <SelectItem value="bubble">
-                        <div className="flex items-center gap-2">
-                          <Target className="h-4 w-4" />
-                          Bubble Chart
-                        </div>
-                      </SelectItem>
+                     
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
