@@ -61,19 +61,19 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
   const controlsDrawerRef = useRef(null)
   const [controlsKey, setControlsKey] = useState(0) // Force re-render key
   const [isResetting, setIsResetting] = useState(false) // Reset feedback state
-  
+
   // Chart and filtering state (declare first)
   const [chartType, setChartType] = useState('line') // 'bar' or 'line'
   const [priorityFilter, setPriorityFilter] = useState('all') // 'all', 'high', 'medium', 'low'
   const [categoryFilter, setCategoryFilter] = useState('all') // 'all', 'strengths', 'weaknesses', 'opportunities', 'threats'
   const [showCharts, setShowCharts] = useState(true) // false = show counts, true = show charts
-  
+
   // Local state for drawer controls (not applied until saved)
   const [localChartType, setLocalChartType] = useState('line')
   const [localPriorityFilter, setLocalPriorityFilter] = useState('all')
   const [localCategoryFilter, setLocalCategoryFilter] = useState('all')
   const [localShowCharts, setLocalShowCharts] = useState(true)
-  
+
   // Simple persistence using ref
   const persistedState = useRef({
     currentPage: {
@@ -100,7 +100,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
   })
 
   const ITEMS_PER_PAGE = 3
-  
+
   // Load persisted state on mount only once
   useEffect(() => {
     if (!persistedState.current.isInitialized) {
@@ -122,7 +122,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       persistedState.current.isInitialized = true
     }
   }, [])
-  
+
   // Persist state changes
   useEffect(() => {
     if (persistedState.current.isInitialized) {
@@ -168,10 +168,10 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     const handleClickOutside = (event) => {
       // Don't close drawer if clicking on select dropdown content or other portal elements
       const isSelectContent = event.target.closest('[data-radix-popper-content-wrapper]') ||
-                             event.target.closest('.radix-select-content') ||
-                             event.target.closest('[role="listbox"]') ||
-                             event.target.closest('[data-radix-select-content]')
-      
+        event.target.closest('.radix-select-content') ||
+        event.target.closest('[role="listbox"]') ||
+        event.target.closest('[data-radix-select-content]')
+
       if (controlsDrawerRef.current && !controlsDrawerRef.current.contains(event.target) && !isSelectContent) {
         setControlsDrawerOpen(false)
       }
@@ -344,43 +344,43 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
   // Filter data based on current filters
   const getFilteredData = (data) => {
     if (!data) return { strengths: [], weaknesses: [], opportunities: [], threats: [] }
-    
+
     const categories = ['strengths', 'weaknesses', 'opportunities', 'threats']
     const filtered = {}
-    
+
     categories.forEach(category => {
       let items = data[category] || []
-      
+
       // Apply priority filter
       if (priorityFilter !== 'all') {
         items = items.filter(item => item.impact?.toLowerCase() === priorityFilter)
       }
-      
+
       // Apply category filter (for SWOT categories)
       if (categoryFilter !== 'all' && categoryFilter !== category) {
         items = []
       }
-      
+
       filtered[category] = items
     })
-    
+
     return filtered
   }
-  
+
   const filteredSwotData = getFilteredData(swotData)
-  
+
   // Get chart data for visualization
   const getChartData = () => {
     const categories = ['strengths', 'weaknesses', 'opportunities', 'threats']
     const data = []
-    
+
     categories.forEach(category => {
       const items = filteredSwotData[category] || []
       const highCount = items.filter(item => item.impact?.toLowerCase() === 'high').length
       const mediumCount = items.filter(item => item.impact?.toLowerCase() === 'medium').length
       const lowCount = items.filter(item => item.impact?.toLowerCase() === 'low').length
       const totalCount = items.length
-      
+
       data.push({
         category: category.charAt(0).toUpperCase() + category.slice(1),
         high: highCount,
@@ -389,7 +389,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
         total: totalCount
       })
     })
-    
+
     return data
   }
 
@@ -458,12 +458,12 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
 
   const copyToClipboard = useCallback(async (item, category) => {
     const text = `${item.title}\n\n${item.description}\n\nImpact: ${item.impact}\nCategory: ${item.category}`
-    
+
     try {
       await navigator.clipboard.writeText(text)
       const itemId = `${category}-${item.title}`
       setCopiedItems(prev => new Set([...prev, itemId]))
-      
+
       // Remove the copied indicator after 2 seconds
       setTimeout(() => {
         setCopiedItems(prev => {
@@ -513,7 +513,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     const itemId = `${category}-${item.title}`
     const isCopied = copiedItems.has(itemId)
     const rating = itemRatings[itemId]
-    
+
     const getItemStyle = (category) => {
       switch (category) {
         case 'strengths':
@@ -551,18 +551,17 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                 <Copy className="h-3 w-3 text-gray-500 dark:text-gray-400" />
               )}
             </Button>
-            
+
             {/* Rating Buttons */}
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => rateItem(item, category, 'up')}
-                className={`h-7 w-7 p-0 ${
-                  rating === 'up' 
-                    ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20' 
+                className={`h-7 w-7 p-0 ${rating === 'up'
+                    ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20'
                     : 'text-gray-500 dark:text-gray-400'
-                }`}
+                  }`}
                 title="Helpful"
               >
                 <ThumbsUp className="h-3 w-3" />
@@ -571,11 +570,10 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                 variant="ghost"
                 size="sm"
                 onClick={() => rateItem(item, category, 'down')}
-                className={`h-7 w-7 p-0 ${
-                  rating === 'down' 
-                    ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20' 
+                className={`h-7 w-7 p-0 ${rating === 'down'
+                    ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
                     : 'text-gray-500 dark:text-gray-400'
-                }`}
+                  }`}
                 title="Not helpful"
               >
                 <ThumbsDown className="h-3 w-3" />
@@ -626,7 +624,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
           >
             <ChevronLeft className="h-3 w-3" />
           </Button>
-          
+
           {Array.from({ length: totalPages }, (_, i) => (
             <Button
               key={i}
@@ -638,7 +636,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
               {i + 1}
             </Button>
           ))}
-          
+
           <Button
             variant="outline"
             size="sm"
@@ -681,10 +679,10 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     const MatrixQuadrant = ({ title, items, bgColor, borderColor, textColor, icon }) => (
       <div className={`${bgColor} ${borderColor} border-2 rounded-xl p-4 h-full min-h-[300px] flex flex-col`}>
         <div className="flex items-center gap-2 mb-4">
-          <div className={`p-2 ${textColor === 'text-green-600' ? 'bg-green-100 dark:bg-green-900/30' : 
-                           textColor === 'text-red-600' ? 'bg-red-100 dark:bg-red-900/30' :
-                           textColor === 'text-blue-600' ? 'bg-blue-100 dark:bg-blue-900/30' :
-                           'bg-amber-100 dark:bg-amber-900/30'} rounded-lg`}>
+          <div className={`p-2 ${textColor === 'text-green-600' ? 'bg-green-100 dark:bg-green-900/30' :
+            textColor === 'text-red-600' ? 'bg-red-100 dark:bg-red-900/30' :
+              textColor === 'text-blue-600' ? 'bg-blue-100 dark:bg-blue-900/30' :
+                'bg-amber-100 dark:bg-amber-900/30'} rounded-lg`}>
             {icon}
           </div>
           <h3 className={`font-bold text-lg ${textColor} dark:${textColor.replace('600', '400')}`}>
@@ -794,7 +792,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
   // Chart Display Component
   const ChartDisplay = ({ chartData, chartType }) => {
     const maxValue = Math.max(...chartData.map(item => Math.max(item.high, item.medium, item.low, item.total)))
-    
+
     if (chartType === 'bar') {
       return (
         <div className="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
@@ -816,7 +814,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-3">
               {chartData.map((item, index) => (
                 <div key={index} className="space-y-2">
@@ -825,17 +823,17 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                     <span className="text-xs text-gray-500 dark:text-gray-400">Total: {item.total}</span>
                   </div>
                   <div className="flex gap-1 h-6 bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden">
-                    <div 
+                    <div
                       className="bg-red-500 transition-all duration-300"
                       style={{ width: `${maxValue > 0 ? (item.high / maxValue) * 100 : 0}%` }}
                       title={`High: ${item.high}`}
                     />
-                    <div 
+                    <div
                       className="bg-yellow-500 transition-all duration-300"
                       style={{ width: `${maxValue > 0 ? (item.medium / maxValue) * 100 : 0}%` }}
                       title={`Medium: ${item.medium}`}
                     />
-                    <div 
+                    <div
                       className="bg-green-500 transition-all duration-300"
                       style={{ width: `${maxValue > 0 ? (item.low / maxValue) * 100 : 0}%` }}
                       title={`Low: ${item.low}`}
@@ -859,10 +857,10 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       const padding = { top: 20, right: 20, bottom: 40, left: 40 }
       const innerWidth = chartWidth - padding.left - padding.right
       const innerHeight = chartHeight - padding.top - padding.bottom
-      
+
       const xStep = innerWidth / (chartData.length - 1)
       const yScale = innerHeight / maxValue
-      
+
       const createPath = (values) => {
         return chartData.map((item, index) => {
           const x = padding.left + (index * xStep)
@@ -870,11 +868,11 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
           return `${index === 0 ? 'M' : 'L'} ${x} ${y}`
         }).join(' ')
       }
-      
+
       const highPath = createPath(chartData.map(item => item.high))
       const mediumPath = createPath(chartData.map(item => item.medium))
       const lowPath = createPath(chartData.map(item => item.low))
-      
+
       return (
         <div className="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
           <div className="space-y-4">
@@ -895,7 +893,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                 </div>
               </div>
             </div>
-            
+
             <div className="flex justify-center">
               <svg width={chartWidth} height={chartHeight} className="overflow-visible">
                 {/* Grid lines */}
@@ -917,7 +915,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                     )
                   })}
                   {/* Horizontal grid lines */}
-                  {[0, Math.ceil(maxValue/4), Math.ceil(maxValue/2), Math.ceil(maxValue*3/4), maxValue].map((value, i) => {
+                  {[0, Math.ceil(maxValue / 4), Math.ceil(maxValue / 2), Math.ceil(maxValue * 3 / 4), maxValue].map((value, i) => {
                     const y = padding.top + (innerHeight - (value * yScale))
                     return (
                       <line
@@ -933,19 +931,19 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                     )
                   })}
                 </g>
-                
+
                 {/* Lines */}
                 <path d={highPath} fill="none" stroke="#ef4444" strokeWidth="2" className="drop-shadow-sm" />
                 <path d={mediumPath} fill="none" stroke="#eab308" strokeWidth="2" className="drop-shadow-sm" />
                 <path d={lowPath} fill="none" stroke="#22c55e" strokeWidth="2" className="drop-shadow-sm" />
-                
+
                 {/* Data points */}
                 {chartData.map((item, index) => {
                   const x = padding.left + (index * xStep)
                   const highY = padding.top + (innerHeight - (item.high * yScale))
                   const mediumY = padding.top + (innerHeight - (item.medium * yScale))
                   const lowY = padding.top + (innerHeight - (item.low * yScale))
-                  
+
                   return (
                     <g key={index}>
                       <circle cx={x} cy={highY} r="3" fill="#ef4444" className="drop-shadow-sm" />
@@ -954,14 +952,14 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                     </g>
                   )
                 })}
-                
+
                 {/* X-axis labels */}
                 {chartData.map((item, index) => {
                   const x = padding.left + (index * xStep)
                   return (
-                    <text 
+                    <text
                       key={index}
-                      x={x} 
+                      x={x}
                       y={chartHeight - 10}
                       textAnchor="middle"
                       className="text-xs fill-gray-600 dark:fill-gray-400"
@@ -970,14 +968,14 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                     </text>
                   )
                 })}
-                
+
                 {/* Y-axis labels */}
-                {[0, Math.ceil(maxValue/2), maxValue].map((value, index) => {
+                {[0, Math.ceil(maxValue / 2), maxValue].map((value, index) => {
                   const y = padding.top + (innerHeight - (value * yScale))
                   return (
-                    <text 
+                    <text
                       key={index}
-                      x={padding.left - 10} 
+                      x={padding.left - 10}
                       y={y + 4}
                       textAnchor="end"
                       className="text-xs fill-gray-600 dark:fill-gray-400"
@@ -988,7 +986,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                 })}
               </svg>
             </div>
-            
+
             {/* Summary */}
             <div className="grid grid-cols-4 gap-2 text-center">
               {chartData.map((item, index) => (
@@ -1061,16 +1059,16 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
   // Reset controls function - Reset to first/default selections
   const resetControls = () => {
     setIsResetting(true)
-    
+
     // Reset all local state to first/default options
     setLocalChartType('line') // First option: Line Chart
     setLocalPriorityFilter('all') // First option: All Priorities
     setLocalCategoryFilter('all') // First option: All Categories
     setLocalShowCharts(true) // First option: Show Counts
-    
+
     // Force re-render of Select components to ensure they display correctly
     setControlsKey(prev => prev + 1)
-    
+
     // Remove reset feedback after a short delay
     setTimeout(() => {
       setIsResetting(false)
@@ -1082,20 +1080,18 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     <>
       {/* Overlay */}
       {controlsDrawerOpen && (
-        <div 
-          className={`fixed inset-0 bg-black z-40 transition-all duration-300 ease-in-out ${
-            controlsDrawerOpen ? 'bg-opacity-50' : 'bg-opacity-0'
-          }`}
+        <div
+          className={`fixed inset-0 bg-black z-40 transition-all duration-300 ease-in-out ${controlsDrawerOpen ? 'bg-opacity-50' : 'bg-opacity-0'
+            }`}
           onClick={() => setControlsDrawerOpen(false)}
         />
       )}
-      
+
       {/* Drawer */}
-      <div 
+      <div
         ref={controlsDrawerRef}
-        className={`fixed top-0 right-0 h-full w-80 bg-white dark:bg-[#121212] shadow-xl z-50 transform transition-all duration-300 ease-in-out ${
-          controlsDrawerOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
-        }`}
+        className={`fixed top-0 right-0 h-full w-80 bg-white dark:bg-[#121212] shadow-xl z-50 transform transition-all duration-300 ease-in-out ${controlsDrawerOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+          }`}
         style={{ transition: 'transform 0.3s ease-in-out, opacity 0.3s ease-in-out' }}
       >
         <div className="flex flex-col h-full">
@@ -1122,7 +1118,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
             >
               <X className="h-4 w-4" />
             </Button>
-            </div>
+          </div>
 
           {/* Content */}
           <div key={controlsKey} className="flex-1 overflow-y-auto p-4 space-y-6">
@@ -1137,87 +1133,89 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                   className="data-[state=checked]:bg-blue-600"
                 />
                 <Label htmlFor="show-charts-drawer" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer font-medium">
-                  {localShowCharts ? 'Show Charts' : 'Show Counts'}
+                  {localShowCharts ? 'Charts View ' : 'Counts View '}
                 </Label>
-          </div>
+              </div>
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 Toggle between statistical counts and visual charts
               </p>
             </div>
-            
+
             {/* Conditional Chart & Filter Options - Only show when charts are enabled */}
             {localShowCharts && (
               <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Charts & Filters</h3>
-              
-              {/* Chart Type Selection */}
-              <div className="space-y-3 mb-6">
-                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Chart Type</Label>
-                <Select value={localChartType} onValueChange={setLocalChartType}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="z-[60]">
-                    <SelectItem value="bar">
-                      <div className="flex items-center gap-2">
-                        <BarChart3 className="h-4 w-4" />
-                        Bar Chart
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="line">
-                      <div className="flex items-center gap-2">
-                        <LineChart className="h-4 w-4" />
-                        Line Chart
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Choose how to visualize the analysis data
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Charts & Filters</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                  <b>Note :</b> Field selection also affects SWOT Insights view
                 </p>
-              </div>
-              
-              {/* Priority Filter */}
-              <div className="space-y-3 mb-6">
-                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Priority Level</Label>
-                <Select value={localPriorityFilter} onValueChange={setLocalPriorityFilter}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="z-[60]">
-                    <SelectItem value="all">All Priorities</SelectItem>
-                    <SelectItem value="high">High Impact</SelectItem>
-                    <SelectItem value="medium">Medium Impact</SelectItem>
-                    <SelectItem value="low">Low Impact</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Filter items by their impact level
-                </p>
-              </div>
-              
-              {/* Category Filter */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">SWOT Category</Label>
-                <Select value={localCategoryFilter} onValueChange={setLocalCategoryFilter}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="z-[60]">
-                    <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="strengths">Strengths Only</SelectItem>
-                    <SelectItem value="weaknesses">Weaknesses Only</SelectItem>
-                    <SelectItem value="opportunities">Opportunities Only</SelectItem>
-                    <SelectItem value="threats">Threats Only</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Focus on specific SWOT categories
-                </p>
+                {/* Chart Type Selection */}
+                <div className="space-y-3 mb-6">
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Chart Type</Label>
+                  <Select value={localChartType} onValueChange={setLocalChartType}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-[60]">
+                      <SelectItem value="bar">
+                        <div className="flex items-center gap-2">
+                          <BarChart3 className="h-4 w-4" />
+                          Bar Chart
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="line">
+                        <div className="flex items-center gap-2">
+                          <LineChart className="h-4 w-4" />
+                          Line Chart
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Choose how to visualize the analysis data
+                  </p>
+                </div>
+
+                {/* Priority Filter */}
+                <div className="space-y-3 mb-6">
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Priority Level</Label>
+                  <Select value={localPriorityFilter} onValueChange={setLocalPriorityFilter}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-[60]">
+                      <SelectItem value="all">All Priorities</SelectItem>
+                      <SelectItem value="high">High Impact</SelectItem>
+                      <SelectItem value="medium">Medium Impact</SelectItem>
+                      <SelectItem value="low">Low Impact</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Filter items by their impact level
+                  </p>
+                </div>
+
+                {/* Category Filter */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">SWOT Category</Label>
+                  <Select value={localCategoryFilter} onValueChange={setLocalCategoryFilter}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-[60]">
+                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="strengths">Strengths Only</SelectItem>
+                      <SelectItem value="weaknesses">Weaknesses Only</SelectItem>
+                      <SelectItem value="opportunities">Opportunities Only</SelectItem>
+                      <SelectItem value="threats">Threats Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Focus on specific SWOT categories
+                  </p>
                 </div>
               </div>
             )}
-            
+
             {/* Show message when charts are disabled */}
             {!localShowCharts && (
               <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
@@ -1232,8 +1230,8 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                 </div>
               </div>
             )}
-              </div>
-              
+          </div>
+
           {/* Action Buttons */}
           <div className="border-t mb-6 border-gray-200 dark:border-gray-700 p-4 space-y-3">
             <div className="flex gap-2">
@@ -1250,9 +1248,8 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                 variant="outline"
                 size="sm"
                 disabled={isResetting}
-                className={`flex-1 flex items-center gap-2 transition-colors ${
-                  isResetting ? 'bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800' : ''
-                }`}
+                className={`flex-1 flex items-center gap-2 transition-colors ${isResetting ? 'bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800' : ''
+                  }`}
               >
                 <RotateCcw className={`h-3 w-3 ${isResetting ? 'animate-spin' : ''}`} />
                 {isResetting ? 'Reset!' : 'Reset'}
@@ -1278,10 +1275,10 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       <Card className="border-0 shadow-lg dark:bg-black">
         <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4">
           <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl shadow-lg">
                 <Target className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                </div>
+              </div>
               <div className="min-w-0">
                 <CardTitle className="text-sm sm:text-base lg:text-lg font-bold text-slate-900 dark:text-white">
                   SWOT Analysis
@@ -1290,13 +1287,13 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                 </CardTitle>
                 <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
                   Strategic analysis by <span className="text-center inline-block font-bold">
-                  Elva
-                  <span className="text-red-500">*</span>
-                </span>
+                    Elva
+                    <span className="text-red-500">*</span>
+                  </span>
                 </p>
               </div>
             </div>
-            
+
             {/* Analysis Controls Button - Far Right */}
             <Button
               variant="ghost"
@@ -1378,87 +1375,85 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       <Card className="dark:bg-black shadow-lg">
         <Tabs value={activeSwotTab} onValueChange={setActiveSwotTab} className="w-full">
           <CardHeader className="pb-3">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
-                <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-white" /> 
-              </div>
-              <div>
-                <CardTitle className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                  SWOT Insights
-                  {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
-                  {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal"></span>}
-                </CardTitle>
-                <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
-                  Internal strengths & weaknesses and external opportunities & threats
-                </p>
-              </div>
-            </div>
-            
-            {/* View Mode Menu */}
-            <div className="relative" ref={viewMenuRef}>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setViewMenuOpen(!viewMenuOpen)}
-                className="h-8 w-8 p-0 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
-                title="View options"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-              
-              {/* Dropdown Menu */}
-              {viewMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1">
-                  <div className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
-                    View Mode
-                  </div>
-                  
-                  <button
-                    onClick={() => {
-                      setViewMode('list')
-                      setViewMenuOpen(false)
-                    }}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                      viewMode === 'list' 
-                        ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20' 
-                        : 'text-gray-700 dark:text-gray-300'
-                    }`}
-                  >
-                    <List className="h-4 w-4" />
-                    <div className="text-left">
-                      <div className="font-medium">List View</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">Detailed items with tabs</div>
-                    </div>
-                    {viewMode === 'list' && (
-                      <Check className="h-4 w-4 ml-auto" />
-                    )}
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      setViewMode('matrix')
-                      setViewMenuOpen(false)
-                    }}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                      viewMode === 'matrix' 
-                        ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20' 
-                        : 'text-gray-700 dark:text-gray-300'
-                    }`}
-                  >
-                    <Grid3X3 className="h-4 w-4" />
-                    <div className="text-left">
-                      <div className="font-medium">2×2 Matrix</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">All quadrants overview</div>
-                    </div>
-                    {viewMode === 'matrix' && (
-                      <Check className="h-4 w-4 ml-auto" />
-                    )}
-                  </button>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
+                  <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 </div>
-              )}
+                <div>
+                  <CardTitle className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                    SWOT Insights
+                    {isDemoMode && <span className="text-xs text-orange-500 font-normal">(Demo)</span>}
+                    {bypassAPI && !isDemoMode && <span className="text-xs text-green-600 font-normal"></span>}
+                  </CardTitle>
+                  <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
+                    Internal strengths & weaknesses and external opportunities & threats
+                  </p>
+                </div>
+              </div>
+
+              {/* View Mode Menu */}
+              <div className="relative" ref={viewMenuRef}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setViewMenuOpen(!viewMenuOpen)}
+                  className="h-8 w-8 p-0 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+                  title="View options"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+
+                {/* Dropdown Menu */}
+                {viewMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1">
+                    <div className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
+                      View Mode
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setViewMode('list')
+                        setViewMenuOpen(false)
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${viewMode === 'list'
+                          ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                          : 'text-gray-700 dark:text-gray-300'
+                        }`}
+                    >
+                      <List className="h-4 w-4" />
+                      <div className="text-left">
+                        <div className="font-medium">List View</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Detailed items with tabs</div>
+                      </div>
+                      {viewMode === 'list' && (
+                        <Check className="h-4 w-4 ml-auto" />
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setViewMode('matrix')
+                        setViewMenuOpen(false)
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${viewMode === 'matrix'
+                          ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                          : 'text-gray-700 dark:text-gray-300'
+                        }`}
+                    >
+                      <Grid3X3 className="h-4 w-4" />
+                      <div className="text-left">
+                        <div className="font-medium">2×2 Matrix</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">All quadrants overview</div>
+                      </div>
+                      {viewMode === 'matrix' && (
+                        <Check className="h-4 w-4 ml-auto" />
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
             {/* Show tabs only in list mode */}
             {viewMode === 'list' && (
               <TabsList className="grid w-full grid-cols-4 h-auto">
@@ -1470,7 +1465,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                   >
                     <div className={config.color}>{config.icon}</div>
                     <span className="text-xs sm:text-sm">{config.label}</span>
-             
+
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -1500,10 +1495,10 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
           </CardContent>
         </Tabs>
       </Card>
-      
+
       {/* Controls Drawer */}
       <ControlsDrawer />
-      
+
     </div>
   )
 }

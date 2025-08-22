@@ -558,7 +558,7 @@ function Assistant() {
   // Sidebar collapse state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   // Resizable panel state
-  const [rightPanelWidth, setRightPanelWidth] = useState(35) // percentage
+  const [rightPanelWidth, setRightPanelWidth] = useState(50) // percentage
   const [isResizing, setIsResizing] = useState(false)
 
   // Collection state

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Separator } from './ui/separator'
-import { Eye, FileText, Brain, TrendingUp, Clock, Sparkles, Target, AlertTriangle, CheckCircle2, BookOpen, Key, ArrowBigDown, Download, Copy, ThumbsUp, ThumbsDown, Info, Menu, ExternalLink } from 'lucide-react'
+import { Eye, FileText, Brain, TrendingUp, Clock, Lightbulb, Sparkles, Target, AlertTriangle, CheckCircle2, BookOpen, Key, ArrowBigDown, Download, Copy, ThumbsUp, ThumbsDown, Info, Menu, ExternalLink } from 'lucide-react'
 import ProfessionalAnalysisDisplay from './ProfessionalAnalysisDisplay'
 import KeyConceptsDisplay from './KeyConceptsDisplay'
 import HighlightableText from './HighlightableText'
@@ -1089,16 +1089,16 @@ This business plan effectively balances growth ambitions with comprehensive risk
                 {/* Open PDF Option - Only show if PDF is available */}
                 {getFileUrl() && (
                   <a
-                  href={getFileUrl()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  <ExternalLink className="h-4 w-4 text-blue-500" />
-                  <span>Open Original PDF</span>
-                </a>
-                
+                    href={getFileUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    <ExternalLink className="h-4 w-4 text-blue-500" />
+                    <span>Open Original PDF</span>
+                  </a>
+
                 )}
 
                 {/* Export Analysis to PDF Option */}
@@ -1153,42 +1153,51 @@ This business plan effectively balances growth ambitions with comprehensive risk
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
           <div className="flex-shrink-0 px-2 sm:px-3 lg:px-4 pt-2 sm:pt-3 dark:bg-[#121212]">
-            <TabsList className={`grid w-full ${hasDocumentViewer ? 'grid-cols-5' : 'grid-cols-3'} bg-slate-100 dark:bg-[#000000] dark:text-white p-0.5 sm:p-1 rounded-xl h-auto`}>
-              <TabsTrigger value="analysis" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
+            <TabsList className={`grid w-full ${hasDocumentViewer ? 'grid-cols-5' : 'grid-cols-5'} bg-transparent border-none h-auto`}>
+              <TabsTrigger value="analysis" className="flex items-center justify-center gap-1 bg-transparent border-none rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-all duration-200 py-2 sm:py-3 px-2 sm:px-3 text-xs">
                 <Brain className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
                 <span className="hidden md:inline">Overview</span>
                 <span className="md:hidden">Overview</span>
               </TabsTrigger>
-              <TabsTrigger value="swot" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
+              <TabsTrigger value="swot" className="flex items-center justify-center gap-1 bg-transparent border-none rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-all duration-200 py-2 sm:py-3 px-2 sm:px-3 text-xs">
                 <Key className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
                 <span className="hidden md:inline">SWOT</span>
                 <span className="md:hidden">SWOT</span>
               </TabsTrigger>
-              <TabsTrigger value="insights" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
+              <TabsTrigger value="insights" className="flex items-center justify-center gap-1 bg-transparent border-none rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-all duration-200 py-2 sm:py-3 px-2 sm:px-3 text-xs">
                 <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
                 <span className="hidden md:inline">Analysis</span>
                 <span className="md:hidden">Analysis</span>
               </TabsTrigger>
-              {hasDocumentViewer && (
-                <TabsTrigger value="document-viewer" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
+              {/* {hasDocumentViewer && (
+                <TabsTrigger value="document-viewer" className="flex items-center justify-center gap-1 bg-transparent border-none rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-all duration-200 py-2 sm:py-3 px-2 sm:px-3 text-xs">
                   <FileText className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
                   <span className="hidden sm:inline">{isPDF ? 'PDF' : 'DOCX Viewer'}</span>
                   <span className="sm:hidden">{isPDF ? 'PDF' : 'DOCX'}</span>
                 </TabsTrigger>
-              )}
-              <TabsTrigger value="document" className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 rounded-lg py-1 sm:py-1.5 px-1 sm:px-2 text-xs">
+              )} */}
+
+              <TabsTrigger value="recommendations" className="flex items-center justify-center gap-1 bg-transparent border-none rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-all duration-200 py-2 sm:py-3 px-2 sm:px-3 text-xs">
+                  <Lightbulb className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                <span className="hidden md:inline">Recommendations</span>
+                <span className="md:hidden">Recommendations</span>
+              </TabsTrigger>
+
+              <TabsTrigger value="document" className="flex items-center justify-center gap-1 bg-transparent border-none rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-all duration-200 py-2 sm:py-3 px-2 sm:px-3 text-xs">
                 <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
                 <span className="hidden md:inline">Extractive Text</span>
                 <span className="md:hidden">Text</span>
               </TabsTrigger>
             </TabsList>
+            {/* Separator */}
+            <div className="border-b border-gray-200 dark:border-gray-700 mt-1"></div>
           </div>
 
           <div className="flex-1 overflow-hidden dark:bg-[#121212]">
             {/* Render all tabs but only show the active one */}
 
             {/* Document Viewer Tab (PDF or DOCX) */}
-            {hasDocumentViewer && (
+            {/* {hasDocumentViewer && (
               <div
                 className={`h-full mt-1 sm:mt-2 px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter ${activeTab === 'document-viewer' ? 'block' : 'hidden'
                   }`}
@@ -1211,7 +1220,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                         )}
                         {getFileUrl() ? (
                           <>
-                            {/* Try object/embed for better PDF support */}
+                            
                             <object
                               data={getFileUrl()}
                               type="application/pdf"
@@ -1225,7 +1234,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                                 onError={(e) => console.log('PDF iframe error:', e)}
                               />
                             </object>
-                            {/* Fallback - direct link */}
+                           
                             <div className="absolute bottom-4 right-4">
                               <a
                                 href={getFileUrl()}
@@ -1255,13 +1264,13 @@ This business plan effectively balances growth ambitions with comprehensive risk
                   <DocxViewer
                     file={file}
                     onTextExtracted={(text) => {
-                      // This can be used to update the interactive text tab
+                     
                       console.log('DOCX text extracted:', text)
                     }}
                   />
                 )}
               </div>
-            )}
+            )} */}
 
             {/* SWOT Tab */}
             <div
@@ -1375,74 +1384,74 @@ This business plan effectively balances growth ambitions with comprehensive risk
 
                   {/* Problem/Context Section - Moved after summary for better UX flow */}
                   {(
-                    (results?.problem_context && results.problem_context.trim()) || 
+                    (results?.problem_context && results.problem_context.trim()) ||
                     (results?.analysis?.problem_context && results.analysis.problem_context.trim())
                   ) && (
-                    <div className="mb-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="p-1.5 bg-gradient-to-br from-orange-500 to-amber-600 rounded-lg shadow-sm">
-                          <Info className="h-3 w-3 text-white" />
+                      <div className="mb-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="p-1.5 bg-gradient-to-br from-orange-500 to-amber-600 rounded-lg shadow-sm">
+                            <Info className="h-3 w-3 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                              Problem / Context
+                            </h3>
+                            <p className="text-xs text-slate-600 dark:text-gray-400">
+                              Why are we analyzing this? What triggered the need?
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                            Problem / Context
-                          </h3>
-                          <p className="text-xs text-slate-600 dark:text-gray-400">
-                            Why are we analyzing this? What triggered the need?
-                          </p>
-                        </div>
-                      </div>
-                      <div className="bg-gradient-to-r from-orange-50/80 to-amber-50/80 dark:from-orange-950/30 dark:to-amber-950/30 rounded-xl p-3 border border-orange-200/50 dark:border-orange-800/30 relative">
-                        {/* Add action buttons at top right */}
-                        <div className="absolute bottom-2 right-2 flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCopy(
-                              (results?.problem_context && results.problem_context.trim()) || 
-                              (results?.analysis?.problem_context && results.analysis.problem_context.trim()) || 
-                              '', 'problem_context'
-                            )}
-                            className="h-6 w-6 p-0 hover:bg-orange-100 dark:hover:bg-orange-900/20"
-                            title="Copy problem context"
-                          >
-                            <Copy className={`h-2.5 w-2.5 ${copiedItem === 'problem_context' ? 'text-orange-600' : 'text-gray-500'}`} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleFeedback('problem_context', 'positive')}
-                            className={`h-6 w-6 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${feedbackGiven['problem_context'] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
-                              }`}
-                            title="Helpful context"
-                          >
-                            <ThumbsUp className={`h-2.5 w-2.5 ${feedbackGiven['problem_context'] === 'positive' ? 'text-green-600' : 'text-gray-500'
-                              }`} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleFeedback('problem_context', 'negative')}
-                            className={`h-6 w-6 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${feedbackGiven['problem_context'] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
-                              }`}
-                            title="Not helpful"
-                          >
-                            <ThumbsDown className={`h-2.5 w-2.5 ${feedbackGiven['problem_context'] === 'negative' ? 'text-red-600' : 'text-gray-500'
-                              }`} />
-                          </Button>
-                        </div>
+                        <div className="bg-gradient-to-r from-orange-50/80 to-amber-50/80 dark:from-orange-950/30 dark:to-amber-950/30 rounded-xl p-3 border border-orange-200/50 dark:border-orange-800/30 relative">
+                          {/* Add action buttons at top right */}
+                          <div className="absolute bottom-2 right-2 flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleCopy(
+                                (results?.problem_context && results.problem_context.trim()) ||
+                                (results?.analysis?.problem_context && results.analysis.problem_context.trim()) ||
+                                '', 'problem_context'
+                              )}
+                              className="h-6 w-6 p-0 hover:bg-orange-100 dark:hover:bg-orange-900/20"
+                              title="Copy problem context"
+                            >
+                              <Copy className={`h-2.5 w-2.5 ${copiedItem === 'problem_context' ? 'text-orange-600' : 'text-gray-500'}`} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleFeedback('problem_context', 'positive')}
+                              className={`h-6 w-6 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${feedbackGiven['problem_context'] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
+                                }`}
+                              title="Helpful context"
+                            >
+                              <ThumbsUp className={`h-2.5 w-2.5 ${feedbackGiven['problem_context'] === 'positive' ? 'text-green-600' : 'text-gray-500'
+                                }`} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleFeedback('problem_context', 'negative')}
+                              className={`h-6 w-6 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${feedbackGiven['problem_context'] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
+                                }`}
+                              title="Not helpful"
+                            >
+                              <ThumbsDown className={`h-2.5 w-2.5 ${feedbackGiven['problem_context'] === 'negative' ? 'text-red-600' : 'text-gray-500'
+                                }`} />
+                            </Button>
+                          </div>
 
-                        <MarkdownRenderer
-                          content={
-                            (results?.problem_context && results.problem_context.trim()) || 
-                            (results?.analysis?.problem_context && results.analysis.problem_context.trim()) || 
-                            'Problem context information not available for this document.'
-                          }
-                          className="text-slate-800 dark:text-slate-100 leading-relaxed text-xs font-medium"
-                        />
+                          <MarkdownRenderer
+                            content={
+                              (results?.problem_context && results.problem_context.trim()) ||
+                              (results?.analysis?.problem_context && results.analysis.problem_context.trim()) ||
+                              'Problem context information not available for this document.'
+                            }
+                            className="text-slate-800 dark:text-slate-100 leading-relaxed text-xs font-medium"
+                          />
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   {/* Quick Stats - Responsive Grid */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-3 sm:mt-4">
