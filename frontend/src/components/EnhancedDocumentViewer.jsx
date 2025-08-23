@@ -1596,7 +1596,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                 }`}
               ref={el => tabContentRefs.current['document'] = el}
             >
-              <Card className="border-0 shadow-xl">
+              <Card className="border-0 shadow-xl dark:bg-transparent">
                 <CardHeader className="px-3 sm:px-4">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2">
                     <div className="flex items-center gap-2">
@@ -1636,7 +1636,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                   {(results?.document_text || isDemoMode || bypassAPI || docxContent) ? (
                     <div className="space-y-2 sm:space-y-3">
                       {/* Interactive Text Display */}
-                      <div className="bg-slate-50 dark:bg-gray-800 rounded-2xl p-2 sm:p-2.5 lg:p-4 max-h-[60vh] overflow-y-auto border border-slate-200 dark:border-gray-700">
+                      <div className="bg-slate-50 dark:bg-background rounded-2xl p-2 sm:p-2.5 lg:p-4 max-h-[60vh] overflow-y-auto rounded-none">
                         {(isDemoMode || bypassAPI) && (
                           <div className={`mb-3 p-2 border rounded-lg ${isDemoMode
                             ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'

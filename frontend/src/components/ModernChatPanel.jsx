@@ -1028,7 +1028,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
             <Button
               type="submit"
               disabled={!inputMessage || !inputMessage.trim() || isLoading || isDisabled || isLoadingHistory || (!casualMode && !isDemoMode && !bypassAPI && !documentId)}
-              className="absolute right-1 sm:right-1.5 bottom-1 sm:bottom-1.5 h-6 w-6 sm:h-7 sm:w-7 p-0 bg-[#121212] hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+              className="absolute right-1 sm:right-1.5 bottom-1 sm:bottom-1.5 h-10 w-10 sm:h-10 sm:w-10 p-0 bg-[#121212] hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl"
             >
               <Send className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white" />
             </Button>
