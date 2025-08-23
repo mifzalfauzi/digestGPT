@@ -24,6 +24,11 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
   const [docxLoading, setDocxLoading] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [highlightClickData, setHighlightClickData] = useState({
+    forceListMode: false,
+    forceCardMode: null,
+    selectedItemIndex: null
+  })
   const menuRef = useRef(null)
   const BASE_URL = import.meta.env.VITE_API_BASE_URL
   // Tab state storage for persistence
@@ -961,6 +966,16 @@ This business plan effectively balances growth ambitions with comprehensive risk
     if (activeTab === 'document') {
       setActiveTab('insights')
     }
+    
+    // Store the highlight click for forcing list mode
+    const highlight = highlights.find(h => h.id === id)
+    if (highlight) {
+      setHighlightClickData({
+        forceListMode: true,
+        forceCardMode: highlight.type === 'insight' ? 'insights' : 'risks',
+        selectedItemIndex: parseInt(highlight.id.split('-')[1]) // Extract index from id like 'insight-0' or 'risk-1'
+      })
+    }
   }
 
   const handleShowInDocument = (id) => {
@@ -979,6 +994,22 @@ This business plan effectively balances growth ambitions with comprehensive risk
       }
     }, 200) // Increased delay to ensure tab rendering completes
   }
+
+  // Reset highlight click data when switching tabs or after it's been applied
+  useEffect(() => {
+    if (highlightClickData.forceListMode && activeTab === 'insights') {
+      // Clear the force mode after it's been applied
+      const timer = setTimeout(() => {
+        setHighlightClickData({
+          forceListMode: false,
+          forceCardMode: null,
+          selectedItemIndex: null
+        })
+      }, 100) // Small delay to ensure the props are processed
+      
+      return () => clearTimeout(timer)
+    }
+  }, [highlightClickData.forceListMode, activeTab])
 
   // Load DOCX content when file changes
   useEffect(() => {
@@ -1587,6 +1618,9 @@ This business plan effectively balances growth ambitions with comprehensive risk
                 activeHighlight={activeHighlight}
                 showSummary={false}
                 onActiveHighlightChange={(newId) => setActiveHighlight(newId)}
+                forceListMode={highlightClickData.forceListMode}
+                forceCardMode={highlightClickData.forceCardMode}
+                selectedItemIndex={highlightClickData.selectedItemIndex}
               />
             </div>
 

@@ -35,7 +35,9 @@ import {
   RotateCcw,
   LineChart,
   BarChart3,
-  Filter
+  Filter,
+  Activity,
+  BookOpen
 } from 'lucide-react'
 import HighlightableText from './HighlightableText'
 import MarkdownRenderer from './MarkdownRenderer'
@@ -56,7 +58,7 @@ import {
   Cell
 } from 'recharts';
 
-function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighlight, onActiveHighlightChange, showSummary = true }) {
+function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighlight, onActiveHighlightChange, showSummary = true, forceListMode = false, forceCardMode = null, selectedItemIndex = null }) {
   const [insights, setInsights] = useState([])
   const [risks, setRisks] = useState([])
   const [summary, setSummary] = useState('')
@@ -98,6 +100,9 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   const [risksControlsKey, setRisksControlsKey] = useState(0)
   const [isInsightsResetting, setIsInsightsResetting] = useState(false)
   const [isRisksResetting, setIsRisksResetting] = useState(false)
+  
+  // Card mode toggle state
+  const [cardMode, setCardMode] = useState('insights') // 'insights' or 'risk'
   
   const insightsDrawerRef = useRef(null)
   const risksDrawerRef = useRef(null)
@@ -144,7 +149,8 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
           risksChartType: parsed.risksChartType || 'line',
           showRisksCharts: parsed.showRisksCharts !== undefined ? parsed.showRisksCharts : true,
           riskCategoryFilter: parsed.riskCategoryFilter || 'all',
-          riskLevelFilter: parsed.riskLevelFilter || 'all'
+          riskLevelFilter: parsed.riskLevelFilter || 'all',
+          cardMode: parsed.cardMode || 'insights'
         }
       }
     } catch (error) {
@@ -157,7 +163,8 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       risksChartType: 'line',
       showRisksCharts: true,
       riskCategoryFilter: 'all',
-      riskLevelFilter: 'all'
+      riskLevelFilter: 'all',
+      cardMode: 'insights'
     }
   }
 
@@ -203,6 +210,28 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     }
   }
 
+  // Risk level color utility function
+  const getRiskLevelColor = (level) => {
+    const colors = {
+      'High': {
+        bg: 'bg-red-100 dark:bg-red-900/20',
+        text: 'text-red-600 dark:text-red-400',
+        badge: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+      },
+      'Medium': {
+        bg: 'bg-orange-100 dark:bg-orange-900/20', 
+        text: 'text-orange-600 dark:text-orange-400',
+        badge: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
+      },
+      'Low': {
+        bg: 'bg-yellow-100 dark:bg-yellow-900/20',
+        text: 'text-yellow-600 dark:text-yellow-400', 
+        badge: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+      }
+    }
+    return colors[level] || colors['Medium']
+  }
+
   // Simple persistence using ref to avoid re-render loops
   const persistedState = useRef({
     currentInsightIndex: 0,
@@ -224,7 +253,8 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     risksChartType: 'line',
     showRisksCharts: true,
     riskCategoryFilter: 'all',
-    riskLevelFilter: 'all'
+    riskLevelFilter: 'all',
+    cardMode: 'insights'
   })
 
   // Touch/swipe handling state - separated for insights and risks
@@ -279,6 +309,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       setShowRisksCharts(defaults.showRisksCharts)
       setRiskCategoryFilter(defaults.riskCategoryFilter)
       setRiskLevelFilter(defaults.riskLevelFilter)
+      setCardMode(defaults.cardMode)
       
       setLocalInsightsChartType(defaults.insightsChartType)
       setLocalShowInsightsCharts(defaults.showInsightsCharts)
@@ -302,6 +333,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
         setShowRisksCharts(stored.showRisksCharts)
         setRiskCategoryFilter(stored.riskCategoryFilter)
         setRiskLevelFilter(stored.riskLevelFilter)
+        setCardMode(stored.cardMode)
         
         setLocalInsightsChartType(stored.insightsChartType)
         setLocalShowInsightsCharts(stored.showInsightsCharts)
@@ -743,12 +775,51 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       risksChartType,
       showRisksCharts,
       riskCategoryFilter,
-      riskLevelFilter
+      riskLevelFilter,
+      cardMode
     }
-  }, [currentInsightIndex, currentRiskIndex, copiedItem, feedbackGiven, insightsChartType, showInsightsCharts, insightCategoryFilter, risksChartType, showRisksCharts, riskCategoryFilter, riskLevelFilter])
+  }, [currentInsightIndex, currentRiskIndex, copiedItem, feedbackGiven, insightsChartType, showInsightsCharts, insightCategoryFilter, risksChartType, showRisksCharts, riskCategoryFilter, riskLevelFilter, cardMode])
+  
+  // Auto-save cardMode to localStorage when it changes
+  useEffect(() => {
+    if (currentDocumentKey) {
+      const currentSettings = JSON.parse(localStorage.getItem(currentDocumentKey) || '{}')
+      const updatedSettings = {
+        ...currentSettings,
+        cardMode: cardMode
+      }
+      localStorage.setItem(currentDocumentKey, JSON.stringify(updatedSettings))
+    }
+  }, [cardMode, currentDocumentKey])
   
   // Update local state when drawers open - cleaned up
   // This was handled in the separate useEffect hooks above
+  
+  // Handle forced props from highlight clicks
+  useEffect(() => {
+    if (forceListMode) {
+      // Force list mode
+      if (forceCardMode === 'insights') {
+        setShowInsightsCharts(false)
+        setLocalShowInsightsCharts(false)
+        setCardMode('insights')
+        
+        // Navigate to specific insight if provided
+        if (selectedItemIndex !== null && selectedItemIndex >= 0) {
+          setCurrentInsightIndex(selectedItemIndex)
+        }
+      } else if (forceCardMode === 'risks') {
+        setShowRisksCharts(false)
+        setLocalShowRisksCharts(false)
+        setCardMode('risks')
+        
+        // Navigate to specific risk if provided
+        if (selectedItemIndex !== null && selectedItemIndex >= 0) {
+          setCurrentRiskIndex(selectedItemIndex)
+        }
+      }
+    }
+  }, [forceListMode, forceCardMode, selectedItemIndex])
   
   // Save insights controls function
   const saveInsightsControls = () => {
@@ -1679,42 +1750,99 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       }}
     >
    
+      {/* Risk/Insights Toggle */}
+      <div className="flex justify-center mb-4">
+        <div className="inline-flex items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-1 shadow-sm">
+          <Button
+            variant={cardMode === 'insights' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setCardMode('insights')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+              cardMode === 'insights'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+            }`}
+          >
+            <BookOpen className="h-4 w-4" />
+            <span className="text-sm font-medium">Insights</span>
+          </Button>
+          <Button
+            variant={cardMode === 'risk' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setCardMode('risk')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+              cardMode === 'risk'
+                ? 'bg-red-600 text-white shadow-sm'
+                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+            }`}
+          >
+            <Activity className="h-4 w-4" />
+            <span className="text-sm font-medium">Risk</span>
+          </Button>
+        </div>
+      </div>
 
       {/* Key Insights Section */}
       <Card className="border-0 dark:bg-transparent">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-lg">
-                <Target className="h-6 w-6 text-white" />
-              </div>
+              {cardMode === 'insights' ? (
+                <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-lg">
+                  <Target className="h-6 w-6 text-white" />
+                </div>
+              ) : (
+                <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg">
+                  <Activity className="h-6 w-6 text-white" />
+                </div>
+              )}
               <div>
                 <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
-                  Strategic Insights
+                  {cardMode === 'insights' ? 'Strategic Insights' : 'Risk Assessment'}
                 </CardTitle>
                 <p className="text-sm text-slate-600 dark:text-gray-400 mt-1">
-                  Key findings from your document
+                  {cardMode === 'insights' ? 'Key findings from your document' : 'Potential risks and mitigation strategies'}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
-                {insights.length} insights
-              </Badge>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setInsightsDrawerOpen(true)}
-                className="h-8 w-8 p-0 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
-                title="Insights Controls"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
+              {cardMode === 'insights' ? (
+                <>
+                  <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+                    {insights.length} insights
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setInsightsDrawerOpen(true)}
+                    className="h-8 w-8 p-0 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
+                    title="Insights Controls"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                    {risks.length} risks
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setRisksDrawerOpen(true)}
+                    className="h-8 w-8 p-0 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
+                    title="Risk Controls"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {insights.length > 0 ? (
+          {cardMode === 'insights' ? (
+            insights.length > 0 ? (
             <>
               {/* Charts Display for Insights - Show only when charts are enabled */}
               {showInsightsCharts ? (
@@ -1957,325 +2085,287 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
               ) : null}
             </>
           ) : (
-            <div className="text-center py-12">
-              <div className="p-4 bg-slate-100 dark:bg-gray-700 rounded-full w-fit mx-auto mb-4">
-                <Target className="h-8 w-8 text-slate-400 dark:text-gray-500" />
-              </div>
-              <p className="text-slate-600 dark:text-gray-400">
-                No strategic insights identified yet.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Separator className="my-4" />
-
-      {/* Risk Assessment Section */}
-      <Card className="border-0 shadow-lg dark:bg-transparent">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-br from-red-500 to-orange-600 rounded-xl shadow-lg">
-                <AlertTriangle className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
-                  Risk Assessment
-                </CardTitle>
-                <p className="text-sm text-slate-600 dark:text-gray-400 mt-1">
-                  Potential risks and concerns identified
+              <div className="text-center py-12">
+                <div className="p-4 bg-slate-100 dark:bg-gray-700 rounded-full w-fit mx-auto mb-4">
+                  <Target className="h-8 w-8 text-slate-400 dark:text-gray-500" />
+                </div>
+                <p className="text-slate-600 dark:text-gray-400">
+                  No strategic insights identified yet.
                 </p>
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge className={`${risks.length === 0
-                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                }`}>
-                {risks.length === 0 ? 'Low Risk' : `${risks.length} risks `}
-              </Badge>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setRisksDrawerOpen(true)}
-                className="h-8 w-8 p-0 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0"
-                title="Risks Controls"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {risks.length > 0 ? (
-            <>
-              {/* Charts Display for Risks - Show only when charts are enabled */}
-              {showRisksCharts ? (
-                <RisksChartDisplay 
-                  data={getRisksChartData()} 
-                  chartType={risksChartType}
-                />
-              ) : currentRisk ? (
-                <>
-                  {/* Current Risk Display - Show only when charts are disabled */}
-                  <div className="relative overflow-hidden">
-                <Alert
-                  className={`transition-all duration-300 overflow-hidden touch-pan-y select-none ${highlights.find(h => h.id === currentRisk.id) ? ' hover:shadow-lg' : ''
-                    } ${activeHighlight === currentRisk.id
-                      ? 'ring-2 ring-red-400 dark:ring-red-500 shadow-lg bg-red-50/50 dark:bg-red-950/30 border-red-300 dark:border-red-600'
-                      : 'border-red-200 dark:border-red-800 hover:border-red-300 dark:hover:border-red-600'
-                    } bg-gradient-to-r from-red-50/80 to-orange-50/80 dark:from-red-950/20 dark:to-orange-950/20`}
-                  style={{
-                    transform: riskSwipeState.isSwipeGesture && riskSwipeState.swipeDirection ? 
-                      `translateX(${riskSwipeState.swipeDirection === 'right' ? riskSwipeState.swipeProgress * 20 : -riskSwipeState.swipeProgress * 20}px)` : 
-                      'translateX(0)',
-                    opacity: riskSwipeState.isSwipeGesture ? Math.max(0.7, 1 - riskSwipeState.swipeProgress * 0.3) : 1,
-                    transition: riskSwipeState.isAnimating ? 'all 0.3s ease-out' : 'none'
-                  }}
-                  onTouchStart={(e) => {
-                    // Only handle touch if we have multiple risks to swipe between
-                    if (filteredRisks.length > 1) {
-                      handleTouchStart(e, 'risk')
-                    }
-                  }}
-                  onTouchMove={(e) => {
-                    if (filteredRisks.length > 1) {
-                      handleTouchMove(e, 'risk')
-                    }
-                  }}
-                  onTouchEnd={(e) => {
-                    if (filteredRisks.length > 1) {
-                      handleTouchEnd(e, 'risk')
-                    }
-                  }}
-                >
-                  {/* Swipe indicator overlay */}
-                  {riskSwipeState.isSwipeGesture && riskSwipeState.swipeProgress > 0.2 && (
-                    <div 
-                      className={`absolute inset-0 flex items-center justify-center bg-red-500/10 dark:bg-red-400/10 pointer-events-none transition-opacity duration-200`}
-                      style={{ opacity: riskSwipeState.swipeProgress }}
-                    >
-                      <div className={`flex items-center gap-2 text-red-600 dark:text-red-400 font-medium`}>
-                        {riskSwipeState.swipeDirection === 'right' ? (
-                          <>
-                            <ChevronLeft className="h-5 w-5" />
-                            <span className="text-sm">Previous</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-sm">Next</span>
-                            <ChevronRight className="h-5 w-5" />
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                <div className="flex items-start gap-2 sm:gap-4 p-3 sm:p-4">
-                  <div className={`p-2 sm:p-2.5 ${getSeverityIconClasses(currentRisk.severity)} rounded-lg flex-shrink-0`}>
-                    <AlertTriangle className={`h-4 w-4 sm:h-5 sm:w-5 text-${getSeverityColor(currentRisk.severity)}-600 dark:text-${getSeverityColor(currentRisk.severity)}-400`} />
-                  </div>
-
-                  <div className="flex-1 space-y-3 min-w-0">
-                    {/* Mobile-first responsive layout */}
-                    <div className="space-y-3">
-                      {/* Badges and buttons row - mobile stacked, desktop inline */}
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
-                        <div className="flex flex-wrap gap-1.5">
-                          <Badge
-                            variant="outline"
-                            className={`text-xs ${getCategoryBadgeClasses(currentRisk.category)} capitalize w-fit`}
+            )
+          ) : (
+            // Risk Assessment View
+            risks.length > 0 ? (
+              <>
+                {/* Charts Display for Risks - Show only when charts are enabled */}
+                {showRisksCharts ? (
+                  <RisksChartDisplay 
+                    data={getRisksChartData()} 
+                    chartType={risksChartType}
+                  />
+                ) : currentRisk ? (
+                  <>
+                    {/* Current Risk Display - Show only when charts are disabled */}
+                    <div className="relative overflow-hidden">
+                      <Alert
+                        className={`transition-all duration-300 overflow-hidden touch-pan-y select-none ${highlights.find(h => h.id === currentRisk.id) ? ' hover:shadow-lg' : ''
+                          } ${activeHighlight === currentRisk.id
+                            ? 'ring-2 ring-red-400 dark:ring-red-500 shadow-lg bg-red-50/50 dark:bg-red-950/30 border-red-300 dark:border-red-600'
+                            : 'border-red-200 dark:border-red-800 hover:border-red-300 dark:hover:border-red-600'
+                          } bg-gradient-to-r from-red-50/80 to-orange-50/80 dark:from-red-950/20 dark:to-orange-950/20`}
+                        style={{
+                          transform: riskSwipeState.isSwipeGesture && riskSwipeState.swipeDirection ? 
+                            `translateX(${riskSwipeState.swipeDirection === 'right' ? riskSwipeState.swipeProgress * 20 : -riskSwipeState.swipeProgress * 20}px)` : 
+                            'translateX(0)',
+                          opacity: riskSwipeState.isSwipeGesture ? Math.max(0.7, 1 - riskSwipeState.swipeProgress * 0.3) : 1,
+                          transition: riskSwipeState.isAnimating ? 'all 0.3s ease-out' : 'none'
+                        }}
+                        onTouchStart={(e) => {
+                          if (filteredRisks.length > 1) {
+                            handleTouchStart(e, 'risk')
+                          }
+                        }}
+                        onTouchMove={(e) => {
+                          if (filteredRisks.length > 1) {
+                            handleTouchMove(e, 'risk')
+                          }
+                        }}
+                        onTouchEnd={(e) => {
+                          if (filteredRisks.length > 1) {
+                            handleTouchEnd(e, 'risk')
+                          }
+                        }}
+                      >
+                        {/* Swipe indicator overlay */}
+                        {riskSwipeState.isSwipeGesture && riskSwipeState.swipeProgress > 0.2 && (
+                          <div 
+                            className={`absolute inset-0 flex items-center justify-center bg-red-500/10 dark:bg-red-400/10 pointer-events-none transition-opacity duration-200`}
+                            style={{ opacity: riskSwipeState.swipeProgress }}
                           >
-                            {currentRisk.category}
-                          </Badge>
-                          <Badge
-                            variant="outline"
-                            className={`text-xs ${getSeverityBadgeClasses(currentRisk.severity)} capitalize w-fit`}
-                          >
-                            {currentRisk.severity}
-                          </Badge>
-                        </div>
-
-                        {/* Copy and Feedback buttons - responsive sizing */}
-                        <div className="flex gap-1 sm:gap-1.5">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCopy(currentRisk.text, currentRisk.id)}
-                            className="h-6 w-6 sm:h-7 sm:w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
-                            title="Copy risk"
-                          >
-                            {copiedItem === currentRisk.id ? (
-                              <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-red-600" />
-                            ) : (
-                              <Copy className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-red-600" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleFeedback(currentRisk.id, 'positive')}
-                            className={`h-6 w-6 sm:h-7 sm:w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${feedbackGiven[currentRisk.id] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
-                              }`}
-                            title="Accurate risk assessment"
-                          >
-                            <ThumbsUp className={`h-2.5 w-2.5 sm:h-3 sm:w-3 ${feedbackGiven[currentRisk.id] === 'positive' ? 'text-green-600' : 'text-gray-500'
-                              }`} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleFeedback(currentRisk.id, 'negative')}
-                            className={`h-6 w-6 sm:h-7 sm:w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${feedbackGiven[currentRisk.id] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
-                              }`}
-                            title="Inaccurate assessment"
-                          >
-                            <ThumbsDown className={`h-2.5 w-2.5 sm:h-3 sm:w-3 ${feedbackGiven[currentRisk.id] === 'negative' ? 'text-red-600' : 'text-gray-500'
-                              }`} />
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      {/* Content text - full width with proper word wrapping */}
-                      <AlertDescription className="text-red-800 dark:text-red-200 leading-relaxed font-medium text-sm break-words overflow-hidden">
-                        <MarkdownRenderer content={currentRisk.text} />
-                      </AlertDescription>
-                    </div>
-
-                    {highlights.find(h => h.id === currentRisk.id) && (
-                      <div className="space-y-2 pt-2 border-t border-red-200 dark:border-red-700">
-                        {/* Highlight button - full width on mobile */}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full sm:w-auto text-xs bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 border-red-300 dark:border-red-700"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            if (activeHighlight === currentRisk.id) {
-                              onActiveHighlightChange?.(null)
-
-                              const hasHighlight = highlights.find(h => h.id === currentRisk.id);
-                              hasHighlight && onHighlightClick(currentRisk.id);
-                            } else {
-                              onHighlightClick(currentRisk.id)
-                            }
-                          }}
-                        >
-                          <Search className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1 sm:mr-1.5" />
-                          <span className="text-xs sm:text-sm">
-                            {activeHighlight === currentRisk.id ? 'Hide highlight' : 'Show in document'}
-                          </span>
-                          <ArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3 ml-1 sm:ml-1.5" />
-                        </Button>
-
-                        {/* Quote - separate line on mobile for better readability */}
-                        {currentRisk.quote && (
-                          <div className="flex items-start gap-2 text-xs text-red-700 dark:text-red-300 px-2 py-1 bg-red-50 dark:bg-red-900/20 rounded">
-                            <div className="w-1 h-1 bg-red-400 rounded-full mt-1.5 flex-shrink-0"></div>
-                            <span className="italic break-words">
-                              "{currentRisk.quote.length > 60 
-                                ? `${currentRisk.quote.substring(0, 60)}...` 
-                                : currentRisk.quote}"
-                            </span>
+                            <div className={`flex items-center gap-2 text-red-600 dark:text-red-400 font-medium`}>
+                              {riskSwipeState.swipeDirection === 'right' ? (
+                                <>
+                                  <ChevronLeft className="h-5 w-5" />
+                                  <span className="text-sm">Previous</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="text-sm">Next</span>
+                                  <ChevronRight className="h-5 w-5" />
+                                </>
+                              )}
+                            </div>
                           </div>
                         )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                </Alert>
-              </div>
+                        
+                        <div className="flex items-start gap-2 sm:gap-4 p-3 sm:p-4">
+                          <div className={`p-2 sm:p-2.5 ${getSeverityIconClasses(currentRisk.severity)} rounded-lg flex-shrink-0`}>
+                            <AlertTriangle className={`h-4 w-4 sm:h-5 sm:w-5 text-${getSeverityColor(currentRisk.severity)}-600 dark:text-${getSeverityColor(currentRisk.severity)}-400`} />
+                          </div>
 
+                          <div className="flex-1 space-y-3 min-w-0">
+                            {/* Mobile-first responsive layout */}
+                            <div className="space-y-3">
+                              {/* Badges and buttons row - mobile stacked, desktop inline */}
+                              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
+                                <div className="flex flex-wrap gap-1.5">
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-xs ${getCategoryBadgeClasses(currentRisk.category)} capitalize w-fit`}
+                                  >
+                                    {currentRisk.category}
+                                  </Badge>
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-xs ${getSeverityBadgeClasses(currentRisk.severity)} capitalize w-fit`}
+                                  >
+                                    {currentRisk.severity}
+                                  </Badge>
+                                </div>
 
-                  {/* Risks Pagination - Show only when charts are disabled */}
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 pt-3 border-t border-red-200 dark:border-red-700">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        userNavigatedManually.current = true
-                        setCurrentRiskIndex(prev => {
-                          const newIdx = Math.max(0, prev - 1)
-                          if (selectedFrom && selectedFrom.type === 'risk' && selectedFrom.index !== newIdx) {
-                            onActiveHighlightChange?.(null)
-                          }
-                          return newIdx
-                        })
-                      }}
-                      disabled={currentRiskIndex === 0}
-                      className="hidden sm:flex text-xs sm:text-sm w-full sm:w-auto"
-                    >
-                      <ChevronLeft className="h-3 w-3 mr-1" />
-                      Previous
-                    </Button>
-                    <div className="text-center order-first sm:order-none">
-                      <p className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white">
-                        Risk {currentRiskIndex + 1} of {filteredRisks.length}
-                      </p>
-                      
-                      <div className="flex gap-1 mt-1 justify-center">
-                        {filteredRisks.map((_, index) => (
-                          <div
-                            key={index}
-                            className={`w-2 h-2 rounded-full transition-colors cursor-pointer ${index === currentRiskIndex
-                              ? 'bg-red-500'
-                              : 'bg-slate-300 dark:bg-gray-600 hover:bg-red-300'
-                              }`}
-                            onClick={() => {
-                              userNavigatedManually.current = true
-                              setCurrentRiskIndex(index)
-                            }}
-                          />
-                        ))}
-                      </div>
-                      <p className="text-xs text-slate-500 dark:text-gray-400 sm:hidden mt-0.5">
-                        Swipe left/right to navigate
-                      </p>
+                                {/* Copy and Feedback buttons - responsive sizing */}
+                                <div className="flex gap-1 sm:gap-1.5">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleCopy(currentRisk.text, currentRisk.id)}
+                                    className="h-6 w-6 sm:h-7 sm:w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
+                                    title="Copy risk"
+                                  >
+                                    {copiedItem === currentRisk.id ? (
+                                      <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-red-600" />
+                                    ) : (
+                                      <Copy className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-red-600" />
+                                    )}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleFeedback(currentRisk.id, 'positive')}
+                                    className={`h-6 w-6 sm:h-7 sm:w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${feedbackGiven[currentRisk.id] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
+                                      }`}
+                                    title="Accurate risk assessment"
+                                  >
+                                    <ThumbsUp className={`h-2.5 w-2.5 sm:h-3 sm:w-3 ${feedbackGiven[currentRisk.id] === 'positive' ? 'text-green-600' : 'text-gray-500'
+                                      }`} />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleFeedback(currentRisk.id, 'negative')}
+                                    className={`h-6 w-6 sm:h-7 sm:w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${feedbackGiven[currentRisk.id] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
+                                      }`}
+                                    title="Inaccurate assessment"
+                                  >
+                                    <ThumbsDown className={`h-2.5 w-2.5 sm:h-3 sm:w-3 ${feedbackGiven[currentRisk.id] === 'negative' ? 'text-red-600' : 'text-gray-500'
+                                      }`} />
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              {/* Content text - full width with proper word wrapping */}
+                              <div className="text-red-800 dark:text-red-200 leading-relaxed font-medium text-sm break-words overflow-hidden">
+                                <MarkdownRenderer content={currentRisk.text} />
+                              </div>
+                            </div>
+
+                            {highlights.find(h => h.id === currentRisk.id) && (
+                              <div className="space-y-2 pt-2 border-t border-red-200 dark:border-red-700">
+                                {/* Highlight button - full width on mobile */}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full sm:w-auto text-xs bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 border-red-300 dark:border-red-700"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    if (activeHighlight === currentRisk.id) {
+                                      onActiveHighlightChange?.(null)
+
+                                      const hasHighlight = highlights.find(h => h.id === currentRisk.id);
+                                      hasHighlight && onHighlightClick(currentRisk.id);
+                                    } else {
+                                      onHighlightClick(currentRisk.id)
+                                    }
+                                  }}
+                                >
+                                  <Search className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1 sm:mr-1.5" />
+                                  <span className="text-xs sm:text-sm">
+                                    {activeHighlight === currentRisk.id ? 'Hide highlight' : 'Show in document'}
+                                  </span>
+                                  <ArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3 ml-1 sm:ml-1.5" />
+                                </Button>
+
+                                {/* Quote - separate line on mobile for better readability */}
+                                {currentRisk.quote && (
+                                  <div className="flex items-start gap-2 text-xs text-red-700 dark:text-red-300 px-2 py-1 bg-red-50 dark:bg-red-900/20 rounded">
+                                    <div className="w-1 h-1 bg-red-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                                    <span className="italic break-words">
+                                      "{currentRisk.quote.length > 60 
+                                        ? `${currentRisk.quote.substring(0, 60)}...` 
+                                        : currentRisk.quote}"
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </Alert>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        userNavigatedManually.current = true
-                        setCurrentRiskIndex(prev => {
-                          const newIdx = Math.min(filteredRisks.length - 1, prev + 1)
-                          if (selectedFrom && selectedFrom.type === 'risk' && selectedFrom.index !== newIdx) {
-                            onActiveHighlightChange?.(null)
-                          }
-                          return newIdx
-                        })
-                      }}
-                      disabled={currentRiskIndex === filteredRisks.length - 1}
-                      className="hidden sm:flex text-xs sm:text-sm w-full sm:w-auto"
-                    >
-                      Next
-                      <ChevronRight className="h-3 w-3 ml-1" />
-                    </Button>
+
+                    {/* Risk Pagination - Show only when charts are disabled */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 pt-3 border-t border-red-200 dark:border-red-700">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          userNavigatedManually.current = true
+                          setCurrentRiskIndex(prev => {
+                            const newIdx = Math.max(0, prev - 1)
+                            if (selectedFrom && selectedFrom.type === 'risk' && selectedFrom.index !== newIdx) {
+                              onActiveHighlightChange?.(null)
+                            }
+                            return newIdx
+                          })
+                        }}
+                        disabled={currentRiskIndex === 0}
+                        className="hidden sm:flex text-xs sm:text-sm w-full sm:w-auto"
+                      >
+                        <ChevronLeft className="h-3 w-3 mr-1" />
+                        Previous
+                      </Button>
+                      <div className="text-center order-first sm:order-none">
+                        <p className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white">
+                          Risk {currentRiskIndex + 1} of {filteredRisks.length}
+                        </p>
+                        
+                        <div className="flex gap-1 mt-1 justify-center">
+                          {filteredRisks.map((_, index) => (
+                            <div
+                              key={index}
+                              className={`w-2 h-2 rounded-full transition-colors cursor-pointer ${
+                                index === currentRiskIndex
+                                  ? 'bg-red-500'
+                                  : 'bg-slate-300 dark:bg-gray-600 hover:bg-red-300'
+                              }`}
+                              onClick={() => {
+                                userNavigatedManually.current = true
+                                setCurrentRiskIndex(index)
+                              }}
+                            />
+                          ))}
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-gray-400 sm:hidden mt-0.5">
+                          Swipe left/right to navigate
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          userNavigatedManually.current = true
+                          setCurrentRiskIndex(prev => {
+                            const newIdx = Math.min(filteredRisks.length - 1, prev + 1)
+                            if (selectedFrom && selectedFrom.type === 'risk' && selectedFrom.index !== newIdx) {
+                              onActiveHighlightChange?.(null)
+                            }
+                            return newIdx
+                          })
+                        }}
+                        disabled={currentRiskIndex === filteredRisks.length - 1}
+                        className="hidden sm:flex text-xs sm:text-sm w-full sm:w-auto"
+                      >
+                        Next
+                        <ChevronRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="p-4 bg-red-100 dark:bg-red-900/20 rounded-full w-fit mx-auto mb-4">
+                      <AlertTriangle className="h-8 w-8 text-red-500 dark:text-red-400" />
+                    </div>
+                    <p className="text-slate-600 dark:text-gray-400">
+                      No risk data available.
+                    </p>
                   </div>
-                </>
-              ) : null}
-            </>
-          ) : (
-            <div className="text-center py-12">
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border border-green-200 dark:border-green-800 rounded-2xl p-8">
-                <div className="p-4 bg-green-100 dark:bg-green-900/40 rounded-full w-fit mx-auto mb-4">
-                  <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
+                )}
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <div className="p-4 bg-red-100 dark:bg-red-900/20 rounded-full w-fit mx-auto mb-4">
+                  <AlertTriangle className="h-8 w-8 text-red-500 dark:text-red-400" />
                 </div>
-                <h3 className="text-lg font-bold text-green-800 dark:text-green-200 mb-2">
-                  No Significant Risks Detected
-                </h3>
-                <p className="text-sm text-green-700 dark:text-green-300">
-                  The document appears to be low risk based on our comprehensive AI analysis.
+                <p className="text-slate-600 dark:text-gray-400">
+                  No potential risks identified yet.
                 </p>
-                <Badge className="mt-3 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                  <Star className="h-3 w-3 mr-1" />
-                  All Clear
-                </Badge>
               </div>
-            </div>
+            )
           )}
         </CardContent>
       </Card>
+
       
       {/* Separate Controls Drawers */}
       <InsightsControlsDrawer />
