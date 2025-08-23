@@ -189,11 +189,11 @@ For each key point and risk flag, please also include a short quote (5-15 words)
 For key concepts, provide the term and a brief explanation of what it means in the context of this document.
 
 SWOT ANALYSIS REQUIREMENTS:
-- Provide EXACTLY 3-5 Strengths (internal positive factors)
-- Provide EXACTLY 3-5 Weaknesses (internal negative factors) 
-- Provide EXACTLY 3-5 Opportunities (external positive factors)
-- Provide EXACTLY 3-5 Threats (external negative factors)
-- Each category must have minimum 3 items, maximum 5 items
+- Provide EXACTLY 5 Strengths (internal positive factors)
+- Provide EXACTLY 5 Weaknesses (internal negative factors) 
+- Provide EXACTLY 5 Opportunities (external positive factors)
+- Provide EXACTLY 5 Threats (external negative factors)
+- Each category must have 5 items
 - If the document doesn't explicitly mention enough items, infer reasonable ones based on context
 - Each item must have: title, detailed description, impact level, and category
 

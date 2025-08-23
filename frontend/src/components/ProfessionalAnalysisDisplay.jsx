@@ -109,7 +109,8 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     scrollHeight: 0,
     clientHeight: 0,
     scrollPercentage: 0,
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    saveTimeout: null
   })
 
   // Generate document-specific storage key
@@ -494,27 +495,24 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     const savedScroll = persistedState.current.scrollPosition
     const element = containerRef.current
     
-    // Only restore if saved within last 10 minutes
-    if (Date.now() - savedScroll.timestamp < 600000) {
-      // Use percentage-based restoration with fallback attempts
+    // Only restore if saved within last 5 minutes and scroll position is meaningful
+    if (Date.now() - savedScroll.timestamp < 300000 && savedScroll.scrollTop > 50) {
+      // Use percentage-based restoration with fewer attempts
       const restorePosition = (attempt = 0) => {
-        if (attempt > 3) return
+        if (attempt > 2) return
         
         setTimeout(() => {
-          if (!containerRef.current) {
-            restorePosition(attempt + 1)
-            return
-          }
+          if (!containerRef.current) return
           
           // Use percentage-based restoration for better consistency
-          if (savedScroll.scrollPercentage > 0) {
+          if (savedScroll.scrollPercentage > 5) { // Only restore if significant scroll
             const maxScroll = element.scrollHeight - element.clientHeight
-            const targetScroll = (savedScroll.scrollPercentage / 100) * maxScroll
-            element.scrollTop = Math.max(0, Math.min(targetScroll, maxScroll))
-          } else if (savedScroll.scrollTop !== undefined) {
-            element.scrollTop = savedScroll.scrollTop
+            if (maxScroll > 0) {
+              const targetScroll = (savedScroll.scrollPercentage / 100) * maxScroll
+              element.scrollTop = Math.max(0, Math.min(targetScroll, maxScroll))
+            }
           }
-        }, 100 + (attempt * 50))
+        }, 200 + (attempt * 100))
       }
       
       restorePosition()
@@ -545,13 +543,22 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     if (!element) return
     
     const handleScroll = () => {
-      saveScrollPosition()
+      // Throttle scroll position saving to avoid performance issues
+      if (scrollPositionRef.current.saveTimeout) {
+        clearTimeout(scrollPositionRef.current.saveTimeout)
+      }
+      scrollPositionRef.current.saveTimeout = setTimeout(() => {
+        saveScrollPosition()
+      }, 100)
     }
     
     element.addEventListener('scroll', handleScroll, { passive: true })
     
     return () => {
       element.removeEventListener('scroll', handleScroll)
+      if (scrollPositionRef.current.saveTimeout) {
+        clearTimeout(scrollPositionRef.current.saveTimeout)
+      }
     }
   }, [saveScrollPosition])
 
@@ -906,8 +913,10 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     // Check if this is a horizontal swipe gesture
     const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY)
     const isSignificantMove = Math.abs(deltaX) > 10
+    const isVerticalScroll = Math.abs(deltaY) > Math.abs(deltaX)
     
-    if (isHorizontalSwipe && isSignificantMove) {
+    // Only prevent default if it's clearly a horizontal swipe, not vertical scroll
+    if (isHorizontalSwipe && isSignificantMove && !isVerticalScroll) {
       e.preventDefault() // Prevent scrolling during swipe
       
       // Set swipe direction
@@ -1072,6 +1081,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                 <YAxis 
                   tick={{ fontSize: 12, fill: '#64748b' }}
                   tickMargin={5}
+                  allowDecimals={false}
                 />
                 <Tooltip 
                   contentStyle={{ 
@@ -1111,6 +1121,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                   name="Value" 
                   tick={{ fontSize: 12, fill: '#64748b' }}
                   tickMargin={5}
+                  allowDecimals={false}
                 />
                 <ZAxis 
                   type="number" 
@@ -1194,6 +1205,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                 <YAxis 
                   tick={{ fontSize: 12, fill: '#64748b' }}
                   tickMargin={5}
+                  allowDecimals={false}
                 />
                 <Tooltip 
                   contentStyle={{ 
@@ -1278,6 +1290,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                   name="Total Risks" 
                   tick={{ fontSize: 12, fill: '#64748b' }}
                   tickMargin={5}
+                  allowDecimals={false}
                 />
                 <ZAxis 
                   type="number" 
@@ -1346,8 +1359,10 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
             width: '100vw',
             height: '100vh',
             margin: 0,
-            padding: 0
+            padding: 0,
+            pointerEvents: 'auto'
           }}
+          onClick={() => setInsightsDrawerOpen(false)}
         />
       )}
 
@@ -1497,8 +1512,10 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
             width: '100vw',
             height: '100vh',
             margin: 0,
-            padding: 0
+            padding: 0,
+            pointerEvents: 'auto'
           }}
+          onClick={() => setRisksDrawerOpen(false)}
         />
       )}
 
@@ -1652,7 +1669,15 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   )
 
   return (
-    <div ref={containerRef} className="space-y-4 sm:space-y-6 p-2 sm:p-4">
+    <div 
+      ref={containerRef} 
+      className="space-y-4 sm:space-y-6 p-2 sm:p-4 w-full overflow-y-auto"
+      style={{ 
+        minHeight: '100%',
+        maxHeight: '100%',
+        overflowX: 'hidden'
+      }}
+    >
    
 
       {/* Key Insights Section */}
@@ -1714,9 +1739,22 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                     opacity: insightSwipeState.isSwipeGesture ? Math.max(0.7, 1 - insightSwipeState.swipeProgress * 0.3) : 1,
                     transition: insightSwipeState.isAnimating ? 'all 0.3s ease-out' : 'none'
                   }}
-                  onTouchStart={(e) => handleTouchStart(e, 'insight')}
-                  onTouchMove={(e) => handleTouchMove(e, 'insight')}
-                  onTouchEnd={(e) => handleTouchEnd(e, 'insight')}
+                  onTouchStart={(e) => {
+                    // Only handle touch if we have multiple insights to swipe between
+                    if (filteredInsights.length > 1) {
+                      handleTouchStart(e, 'insight')
+                    }
+                  }}
+                  onTouchMove={(e) => {
+                    if (filteredInsights.length > 1) {
+                      handleTouchMove(e, 'insight')
+                    }
+                  }}
+                  onTouchEnd={(e) => {
+                    if (filteredInsights.length > 1) {
+                      handleTouchEnd(e, 'insight')
+                    }
+                  }}
                 >
                   {/* Swipe indicator overlay */}
                   {insightSwipeState.isSwipeGesture && insightSwipeState.swipeProgress > 0.2 && (
@@ -1995,9 +2033,22 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                     opacity: riskSwipeState.isSwipeGesture ? Math.max(0.7, 1 - riskSwipeState.swipeProgress * 0.3) : 1,
                     transition: riskSwipeState.isAnimating ? 'all 0.3s ease-out' : 'none'
                   }}
-                  onTouchStart={(e) => handleTouchStart(e, 'risk')}
-                  onTouchMove={(e) => handleTouchMove(e, 'risk')}
-                  onTouchEnd={(e) => handleTouchEnd(e, 'risk')}
+                  onTouchStart={(e) => {
+                    // Only handle touch if we have multiple risks to swipe between
+                    if (filteredRisks.length > 1) {
+                      handleTouchStart(e, 'risk')
+                    }
+                  }}
+                  onTouchMove={(e) => {
+                    if (filteredRisks.length > 1) {
+                      handleTouchMove(e, 'risk')
+                    }
+                  }}
+                  onTouchEnd={(e) => {
+                    if (filteredRisks.length > 1) {
+                      handleTouchEnd(e, 'risk')
+                    }
+                  }}
                 >
                   {/* Swipe indicator overlay */}
                   {riskSwipeState.isSwipeGesture && riskSwipeState.swipeProgress > 0.2 && (

@@ -32,7 +32,7 @@ import {
   List,
   MoreHorizontal,
   BarChart3,
-  LineChart,
+  LineChart as LineChartIcon,
   Filter,
   Settings,
   X,
@@ -41,6 +41,21 @@ import {
 } from "lucide-react"
 import { Separator } from "./ui/separator"
 import axios from "axios"
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  ScatterChart,
+  Scatter,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Cell
+} from 'recharts'
 
 
 export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = false }) {
@@ -940,10 +955,30 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
   const ChartDisplay = ({ chartData, chartType }) => {
     const maxValue = Math.max(...chartData.map(item => Math.max(item.high, item.medium, item.low, item.total)))
 
+    // Custom tooltip for all chart types
+    const CustomTooltip = ({ active, payload, label }) => {
+      if (active && payload && payload.length) {
+        return (
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+            <p className="font-semibold text-gray-800 dark:text-gray-200">{label}</p>
+            {payload.map((entry, index) => (
+              <p key={index} style={{ color: entry.color }} className="text-sm">
+                {`${entry.name}: ${entry.value}`}
+              </p>
+            ))}
+          </div>
+        )
+      }
+      return null
+    }
+
     if (chartType === 'bubble') {
-      // Responsive bubble chart dimensions
-      const bubbleWidth = 400
-      const bubbleHeight = 300
+      // Transform data for scatter plot
+      const scatterData = chartData.flatMap(item => [
+        { category: item.category, impact: 'High', value: item.high, x: item.category, y: item.high, z: item.high * 10 },
+        { category: item.category, impact: 'Medium', value: item.medium, x: item.category, y: item.medium, z: item.medium * 8 },
+        { category: item.category, impact: 'Low', value: item.low, x: item.category, y: item.low, z: item.low * 6 }
+      ]).filter(item => item.value > 0)
       
       return (
         <div className="bg-white dark:bg-gray-900 rounded-xl p-2 sm:p-4 border border-gray-200 dark:border-gray-700">
@@ -966,123 +1001,43 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
               </div>
             </div>
 
-            <div className="w-full overflow-x-auto">
-              <div className="flex justify-center min-w-fit">
-                <svg 
-                  width={bubbleWidth} 
-                  height={bubbleHeight} 
-                  className="overflow-visible max-w-full h-auto"
-                  viewBox={`0 0 ${bubbleWidth} ${bubbleHeight}`}
-                >
-                  {/* Grid lines with unique ID */}
-                  <defs>
-                    <pattern id={`bubble-grid-${currentDocumentKey}`} width="40" height="30" patternUnits="userSpaceOnUse">
-                      <path d="M 40 0 L 0 0 0 30" fill="none" stroke="rgba(156, 163, 175, 0.2)" strokeWidth="1"/>
-                    </pattern>
-                  </defs>
-                  <rect width="100%" height="100%" fill={`url(#bubble-grid-${currentDocumentKey})`} />
-                
-                {/* Quadrant labels - positioned to avoid overlap */}
-                <text x={100} y={15} textAnchor="middle" className="text-xs fill-gray-500 dark:fill-gray-400 font-medium">
-                  Internal Strengths
-                </text>
-                <text x={300} y={15} textAnchor="middle" className="text-xs fill-gray-500 dark:fill-gray-400 font-medium">
-                  Internal Weaknesses
-                </text>
-                <text x={100} y={295} textAnchor="middle" className="text-xs fill-gray-500 dark:fill-gray-400 font-medium">
-                  External Opportunities
-                </text>
-                <text x={300} y={295} textAnchor="middle" className="text-xs fill-gray-500 dark:fill-gray-400 font-medium">
-                  External Threats
-                </text>
-
-                {/* Center lines */}
-                <line x1={200} y1={30} x2={200} y2={270} stroke="rgba(156, 163, 175, 0.5)" strokeWidth="2" strokeDasharray="5,5" />
-                <line x1={50} y1={150} x2={350} y2={150} stroke="rgba(156, 163, 175, 0.5)" strokeWidth="2" strokeDasharray="5,5" />
-
-                {/* Bubbles */}
-                {chartData.map((item, index) => {
-                  const x = index === 0 ? 100 : // Strengths
-                           index === 1 ? 300 : // Weaknesses  
-                           index === 2 ? 100 : // Opportunities
-                           300; // Threats
-                  const y = index < 2 ? 80 : 220; // Top row vs bottom row
-                  
-                  const highRadius = Math.max(8, (item.high / Math.max(maxValue, 1)) * 25)
-                  const mediumRadius = Math.max(6, (item.medium / Math.max(maxValue, 1)) * 20)
-                  const lowRadius = Math.max(4, (item.low / Math.max(maxValue, 1)) * 15)
-
-                  return (
-                    <g key={index}>
-                      {/* High impact bubble */}
-                      {item.high > 0 && (
-                        <circle
-                          cx={x}
-                          cy={y - 15}
-                          r={highRadius}
-                          fill="#ef4444"
-                          fillOpacity={0.7}
-                          stroke="#dc2626"
-                          strokeWidth={2}
-                        >
-                          <title>{`${item.category} High Impact: ${item.high}`}</title>
-                        </circle>
-                      )}
-                      
-                      {/* Medium impact bubble */}
-                      {item.medium > 0 && (
-                        <circle
-                          cx={x + (item.high > 0 ? 20 : 0)}
-                          cy={y}
-                          r={mediumRadius}
-                          fill="#eab308"
-                          fillOpacity={0.7}
-                          stroke="#ca8a04"
-                          strokeWidth={2}
-                        >
-                          <title>{`${item.category} Medium Impact: ${item.medium}`}</title>
-                        </circle>
-                      )}
-                      
-                      {/* Low impact bubble */}
-                      {item.low > 0 && (
-                        <circle
-                          cx={x - (item.high > 0 ? 20 : 0)}
-                          cy={y + 15}
-                          r={lowRadius}
-                          fill="#22c55e"
-                          fillOpacity={0.7}
-                          stroke="#16a34a"
-                          strokeWidth={2}
-                        >
-                          <title>{`${item.category} Low Impact: ${item.low}`}</title>
-                        </circle>
-                      )}
-
-                      {/* Category label - positioned to avoid overlap with quadrant labels */}
-                      <text
-                        x={x}
-                        y={index < 2 ? y + 45 : y + 40} // Different positioning for top/bottom rows
-                        textAnchor="middle"
-                        className="text-xs font-medium fill-gray-700 dark:fill-gray-300"
-                      >
-                        {item.category}
-                      </text>
-                      
-                      {/* Count text with impact breakdown */}
-                      <text
-                        x={x}
-                        y={index < 2 ? y + 57 : y + 52} // Different positioning for top/bottom rows
-                        textAnchor="middle"
-                        className="text-xs fill-gray-500 dark:fill-gray-400"
-                      >
-                        {item.total} ({item.high}H {item.medium}M {item.low}L)
-                      </text>
-                    </g>
-                  )
-                })}
-                </svg>
-              </div>
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(156, 163, 175, 0.3)" />
+                  <XAxis 
+                    dataKey="x" 
+                    type="category" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: 'rgb(107, 114, 128)' }}
+                  />
+                  <YAxis 
+                    dataKey="y" 
+                    type="number"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: 'rgb(107, 114, 128)' }}
+                    allowDecimals={false}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Scatter 
+                    name="High Impact" 
+                    data={scatterData.filter(d => d.impact === 'High')} 
+                    fill="#ef4444"
+                  />
+                  <Scatter 
+                    name="Medium Impact" 
+                    data={scatterData.filter(d => d.impact === 'Medium')} 
+                    fill="#eab308"
+                  />
+                  <Scatter 
+                    name="Low Impact" 
+                    data={scatterData.filter(d => d.impact === 'Low')} 
+                    fill="#22c55e"
+                  />
+                </ScatterChart>
+              </ResponsiveContainer>
             </div>
 
             {/* Mobile legend */}
@@ -1130,37 +1085,77 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(156, 163, 175, 0.3)" />
+                  <XAxis 
+                    dataKey="category" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: 'rgb(107, 114, 128)' }}
+                  />
+                  <YAxis 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: 'rgb(107, 114, 128)' }}
+                    allowDecimals={false}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend 
+                    wrapperStyle={{ fontSize: '12px', color: 'rgb(107, 114, 128)' }}
+                  />
+                  <Bar 
+                    dataKey="high" 
+                    name="High Impact" 
+                    fill="#ef4444" 
+                    stackId="a" 
+                    radius={[0, 0, 0, 0]}
+                  />
+                  <Bar 
+                    dataKey="medium" 
+                    name="Medium Impact" 
+                    fill="#eab308" 
+                    stackId="a" 
+                    radius={[0, 0, 0, 0]}
+                  />
+                  <Bar 
+                    dataKey="low" 
+                    name="Low Impact" 
+                    fill="#22c55e" 
+                    stackId="a" 
+                    radius={[2, 2, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Mobile legend */}
+            <div className="sm:hidden flex items-center justify-center gap-3 text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-red-500 rounded-sm"></div>
+                <span className="text-gray-600 dark:text-gray-400">H</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-yellow-500 rounded-sm"></div>
+                <span className="text-gray-600 dark:text-gray-400">M</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-green-500 rounded-sm"></div>
+                <span className="text-gray-600 dark:text-gray-400">L</span>
+              </div>
+            </div>
+
+            {/* Summary */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
               {chartData.map((item, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">{item.category}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Total: {item.total}</span>
+                <div key={index} className="space-y-1">
+                  <div className="text-xs font-medium text-gray-700 dark:text-gray-300">{item.category}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    H:{item.high} M:{item.medium} L:{item.low}
                   </div>
-                  <div className="flex gap-1 h-6 bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden">
-                    <div
-                      className="bg-red-500 transition-all duration-300"
-                      style={{ width: `${maxValue > 0 ? (item.high / maxValue) * 100 : 0}%` }}
-                      title={`High: ${item.high}`}
-                    />
-                    <div
-                      className="bg-yellow-500 transition-all duration-300"
-                      style={{ width: `${maxValue > 0 ? (item.medium / maxValue) * 100 : 0}%` }}
-                      title={`Medium: ${item.medium}`}
-                    />
-                    <div
-                      className="bg-green-500 transition-all duration-300"
-                      style={{ width: `${maxValue > 0 ? (item.low / maxValue) * 100 : 0}%` }}
-                      title={`Low: ${item.low}`}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                    <span>High: {item.high}</span>
-                    <span>Medium: {item.medium}</span>
-                    <span>Low: {item.low}</span>
-                  </div>
-                  <div className="text-center text-xs text-gray-600 dark:text-gray-300 font-medium mt-1">
-                    Total: {item.total} items
+                  <div className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                    Total: {item.total}
                   </div>
                 </div>
               ))}
@@ -1169,28 +1164,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
         </div>
       )
     } else {
-      // Line Chart - Responsive dimensions
-      const chartHeight = 200
-      const chartWidth = 400
-      const padding = { top: 20, right: 20, bottom: 40, left: 40 }
-      const innerWidth = chartWidth - padding.left - padding.right
-      const innerHeight = chartHeight - padding.top - padding.bottom
-
-      const xStep = innerWidth / (chartData.length - 1)
-      const yScale = innerHeight / maxValue
-
-      const createPath = (values) => {
-        return chartData.map((item, index) => {
-          const x = padding.left + (index * xStep)
-          const y = padding.top + (innerHeight - (values[index] * yScale))
-          return `${index === 0 ? 'M' : 'L'} ${x} ${y}`
-        }).join(' ')
-      }
-
-      const highPath = createPath(chartData.map(item => item.high))
-      const mediumPath = createPath(chartData.map(item => item.medium))
-      const lowPath = createPath(chartData.map(item => item.low))
-
+      // Line Chart using Recharts
       return (
         <div className="bg-white dark:bg-gray-900 rounded-xl p-2 sm:p-4 border border-gray-200 dark:border-gray-700">
           <div className="space-y-4">
@@ -1212,104 +1186,55 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
               </div>
             </div>
 
-            <div className="w-full overflow-x-auto">
-              <div className="flex justify-center min-w-fit">
-                <svg 
-                  width={chartWidth} 
-                  height={chartHeight} 
-                  className="overflow-visible max-w-full h-auto"
-                  viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-                >
-                {/* Grid lines */}
-                <g>
-                  {/* Vertical grid lines - align with data points */}
-                  {chartData.map((_, i) => {
-                    const x = padding.left + (i * xStep)
-                    return (
-                      <line
-                        key={`v-${i}`}
-                        x1={x}
-                        y1={padding.top}
-                        x2={x}
-                        y2={chartHeight - padding.bottom}
-                        stroke="rgba(156, 163, 175, 0.3)"
-                        strokeWidth="1"
-                        strokeDasharray="3,3"
-                      />
-                    )
-                  })}
-                  {/* Horizontal grid lines */}
-                  {[0, Math.ceil(maxValue / 4), Math.ceil(maxValue / 2), Math.ceil(maxValue * 3 / 4), maxValue].map((value, i) => {
-                    const y = padding.top + (innerHeight - (value * yScale))
-                    return (
-                      <line
-                        key={`h-${i}`}
-                        x1={padding.left}
-                        y1={y}
-                        x2={chartWidth - padding.right}
-                        y2={y}
-                        stroke="rgba(156, 163, 175, 0.3)"
-                        strokeWidth="1"
-                        strokeDasharray="3,3"
-                      />
-                    )
-                  })}
-                </g>
-
-                {/* Lines */}
-                <path d={highPath} fill="none" stroke="#ef4444" strokeWidth="2" className="drop-shadow-sm" />
-                <path d={mediumPath} fill="none" stroke="#eab308" strokeWidth="2" className="drop-shadow-sm" />
-                <path d={lowPath} fill="none" stroke="#22c55e" strokeWidth="2" className="drop-shadow-sm" />
-
-                {/* Data points */}
-                {chartData.map((item, index) => {
-                  const x = padding.left + (index * xStep)
-                  const highY = padding.top + (innerHeight - (item.high * yScale))
-                  const mediumY = padding.top + (innerHeight - (item.medium * yScale))
-                  const lowY = padding.top + (innerHeight - (item.low * yScale))
-
-                  return (
-                    <g key={index}>
-                      <circle cx={x} cy={highY} r="3" fill="#ef4444" className="drop-shadow-sm" />
-                      <circle cx={x} cy={mediumY} r="3" fill="#eab308" className="drop-shadow-sm" />
-                      <circle cx={x} cy={lowY} r="3" fill="#22c55e" className="drop-shadow-sm" />
-                    </g>
-                  )
-                })}
-
-                {/* X-axis labels */}
-                {chartData.map((item, index) => {
-                  const x = padding.left + (index * xStep)
-                  return (
-                    <text
-                      key={index}
-                      x={x}
-                      y={chartHeight - 10}
-                      textAnchor="middle"
-                      className="text-xs fill-gray-600 dark:fill-gray-400"
-                    >
-                      {item.category.charAt(0)}
-                    </text>
-                  )
-                })}
-
-                {/* Y-axis labels */}
-                {[0, Math.ceil(maxValue / 2), maxValue].map((value, index) => {
-                  const y = padding.top + (innerHeight - (value * yScale))
-                  return (
-                    <text
-                      key={index}
-                      x={padding.left - 10}
-                      y={y + 4}
-                      textAnchor="end"
-                      className="text-xs fill-gray-600 dark:fill-gray-400"
-                    >
-                      {value}
-                    </text>
-                  )
-                })}
-                </svg>
-              </div>
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(156, 163, 175, 0.3)" />
+                  <XAxis 
+                    dataKey="category" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: 'rgb(107, 114, 128)' }}
+                  />
+                  <YAxis 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: 'rgb(107, 114, 128)' }}
+                    allowDecimals={false}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend 
+                    wrapperStyle={{ fontSize: '12px', color: 'rgb(107, 114, 128)' }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="high" 
+                    name="High Impact"
+                    stroke="#ef4444" 
+                    strokeWidth={2}
+                    dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: '#ef4444' }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="medium" 
+                    name="Medium Impact"
+                    stroke="#eab308" 
+                    strokeWidth={2}
+                    dot={{ fill: '#eab308', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: '#eab308' }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="low" 
+                    name="Low Impact"
+                    stroke="#22c55e" 
+                    strokeWidth={2}
+                    dot={{ fill: '#22c55e', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: '#22c55e' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
 
             {/* Mobile legend */}
@@ -1489,7 +1414,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
                     <SelectContent className="z-[60]">
                     <SelectItem value="line">
                         <div className="flex items-center gap-2">
-                          <LineChart className="h-4 w-4" />
+                          <LineChartIcon className="h-4 w-4" />
                           Line Chart
                         </div>
                       </SelectItem>
