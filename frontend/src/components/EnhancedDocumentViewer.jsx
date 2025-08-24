@@ -979,20 +979,161 @@ This business plan effectively balances growth ambitions with comprehensive risk
   }
 
   const handleShowInDocument = (id) => {
+    console.log('handleShowInDocument called with id:', id)
     setActiveHighlight(id)
     setActiveTab('document')
 
-    // Small delay to ensure tab switch completes before scrolling
-    setTimeout(() => {
-      const element = document.querySelector(`[data-highlight-id="${id}"]`)
-
-      if (element) {
-        element.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center'
-        })
+    // Enhanced delay and retry mechanism to ensure reliable scrolling
+    const attemptScroll = (attempts = 0, maxAttempts = 10) => {
+      console.log(`Attempting scroll ${attempts + 1}/${maxAttempts} for highlight:`, id)
+      
+      // Try multiple selectors to find the highlight
+      let element = document.querySelector(`[data-highlight-id="${id}"]`)
+      
+      if (!element) {
+        // Fallback: try without quotes in case of encoding issues
+        element = document.querySelector(`[data-highlight-id=${id}]`)
       }
-    }, 200) // Increased delay to ensure tab rendering completes
+      
+      if (!element) {
+        // Debug: log all highlight elements to see what's available
+        const allHighlights = document.querySelectorAll('[data-highlight-id]')
+        console.log('All highlights found:', Array.from(allHighlights).map(el => el.getAttribute('data-highlight-id')))
+      }
+      
+      if (element) {
+        console.log('Found highlight element:', element)
+        
+        // Get the scrollable container (document tab)
+        const scrollContainer = tabContentRefs.current['document']
+        
+        if (scrollContainer) {
+          // Method: Calculate scroll position using getBoundingClientRect for accuracy
+          const elementRect = element.getBoundingClientRect()
+          const containerRect = scrollContainer.getBoundingClientRect()
+          const containerHeight = scrollContainer.clientHeight
+          const elementHeight = element.offsetHeight
+          
+          // Calculate relative position within the scrollable container
+          let calculatedTop = elementRect.top - containerRect.top + scrollContainer.scrollTop
+          
+          // If getBoundingClientRect fails, try offsetTop as fallback
+          if (calculatedTop <= 0) {
+            calculatedTop = element.offsetTop
+            
+            // If offsetTop is also 0, try DOM traversal
+            if (calculatedTop === 0) {
+              let currentElement = element
+              while (currentElement && currentElement !== scrollContainer) {
+                calculatedTop += currentElement.offsetTop || 0
+                currentElement = currentElement.offsetParent
+                if (currentElement === scrollContainer) break
+              }
+              
+              // If still 0, use text-based estimation
+              if (calculatedTop === 0) {
+                const textContainer = element.closest('.whitespace-pre-wrap, .prose, [data-highlight-container]')
+                if (textContainer) {
+                  const allHighlights = Array.from(textContainer.querySelectorAll('[data-highlight-id]'))
+                  const elementIndex = allHighlights.indexOf(element)
+                  
+                  if (elementIndex >= 0) {
+                    // Estimate position based on element index and average spacing
+                    const avgSpacing = textContainer.scrollHeight / Math.max(allHighlights.length, 1)
+                    calculatedTop = elementIndex * avgSpacing
+                    console.log('Used index-based estimation:', calculatedTop, 'for element', elementIndex, 'of', allHighlights.length)
+                  }
+                }
+              }
+            }
+          }
+          
+          // Calculate scroll position to center the element
+          // For small positions, don't try to center, just scroll to the element
+          let scrollTop
+          if (calculatedTop < containerHeight / 2) {
+            // Element is near the top, just scroll to show it
+            scrollTop = Math.max(0, calculatedTop - 100) // Leave some margin
+          } else {
+            // Element is further down, try to center it
+            scrollTop = calculatedTop - (containerHeight / 2) + (elementHeight / 2)
+          }
+          
+          console.log('Scroll calculation details:', {
+            elementRect: elementRect.top,
+            calculatedTop,
+            containerHeight,
+            elementHeight,
+            scrollTop,
+            scrollContainer: scrollContainer.tagName,
+            containerScrollTop: scrollContainer.scrollTop,
+            containerScrollHeight: scrollContainer.scrollHeight
+          })
+          
+          // Smooth scroll to the calculated position
+          scrollContainer.scrollTo({
+            top: scrollTop,
+            behavior: 'smooth'
+          })
+          
+          console.log('Scrolled to position:', scrollTop)
+          
+          // Verify scroll worked after a delay and provide fallback
+          setTimeout(() => {
+            const newScrollTop = scrollContainer.scrollTop
+            console.log('Final scroll position:', newScrollTop, 'vs target:', scrollTop)
+            
+            // If scroll didn't work well, try scrollIntoView as fallback
+            if (Math.abs(newScrollTop - scrollTop) > 20) {
+              console.log('Primary scroll failed, using scrollIntoView fallback')
+              element.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+                inline: 'nearest'
+              })
+              
+              // Final verification
+              setTimeout(() => {
+                const finalScrollTop = scrollContainer.scrollTop
+                console.log('Final fallback scroll position:', finalScrollTop)
+              }, 300)
+            } else {
+              console.log('Scroll successful!')
+            }
+          }, 300)
+          
+        } else {
+          console.log('No scroll container found, using scrollIntoView')
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'nearest'
+          })
+        }
+        
+        // Add a subtle flash effect to make the highlight more visible
+        element.style.transition = 'box-shadow 0.3s ease-in-out'
+        element.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.8)'
+        setTimeout(() => {
+          element.style.boxShadow = ''
+        }, 1500)
+        
+        console.log('Successfully scrolled to highlight:', id)
+      } else if (attempts < maxAttempts) {
+        // Retry if element not found yet
+        console.log(`Element not found, retrying in 200ms... (attempt ${attempts + 1})`)
+        setTimeout(() => attemptScroll(attempts + 1, maxAttempts), 200)
+      } else {
+        console.warn('Could not find highlight element after', maxAttempts, 'attempts:', id)
+        console.log('Available highlight IDs:', 
+          Array.from(document.querySelectorAll('[data-highlight-id]'))
+            .map(el => el.getAttribute('data-highlight-id'))
+        )
+      }
+    }
+
+    // Initial delay to ensure tab switch completes
+    setTimeout(() => attemptScroll(), 500)
   }
 
   // Reset highlight click data when switching tabs or after it's been applied
@@ -1083,7 +1224,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800">
       {/* Enhanced Header - Fixed at top */}
-      <div className="border-b flex-shrink-0 px-2 sm:px-3 lg:px-4 py-2 sm:py-3 bg-white/80 dark:bg-[#121212] backdrop-blur-sm">
+      <div className=" flex-shrink-0 px-2 sm:px-3 lg:px-4 py-2 sm:py-3 bg-white/80 dark:bg-[#121212] backdrop-blur-sm">
         <div className="flex flex-row items-center justify-between gap-2">
           {/* LEFT SIDE */}
           <div className="flex items-center gap-2">
@@ -1281,7 +1422,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                 <span className="hidden md:inline">Extractive Text</span>
                 <span className="md:hidden"></span>
               </TabsTrigger>
-              {/* <Separator className="col-span-full border-b border-gray-200 dark:border-gray-800" /> */}
+              <Separator className="col-span-full border-b border-gray-200 dark:border-gray-800" />
               {/* <div className="w-full border-b border-gray-200 dark:border-gray-700"></div> */}
             </TabsList>
             {/* Separator */}
@@ -1626,9 +1767,10 @@ This business plan effectively balances growth ambitions with comprehensive risk
 
             {/* Interactive Document Text Tab */}
             <div
-              className={`h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter ${activeTab === 'document' ? 'block' : 'hidden'
+              className={`h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter scroll-smooth ${activeTab === 'document' ? 'block' : 'hidden'
                 }`}
               ref={el => tabContentRefs.current['document'] = el}
+              style={{ scrollBehavior: 'smooth' }}
             >
               <Card className="border-0 shadow-xl dark:bg-transparent">
                 <CardHeader className="px-3 sm:px-4">

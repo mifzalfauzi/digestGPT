@@ -1129,7 +1129,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     const colors = ['#10b981', '#059669', '#14b8a6', '#6ee7b7', '#34d399'];
 
     return (
-      <div className="mt-4 p-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
+      <div className=" p-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
         <div className="flex items-center gap-2 mb-3">
           <LineChart className="h-4 w-4 text-emerald-600" />
           <h4 className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
@@ -1253,7 +1253,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     };
 
     return (
-      <div className="mt-4 p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800">
+      <div className="p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800">
         <div className="flex items-center gap-2 mb-3">
           <BarChart3 className="h-4 w-4 text-red-600" />
           <h4 className="text-sm font-semibold text-red-800 dark:text-red-200">
@@ -1751,39 +1751,40 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     >
    
       {/* Risk/Insights Toggle */}
-      <div className="flex justify-center mb-4">
-        <div className="inline-flex items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-1 shadow-sm">
+      <div className="flex justify-center -mt-4">
+        <div className="inline-flex rounded-none p-1 ">
           <Button
             variant={cardMode === 'insights' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setCardMode('insights')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
-              cardMode === 'insights'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 transition-all duration-200 rounded-none border-b-2 
+              ${
+                cardMode === 'insights'
+                  ? 'text-blue-400 border-blue-400 bg-transparent dark:hover:bg-transparent'
+                  : 'text-gray-600 dark:text-gray-300 border-transparent hover:text-blue-600 hover:border-blue-600 hover:bg-transparent dark:hover:text-blue-300 dark:hover:border-blue-300'
+              }`}
           >
-            <BookOpen className="h-4 w-4" />
-            <span className="text-sm font-medium">Insights</span>
+            <BookOpen className="h-3 w-3" />
+            <span className="text-xs font-medium">Insights</span>
           </Button>
           <Button
             variant={cardMode === 'risk' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setCardMode('risk')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-none transition-all duration-200 border-b-2 ${
               cardMode === 'risk'
-                ? 'bg-red-600 text-white shadow-sm'
-                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-            }`}
+                ? 'text-red-400 border-red-400 bg-transparent dark:hover:bg-transparent'
+                : 'text-gray-600 dark:text-gray-300 border-transparent hover:text-red-600 hover:border-red-600 hover:bg-transparent dark:hover:text-red-300 dark:hover:border-red-300'
+              }`}
           >
-            <Activity className="h-4 w-4" />
-            <span className="text-sm font-medium">Risk</span>
+            <Activity className="h-3 w-3" />
+            <span className="text-xs font-medium">Risks</span>
           </Button>
         </div>
       </div>
 
       {/* Key Insights Section */}
-      <Card className="border-0 dark:bg-transparent">
+      <Card className="border-0 dark:bg-transparent !mt-0">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -1840,7 +1841,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="">
           {cardMode === 'insights' ? (
             insights.length > 0 ? (
             <>
