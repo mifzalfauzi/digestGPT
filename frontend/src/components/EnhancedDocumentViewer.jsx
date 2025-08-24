@@ -1030,18 +1030,46 @@ This business plan effectively balances growth ambitions with comprehensive risk
                 if (currentElement === scrollContainer) break
               }
               
-              // If still 0, use text-based estimation
+              // If still 0, use text-based position calculation from highlight data
               if (calculatedTop === 0) {
-                const textContainer = element.closest('.whitespace-pre-wrap, .prose, [data-highlight-container]')
-                if (textContainer) {
-                  const allHighlights = Array.from(textContainer.querySelectorAll('[data-highlight-id]'))
-                  const elementIndex = allHighlights.indexOf(element)
+                // Find highlight data by id to get character position
+                const highlight = highlights.find(h => h.id === id)
+                if (highlight && highlight.position && highlight.position.found) {
+                  const documentText = (isDemoMode || bypassAPI) ? mockDocumentText : results?.document_text
                   
-                  if (elementIndex >= 0) {
-                    // Estimate position based on element index and average spacing
-                    const avgSpacing = textContainer.scrollHeight / Math.max(allHighlights.length, 1)
-                    calculatedTop = elementIndex * avgSpacing
-                    console.log('Used index-based estimation:', calculatedTop, 'for element', elementIndex, 'of', allHighlights.length)
+                  if (scrollContainer && documentText) {
+                    const charPosition = highlight.position.start
+                    const totalTextLength = documentText.length
+                    
+                    // Use the scroll container's scrollHeight directly
+                    const containerScrollHeight = scrollContainer.scrollHeight
+                    const positionRatio = charPosition / totalTextLength
+                    calculatedTop = Math.max(0, containerScrollHeight * positionRatio)
+                    
+                    console.log('Character position calculation debug:', {
+                      charPosition,
+                      totalTextLength,
+                      containerScrollHeight,
+                      positionRatio,
+                      calculatedBeforeMax: containerScrollHeight * positionRatio,
+                      calculatedTop,
+                      scrollContainerTag: scrollContainer.tagName,
+                      scrollContainerClass: scrollContainer.className
+                    })
+                  }
+                } else {
+                  // Fallback to original index-based estimation
+                  const textContainer = element.closest('.whitespace-pre-wrap, .prose, [data-highlight-container]')
+                  if (textContainer) {
+                    const allHighlights = Array.from(textContainer.querySelectorAll('[data-highlight-id]'))
+                    const elementIndex = allHighlights.indexOf(element)
+                    
+                    if (elementIndex >= 0) {
+                      // Estimate position based on element index and average spacing
+                      const avgSpacing = textContainer.scrollHeight / Math.max(allHighlights.length, 1)
+                      calculatedTop = elementIndex * avgSpacing
+                      console.log('Used index-based estimation:', calculatedTop, 'for element', elementIndex, 'of', allHighlights.length)
+                    }
                   }
                 }
               }
@@ -1124,7 +1152,38 @@ This business plan effectively balances growth ambitions with comprehensive risk
         console.log(`Element not found, retrying in 200ms... (attempt ${attempts + 1})`)
         setTimeout(() => attemptScroll(attempts + 1, maxAttempts), 200)
       } else {
+        // Final fallback: use position data directly without DOM element
         console.warn('Could not find highlight element after', maxAttempts, 'attempts:', id)
+        console.log('Attempting position-based scroll fallback...')
+        
+        const highlight = highlights.find(h => h.id === id)
+        const scrollContainer = tabContentRefs.current['document']
+        
+        if (highlight && highlight.position && highlight.position.found && scrollContainer) {
+          const documentText = (isDemoMode || bypassAPI) ? mockDocumentText : results?.document_text
+          
+          if (documentText) {
+            const charPosition = highlight.position.start
+            const totalTextLength = documentText.length
+            const containerScrollHeight = scrollContainer.scrollHeight
+            const positionRatio = charPosition / totalTextLength
+            const scrollTop = containerScrollHeight * positionRatio
+            
+            console.log('Using direct position-based scroll:', {
+              charPosition,
+              totalTextLength,
+              positionRatio,
+              scrollTop,
+              containerScrollHeight
+            })
+            
+            scrollContainer.scrollTo({
+              top: scrollTop,
+              behavior: 'smooth'
+            })
+          }
+        }
+        
         console.log('Available highlight IDs:', 
           Array.from(document.querySelectorAll('[data-highlight-id]'))
             .map(el => el.getAttribute('data-highlight-id'))
@@ -1856,37 +1915,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                       </div>
 
                       {/* Instructions - Responsive Grid */}
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
-                        <div className="p-2 sm:p-2.5 lg:p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
-                          <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-200 font-medium mb-1.5 text-sm">
-                            <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                            Key Insights
-                          </div>
-                          <p className="text-xs text-emerald-700 dark:text-emerald-300">
-                            {isDemoMode
-                              ? 'In the full version, insights from the AI analysis would be highlighted in green when clicked.'
-                              : bypassAPI
-                                ? 'In normal operation, AI insights would be highlighted here when clicked from the analysis tab.'
-                                : 'Navigate to the Analysis tab and click on any insight to see it highlighted here in green.'
-                            }
-                          </p>
-                        </div>
-
-                        <div className="p-2 sm:p-2.5 lg:p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
-                          <div className="flex items-center gap-2 text-red-800 dark:text-red-200 font-medium mb-1.5 text-sm">
-                            <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                            Risk Flags
-                          </div>
-                          <p className="text-xs text-red-700 dark:text-red-300">
-                            {isDemoMode
-                              ? 'Risk assessments would be highlighted in red when selected from the analysis tab.'
-                              : bypassAPI
-                                ? 'Risk flags from AI analysis would normally be highlighted here in red when selected.'
-                                : 'Click on any risk assessment in the Analysis tab to see it highlighted here in red.'
-                            }
-                          </p>
-                        </div>
-                      </div>
+                      
                     </div>
                   ) : (
                     <div className="text-center py-8 sm:py-12">

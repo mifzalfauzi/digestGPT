@@ -102,7 +102,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   const [isRisksResetting, setIsRisksResetting] = useState(false)
   
   // Card mode toggle state
-  const [cardMode, setCardMode] = useState('insights') // 'insights' or 'risk'
+  const [cardMode, setCardMode] = useState('insights') // 'insights' or 'risk' or 'impact'
   
   const insightsDrawerRef = useRef(null)
   const risksDrawerRef = useRef(null)
@@ -1780,6 +1780,19 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
             <Activity className="h-3 w-3" />
             <span className="text-xs font-medium">Risks</span>
           </Button>
+          <Button
+            variant={cardMode === 'impact' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setCardMode('impact')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-none transition-all duration-200 border-b-2 ${
+              cardMode === 'impact'
+                ? 'text-yellow-400 border-yellow-400 bg-transparent dark:hover:bg-transparent'
+                : 'text-gray-600 dark:text-gray-300 border-transparent hover:text-yellow-600 hover:border-yellow-600 hover:bg-transparent dark:hover:text-yellow-300 dark:hover:border-yellow-300'
+              }`}
+          >
+            <Target className="h-3 w-3" />
+            <span className="text-xs font-medium">Impact</span>
+          </Button>
         </div>
       </div>
 
@@ -1980,13 +1993,12 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                             className="w-full sm:w-auto text-xs bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 border-emerald-300 dark:border-emerald-700"
                             onClick={(e) => {
                               e.stopPropagation()
+                              // Always trigger the highlight click first to ensure scrolling works
+                              onHighlightClick(currentInsight.id)
+                              
+                              // Then handle the active state toggle
                               if (activeHighlight === currentInsight.id) {
                                 onActiveHighlightChange?.(null)
-
-                                const hasHighlight = highlights.find(h => h.id === currentInsight.id);
-                                hasHighlight && onHighlightClick(currentInsight.id);
-                              } else {
-                                onHighlightClick(currentInsight.id)
                               }
                             }}
                           >
@@ -2240,13 +2252,12 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                                   className="w-full sm:w-auto text-xs bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 border-red-300 dark:border-red-700"
                                   onClick={(e) => {
                                     e.stopPropagation()
+                                    // Always trigger the highlight click first to ensure scrolling works
+                                    onHighlightClick(currentRisk.id)
+                                    
+                                    // Then handle the active state toggle
                                     if (activeHighlight === currentRisk.id) {
                                       onActiveHighlightChange?.(null)
-
-                                      const hasHighlight = highlights.find(h => h.id === currentRisk.id);
-                                      hasHighlight && onHighlightClick(currentRisk.id);
-                                    } else {
-                                      onHighlightClick(currentRisk.id)
                                     }
                                   }}
                                 >
