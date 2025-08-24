@@ -68,6 +68,7 @@ class Document(Base):
     word_count = Column(Integer)
     analysis_method = Column(String)
     recommendations = Column(Text)
+    impact = Column(Text)
     file_url = Column(String, nullable=True)  # Add file URL for PDF viewing
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
 
