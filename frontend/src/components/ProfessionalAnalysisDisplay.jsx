@@ -102,8 +102,22 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   const [isInsightsResetting, setIsInsightsResetting] = useState(false)
   const [isRisksResetting, setIsRisksResetting] = useState(false)
   
-  // Card mode toggle state
-  const [cardMode, setCardMode] = useState('insights') // 'insights' or 'risk' or 'impact'
+  // Card mode toggle state - initialize from storage if available
+  const [cardMode, setCardMode] = useState(() => {
+    // Try to load from storage for current document on initial render
+    try {
+      const documentKey = generateDocumentKey(results)
+      const stored = localStorage.getItem(documentKey)
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        console.log('Parsed cardMode:', parsed.cardMode)
+        return parsed.cardMode || 'insights'
+      }
+    } catch (error) {
+      console.warn('Failed to load initial cardMode from localStorage:', error)
+    }
+    return 'insights'
+  }) // 'insights' or 'risk' or 'impact'
   
   const insightsDrawerRef = useRef(null)
   const risksDrawerRef = useRef(null)
@@ -178,6 +192,25 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     }
   }
 
+  // Save all current settings to localStorage (comprehensive save)
+  const saveAllSettingsToStorage = () => {
+    try {
+      const allSettings = {
+        insightsChartType,
+        showInsightsCharts,
+        insightCategoryFilter,
+        risksChartType,
+        showRisksCharts,
+        riskCategoryFilter,
+        riskLevelFilter,
+        cardMode
+      }
+      localStorage.setItem(currentDocumentKey, JSON.stringify(allSettings))
+    } catch (error) {
+      console.warn('Failed to save all analysis settings to localStorage:', error)
+    }
+  }
+
   // Save insights settings to localStorage for current document
   const saveInsightsToStorage = (settings) => {
     try {
@@ -186,7 +219,8 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
         ...existingSettings,
         insightsChartType: settings.insightsChartType,
         showInsightsCharts: settings.showInsightsCharts,
-        insightCategoryFilter: settings.insightCategoryFilter
+        insightCategoryFilter: settings.insightCategoryFilter,
+        cardMode // Always preserve current cardMode
       }
       localStorage.setItem(currentDocumentKey, JSON.stringify(updatedSettings))
     } catch (error) {
@@ -203,7 +237,8 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
         risksChartType: settings.risksChartType,
         showRisksCharts: settings.showRisksCharts,
         riskCategoryFilter: settings.riskCategoryFilter,
-        riskLevelFilter: settings.riskLevelFilter
+        riskLevelFilter: settings.riskLevelFilter,
+        cardMode // Always preserve current cardMode
       }
       localStorage.setItem(currentDocumentKey, JSON.stringify(updatedSettings))
     } catch (error) {
@@ -303,6 +338,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       
       // Reset all settings to defaults for new document
       const defaults = loadFromStorage()
+      console.log(`🆕 Loading defaults for new document ${newDocumentKey}:`, defaults)
       setInsightsChartType(defaults.insightsChartType)
       setShowInsightsCharts(defaults.showInsightsCharts)
       setInsightCategoryFilter(defaults.insightCategoryFilter)
@@ -327,6 +363,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       // Same document - load persisted settings if available
       const stored = loadFromStorage()
       if (stored) {
+        console.log(`📥 Loading stored settings for ${currentDocumentKey}:`, stored)
         setInsightsChartType(stored.insightsChartType)
         setShowInsightsCharts(stored.showInsightsCharts)
         setInsightCategoryFilter(stored.insightCategoryFilter)
@@ -816,17 +853,23 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     }
   }, [currentInsightIndex, currentRiskIndex, copiedItem, feedbackGiven, insightsChartType, showInsightsCharts, insightCategoryFilter, risksChartType, showRisksCharts, riskCategoryFilter, riskLevelFilter, cardMode])
   
-  // Auto-save cardMode to localStorage when it changes
+  // Auto-save all settings including cardMode to localStorage when any setting changes
   useEffect(() => {
     if (currentDocumentKey) {
-      const currentSettings = JSON.parse(localStorage.getItem(currentDocumentKey) || '{}')
-      const updatedSettings = {
-        ...currentSettings,
-        cardMode: cardMode
+      const allSettings = {
+        insightsChartType,
+        showInsightsCharts,
+        insightCategoryFilter,
+        risksChartType,
+        showRisksCharts,
+        riskCategoryFilter,
+        riskLevelFilter,
+        cardMode
       }
-      localStorage.setItem(currentDocumentKey, JSON.stringify(updatedSettings))
+      console.log(`💾 Saving settings for ${currentDocumentKey}:`, allSettings)
+      localStorage.setItem(currentDocumentKey, JSON.stringify(allSettings))
     }
-  }, [cardMode, currentDocumentKey])
+  }, [cardMode, currentDocumentKey, insightsChartType, showInsightsCharts, insightCategoryFilter, risksChartType, showRisksCharts, riskCategoryFilter, riskLevelFilter])
   
   // Update local state when drawers open - cleaned up
   // This was handled in the separate useEffect hooks above
