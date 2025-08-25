@@ -6,7 +6,7 @@ import { Textarea } from './ui/textarea'
 import { Badge } from './ui/badge'
 import { Card, CardHeader, CardContent } from './ui/card'
 import { Separator } from './ui/separator'
-import { MessageCircle, Send, Bot, User, AlertCircle, Trash2, Sparkles, Brain, Zap, ThumbsUp, ThumbsDown, Copy, Check, Clock, ChevronDown, Share2, ExternalLink, Link, Eye, X } from 'lucide-react'
+import { MessageCircle, Send, Bot, User, ArrowUp, AlertCircle, Trash2, Sparkles, Brain, Zap, ThumbsUp, ThumbsDown, Copy, Check, Clock, ChevronDown, Share2, ExternalLink, Link, Eye, X } from 'lucide-react'
 import MessageFormatter from './MessageFormatter'
 import TypewriterText from './TypewriterText'
 
@@ -1030,7 +1030,7 @@ function ModernChatPanel({ documentId, filename, onSetInputMessage, isDemoMode =
               disabled={!inputMessage || !inputMessage.trim() || isLoading || isDisabled || isLoadingHistory || (!casualMode && !isDemoMode && !bypassAPI && !documentId)}
               className="absolute right-1 sm:right-1.5 bottom-1 sm:bottom-1.5 h-10 w-10 sm:h-10 sm:w-10 p-0 bg-[#121212] hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl"
             >
-              <Send className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white" />
+              <ArrowUp className="h-3 w-3 sm:h-5 sm:w-5 text-white" />
             </Button>
           </div>
 

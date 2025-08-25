@@ -34,6 +34,71 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
   // Tab state storage for persistence
   const tabStateRef = useRef({})
   const tabContentRefs = useRef({})
+  const isInitialRenderRef = useRef(true)
+
+  // Generate document key for activeTab storage with multiple fallbacks
+  const generateDocumentKey = useCallback(() => {
+    // Try multiple identifiers in order of preference
+    const identifier = results?.id || 
+                      results?.filename || 
+                      file?.name || 
+                      window.location.pathname || 
+                      'default'
+    return `enhancedDocViewer_activeTab_${identifier}`
+  }, [results?.id, results?.filename, file?.name])
+
+  // Get current document identifier for consistency checks
+  const getCurrentDocumentId = useCallback(() => {
+    return results?.id || results?.filename || file?.name || window.location.pathname || 'default'
+  }, [results?.id, results?.filename, file?.name])
+
+  // Clean up old activeTab entries from localStorage
+  const cleanupOldActiveTabEntries = useCallback(() => {
+    try {
+      const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000)
+      const keysToRemove = []
+      
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith('enhancedDocViewer_activeTab_')) {
+          try {
+            const stored = localStorage.getItem(key)
+            if (stored) {
+              const parsed = JSON.parse(stored)
+              if (parsed.timestamp && parsed.timestamp < sevenDaysAgo) {
+                keysToRemove.push(key)
+              }
+            }
+          } catch (e) {
+            // Remove invalid entries
+            keysToRemove.push(key)
+          }
+        }
+      }
+      
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key)
+        console.log(`🧹 Cleaned up old activeTab entry: ${key}`)
+      })
+    } catch (error) {
+      console.warn('Failed to cleanup old activeTab entries:', error)
+    }
+  }, [])
+
+  // Save activeTab to localStorage
+  const saveActiveTabToStorage = useCallback((tabValue) => {
+    try {
+      const documentKey = generateDocumentKey()
+      const tabData = { activeTab: tabValue, timestamp: Date.now() }
+      localStorage.setItem(documentKey, JSON.stringify(tabData))
+      console.log(`💾 Saved activeTab "${tabValue}" for ${documentKey}`)
+      
+      // Clean up old activeTab entries (older than 7 days)
+      cleanupOldActiveTabEntries()
+    } catch (error) {
+      console.warn('Failed to save activeTab to localStorage:', error)
+    }
+  }, [generateDocumentKey, cleanupOldActiveTabEntries])
 
   // Find the actual scrollable element within a tab container
   const findScrollableElement = useCallback((tabElement) => {
@@ -813,18 +878,71 @@ This business plan effectively balances growth ambitions with comprehensive risk
     })
   }, [])
 
-  // Set default tab based on document availability
+  // Restore activeTab from localStorage when document data becomes available
   useEffect(() => {
-    if (activeTab === 'analysis' || !activeTab) { // Only set if still on default
+    const restoreActiveTab = () => {
+      try {
+        const documentKey = generateDocumentKey()
+        const currentDocId = getCurrentDocumentId()
+        
+        // Skip if we don't have a proper document identifier yet
+        if (currentDocId === 'default' || currentDocId === window.location.pathname) {
+          return
+        }
+        
+        console.log(`🔍 Attempting to restore activeTab for document: ${currentDocId}`)
+        
+        const stored = localStorage.getItem(documentKey)
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          // Only restore if the stored data is recent (within 7 days)
+          if (parsed.timestamp && Date.now() - parsed.timestamp < (7 * 24 * 60 * 60 * 1000)) {
+            console.log(`📂 Restored activeTab "${parsed.activeTab}" from localStorage for ${documentKey}`)
+            setActiveTab(parsed.activeTab || 'analysis')
+            isInitialRenderRef.current = false // Prevent auto-save from triggering
+          } else {
+            console.log('🧹 Stored activeTab is too old, using default')
+          }
+        } else {
+          console.log(`📝 No stored activeTab found for ${documentKey}, using default`)
+        }
+      } catch (error) {
+        console.warn('Failed to restore activeTab from localStorage:', error)
+      }
+    }
+
+    // Only attempt restoration when we have document data
+    if (results || file) {
+      console.log('🔄 Document data available, attempting activeTab restoration...', {
+        hasResults: !!results,
+        hasFile: !!file,
+        resultsId: results?.id,
+        resultsFilename: results?.filename,
+        fileName: file?.name
+      })
+      restoreActiveTab()
+    } else {
+      console.log('⏳ Waiting for document data before restoring activeTab...')
+    }
+  }, [results, file, generateDocumentKey, getCurrentDocumentId])
+
+  // Set default tab based on document availability (only if no stored preference)
+  useEffect(() => {
+    // Check if we have a stored activeTab preference for this document
+    const documentKey = generateDocumentKey()
+    const hasStoredTab = localStorage.getItem(documentKey)
+    
+    // Only set default if no stored preference and still on initial 'analysis'
+    if (!hasStoredTab && (activeTab === 'analysis')) {
       if (hasDocumentViewer) {
         setActiveTab("analysis")
       } else if (isDemoMode || bypassAPI) {
-        setActiveTab("analysis")
+        setActiveTab("analysis") 
       } else {
         setActiveTab("analysis")
       }
     }
-  }, [hasDocumentViewer, isDemoMode, bypassAPI])
+  }, [hasDocumentViewer, isDemoMode, bypassAPI, generateDocumentKey, activeTab])
 
   // Add scroll event listeners to track scroll position changes
   useEffect(() => {
@@ -878,6 +996,25 @@ This business plan effectively balances growth ambitions with comprehensive risk
       clearTimeout(saveCurrentTabState._throttleTimer)
     }
   }, [activeTab, findScrollableElement, saveCurrentTabState])
+
+  // Auto-save activeTab to localStorage whenever it changes
+  useEffect(() => {
+    // Skip saving on initial render to avoid duplicate saves
+    if (isInitialRenderRef.current) {
+      return
+    }
+    
+    // Only save if we have a proper document identifier
+    const currentDocId = getCurrentDocumentId()
+    if (currentDocId === 'default' || currentDocId === window.location.pathname) {
+      return
+    }
+    
+    // Save the current activeTab
+    if (activeTab) {
+      saveActiveTabToStorage(activeTab)
+    }
+  }, [activeTab, saveActiveTabToStorage, getCurrentDocumentId])
 
   // Save state when component unmounts
   useEffect(() => {

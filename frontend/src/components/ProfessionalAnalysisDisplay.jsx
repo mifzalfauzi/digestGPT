@@ -58,7 +58,7 @@ import {
   Cell
 } from 'recharts';
 
-function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighlight, onActiveHighlightChange, showSummary = true, forceListMode = false, forceCardMode = null, selectedItemIndex = null }) {
+function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighlight, onActiveHighlightChange, showSummary = true, forceListMode = false, forceCardMode = null, selectedItemIndex = null, activeTab = null, storedCardMode = null, onTabSync = null }) {
   const [insights, setInsights] = useState([])
   const [risks, setRisks] = useState([])
   const [summary, setSummary] = useState('')
@@ -102,20 +102,52 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   const [isInsightsResetting, setIsInsightsResetting] = useState(false)
   const [isRisksResetting, setIsRisksResetting] = useState(false)
   
-  // Card mode toggle state - initialize from storage if available
+  // Card mode toggle state - initialize from storage if available, synchronized with activeTab
   const [cardMode, setCardMode] = useState(() => {
-    // Try to load from storage for current document on initial render
+    // Priority 1: If storedCardMode is provided from parent, use that
+    if (storedCardMode && (storedCardMode === 'insights' || storedCardMode === 'risk' || storedCardMode === 'impact')) {
+      console.log(`🎯 Using storedCardMode from parent: "${storedCardMode}"`)
+      return storedCardMode
+    }
+    
+    // Priority 2: Try to load from localStorage FIRST (most important for persistence)
     try {
       const documentKey = generateDocumentKey(results)
+      
+      // Clean up duplicates before loading
+      try {
+        const allKeys = []
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          if (key && key.startsWith('enhancedDocViewer_analysisControls_') && key !== documentKey) {
+            allKeys.push(key)
+          }
+        }
+        allKeys.forEach(key => localStorage.removeItem(key))
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+      
       const stored = localStorage.getItem(documentKey)
       if (stored) {
         const parsed = JSON.parse(stored)
-        console.log('Parsed cardMode:', parsed.cardMode)
-        return parsed.cardMode || 'insights'
+        const savedCardMode = parsed.cardMode
+        if (savedCardMode && (savedCardMode === 'insights' || savedCardMode === 'risk' || savedCardMode === 'impact')) {
+          console.log(`💾 Using saved cardMode from localStorage: "${savedCardMode}"`)
+          return savedCardMode
+        }
       }
     } catch (error) {
       console.warn('Failed to load initial cardMode from localStorage:', error)
     }
+    
+    // Priority 3: If activeTab indicates a specific mode, use that as fallback
+    if (activeTab === 'insights' || activeTab === 'risk' || activeTab === 'impact') {
+      console.log(`📱 Using activeTab as fallback: "${activeTab}"`)
+      return activeTab
+    }
+    
+    console.log(`🔄 Using default cardMode: "insights"`)
     return 'insights'
   }) // 'insights' or 'risk' or 'impact'
   
@@ -133,30 +165,62 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     saveTimeout: null
   })
 
-  // Generate document-specific storage key
+  // Generate document-specific storage key - use document_id primarily
   const generateDocumentKey = (resultsData) => {
-    if (!resultsData) return 'analysis-controls-default'
-    
-    // Create a simple hash from the results data to identify unique documents
-    const dataString = JSON.stringify(resultsData)
-    let hash = 0
-    for (let i = 0; i < dataString.length; i++) {
-      const char = dataString.charCodeAt(i)
-      hash = ((hash << 5) - hash) + char
-      hash = hash & hash // Convert to 32-bit integer
+    // NEVER create a default key - wait for proper document data
+    if (!resultsData?.document_id && !resultsData?.id && !resultsData?.filename) {
+      console.log(`🚨 No valid document identifier found, skipping key generation`)
+      return null
     }
-    return `analysis-controls-${Math.abs(hash)}`
+    
+    // Always prioritize document_id > id > filename for consistency
+    const identifier = resultsData?.document_id || 
+                      resultsData?.id || 
+                      resultsData?.filename
+    
+    const key = `enhancedDocViewer_analysisControls_${identifier}`
+    console.log(`🔑 Using storage key: ${key}`)
+    
+    return key
   }
   
-  const STORAGE_KEY = generateDocumentKey(results)
-  const [currentDocumentKey, setCurrentDocumentKey] = useState(STORAGE_KEY)
+  // Initialize currentDocumentKey properly to avoid false "document change" detection
+  const [currentDocumentKey, setCurrentDocumentKey] = useState(() => {
+    const key = generateDocumentKey(results)
+    if (!key) {
+      console.log(`⏳ Waiting for proper document data before setting key`)
+    }
+    return key
+  })
 
-  // Load settings from localStorage for current document
-  const loadFromStorage = () => {
+  // Load settings from localStorage and clean up duplicates
+  const loadFromStorage = (keyOverride = null) => {
+    const targetKey = keyOverride || currentDocumentKey
+    
+    // If no valid key, return defaults without trying to access localStorage
+    if (!targetKey) {
+      console.log(`📝 No valid key available, using defaults`)
+      return {
+        insightsChartType: 'line',
+        showInsightsCharts: true,
+        insightCategoryFilter: 'all',
+        risksChartType: 'line',
+        showRisksCharts: true,
+        riskCategoryFilter: 'all',
+        riskLevelFilter: 'all',
+        cardMode: 'insights'
+      }
+    }
+    
     try {
-      const stored = localStorage.getItem(currentDocumentKey)
+      // First, clean up duplicate session keys
+      cleanupDuplicateKeys(targetKey)
+      
+      // Load from specified key
+      const stored = localStorage.getItem(targetKey)
       if (stored) {
         const parsed = JSON.parse(stored)
+        console.log(`📥 Loaded settings from ${targetKey}:`, parsed)
         return {
           insightsChartType: parsed.insightsChartType || 'line',
           showInsightsCharts: parsed.showInsightsCharts !== undefined ? parsed.showInsightsCharts : true,
@@ -171,6 +235,9 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     } catch (error) {
       console.warn('Failed to load analysis settings from localStorage:', error)
     }
+    
+    // Return defaults if no stored settings found
+    console.log(`📝 Using default settings for ${targetKey}`)
     return {
       insightsChartType: 'line',
       showInsightsCharts: true,
@@ -183,10 +250,58 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     }
   }
 
+  // Clean up ALL localStorage keys except the current document's key
+  const cleanupDuplicateKeys = (keepKey = null) => {
+    try {
+      const targetKey = keepKey || currentDocumentKey
+      console.log(`🧹 AGGRESSIVE CLEANUP: Removing ALL analysis control keys except: ${targetKey}`)
+      
+      // Find all enhancedDocViewer_analysisControls keys
+      const allKeys = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith('enhancedDocViewer_analysisControls_')) {
+          allKeys.push(key)
+        }
+      }
+      
+      console.log(`🔍 Found ${allKeys.length} total analysis control keys:`, allKeys)
+      
+      // Remove EVERYTHING except the target key
+      let removedCount = 0
+      allKeys.forEach(key => {
+        if (key !== targetKey && targetKey) {
+          console.log(`🗑️  REMOVING: ${key}`)
+          localStorage.removeItem(key)
+          removedCount++
+        } else if (!targetKey) {
+          // If no target key, remove ALL analysis control keys
+          console.log(`🗑️  REMOVING ALL: ${key}`)
+          localStorage.removeItem(key)
+          removedCount++
+        }
+      })
+      
+      if (removedCount > 0) {
+        console.log(`✅ CLEANED UP ${removedCount} localStorage entries, kept: ${targetKey || 'NONE'}`)
+      } else {
+        console.log(`✅ No cleanup needed, localStorage is clean`)
+      }
+    } catch (error) {
+      console.warn('Failed to cleanup duplicate keys:', error)
+    }
+  }
+
   // Save settings to localStorage for current document
   const saveToStorage = (settings) => {
+    if (!currentDocumentKey) {
+      console.log(`⏸️  Skipping save - no valid document key available`)
+      return
+    }
+    
     try {
       localStorage.setItem(currentDocumentKey, JSON.stringify(settings))
+      console.log(`💾 Saved settings to ${currentDocumentKey}:`, settings)
     } catch (error) {
       console.warn('Failed to save analysis settings to localStorage:', error)
     }
@@ -333,11 +448,36 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     
     // Handle document changes - reset state only for truly new documents
     const newDocumentKey = generateDocumentKey(results)
-    if (newDocumentKey !== currentDocumentKey) {
-      console.log('New document detected, resetting analysis controls state')
+    const documentId = results?.document_id || results?.filename || 'unknown'
+    
+    // Skip if we don't have a valid new key
+    if (!newDocumentKey) {
+      console.log(`⏸️  Skipping document change logic - no valid key available`)
+      return
+    }
+    
+    const isNewDocument = newDocumentKey !== currentDocumentKey
+    
+    console.log(`🔍 Document key comparison:`, {
+      currentDocumentKey,
+      newDocumentKey,
+      isNewDocument,
+      documentId,
+      hasAnalysis: !!results?.analysis
+    })
+    
+    // Only trigger document change if we have a valid new key AND it's different
+    if (isNewDocument && newDocumentKey) {
+      console.log(`🔄 NEW DOCUMENT detected: ${currentDocumentKey} → ${newDocumentKey} (${documentId})`)
       
-      // Reset all settings to defaults for new document
-      const defaults = loadFromStorage()
+      // Update the current document key first
+      setCurrentDocumentKey(newDocumentKey)
+      
+      // Clean up duplicates first - keep only the new document's key
+      cleanupDuplicateKeys(newDocumentKey)
+      
+      // Reset all settings to defaults for new document  
+      const defaults = loadFromStorage(newDocumentKey)
       console.log(`🆕 Loading defaults for new document ${newDocumentKey}:`, defaults)
       setInsightsChartType(defaults.insightsChartType)
       setShowInsightsCharts(defaults.showInsightsCharts)
@@ -346,6 +486,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       setShowRisksCharts(defaults.showRisksCharts)
       setRiskCategoryFilter(defaults.riskCategoryFilter)
       setRiskLevelFilter(defaults.riskLevelFilter)
+      console.log(`🎯 Setting cardMode for new document from defaults: ${defaults.cardMode}`)
       setCardMode(defaults.cardMode)
       
       setLocalInsightsChartType(defaults.insightsChartType)
@@ -358,9 +499,9 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       
       setInsightsDrawerOpen(false)
       setRisksDrawerOpen(false)
-      setCurrentDocumentKey(newDocumentKey)
-    } else {
+    } else if (currentDocumentKey) {
       // Same document - load persisted settings if available
+      console.log(`✅ SAME DOCUMENT - loading persisted settings for: ${currentDocumentKey}`)
       const stored = loadFromStorage()
       if (stored) {
         console.log(`📥 Loading stored settings for ${currentDocumentKey}:`, stored)
@@ -371,6 +512,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
         setShowRisksCharts(stored.showRisksCharts)
         setRiskCategoryFilter(stored.riskCategoryFilter)
         setRiskLevelFilter(stored.riskLevelFilter)
+        console.log(`🎯 Setting cardMode for same document from storage: ${stored.cardMode}`)
         setCardMode(stored.cardMode)
         
         setLocalInsightsChartType(stored.insightsChartType)
@@ -486,7 +628,20 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     ]
     setHighlights(newHighlights)
 
-  }, [results, currentDocumentKey])
+  }, [results?.document_id, results?.filename])
+
+  // Clean up duplicates on component mount
+  useEffect(() => {
+    console.log(`🎬 Component mounted - cleaning up localStorage duplicates`)
+    // Clean up ALL analysis control keys except any that might be valid
+    const currentKey = generateDocumentKey(results)
+    if (currentKey) {
+      cleanupDuplicateKeys(currentKey)
+    } else {
+      // If no valid key yet, clean up ALL keys for a fresh start
+      cleanupDuplicateKeys(null)
+    }
+  }, []) // Run only once on mount
   
   // Filter data based on current filters
   const getFilteredInsights = (insights) => {
@@ -853,6 +1008,34 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     }
   }, [currentInsightIndex, currentRiskIndex, copiedItem, feedbackGiven, insightsChartType, showInsightsCharts, insightCategoryFilter, risksChartType, showRisksCharts, riskCategoryFilter, riskLevelFilter, cardMode])
   
+  // Sync cardMode with storedCardMode changes from parent component
+  useEffect(() => {
+    if (storedCardMode && (storedCardMode === 'insights' || storedCardMode === 'risk' || storedCardMode === 'impact')) {
+      if (cardMode !== storedCardMode) {
+        console.log(`🔄 Syncing cardMode from "${cardMode}" to "${storedCardMode}" based on storedCardMode`)
+        setCardMode(storedCardMode)
+      }
+    }
+  }, [storedCardMode, cardMode])
+
+  // Sync cardMode with activeTab changes from parent component
+  useEffect(() => {
+    if (activeTab && (activeTab === 'insights' || activeTab === 'risk' || activeTab === 'impact')) {
+      if (cardMode !== activeTab) {
+        console.log(`🔄 Syncing cardMode from "${cardMode}" to "${activeTab}" based on activeTab`)
+        setCardMode(activeTab)
+      }
+    }
+  }, [activeTab, cardMode])
+
+  // Notify parent component when cardMode changes (for reverse sync)
+  useEffect(() => {
+    if (onTabSync && (cardMode === 'insights' || cardMode === 'risk' || cardMode === 'impact')) {
+      console.log(`📤 Notifying parent of cardMode change to "${cardMode}"`)
+      onTabSync(cardMode)
+    }
+  }, [cardMode, onTabSync])
+
   // Auto-save all settings including cardMode to localStorage when any setting changes
   useEffect(() => {
     if (currentDocumentKey) {
