@@ -348,6 +348,8 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
 
     // Handle case where analysis might be a string instead of object
     let analysisData = results.analysis
+
+    console.log('Analysis data:', analysisData)
     if (typeof analysisData === 'string') {
       console.log('Analysis is a string, attempting to parse JSON...')
       try {
@@ -359,6 +361,8 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
         return
       }
     }
+
+    console.log('Processed analysis data:', analysisData)
 
     // Process summary
     setSummary(analysisData.summary || '')

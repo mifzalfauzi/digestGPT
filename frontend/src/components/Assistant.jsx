@@ -682,12 +682,15 @@ function Assistant() {
         console.log("Raw key_concepts:", fullDocumentData.key_concepts)
         console.log("Raw swot_analysis type:", typeof fullDocumentData.swot_analysis)
         console.log("Raw swot_analysis:", fullDocumentData.swot_analysis)
+        console.log("Raw impact_analysis type:", typeof fullDocumentData.impact_analysis)
+        console.log("Raw impact_analysis:", fullDocumentData.impact_analysis)
 
         // Parse JSON fields safely - FIXED LOGIC
         let keyPoints = []
         let riskFlags = []
         let keyConcepts = []
         let swotAnalysis = {}
+        let impactAnalysis = {}
 
         try {
           // key_points is a JSON STRING - needs parsing
@@ -748,6 +751,19 @@ function Assistant() {
           console.error('Error processing swot_analysis:', e)
         }
 
+        try {
+          if (fullDocumentData.impact_analysis) {
+            if (typeof fullDocumentData.impact_analysis === 'object' && !Array.isArray(fullDocumentData.impact_analysis)) {
+              // It's already an object - use directly
+              impactAnalysis = fullDocumentData.impact_analysis
+            } else if (typeof fullDocumentData.impact_analysis === 'string') {
+              impactAnalysis = JSON.parse(fullDocumentData.impact_analysis)
+            }
+          }
+        } catch (e) {
+          console.error('Error processing impact_analysis:', e)
+        }
+
         // Also check if the data is nested in analysis object
         if (fullDocumentData.analysis) {
           console.log("Found analysis object:", fullDocumentData.analysis)
@@ -788,6 +804,15 @@ function Assistant() {
             }
             console.log("Used analysis.swot_analysis:", swotAnalysis)
           }
+
+          if (Object.keys(impactAnalysis).length === 0 && fullDocumentData.analysis.impact_analysis) {
+            if (typeof fullDocumentData.analysis.impact_analysis === 'object' && !Array.isArray(fullDocumentData.analysis.impact_analysis)) {
+              impactAnalysis = fullDocumentData.analysis.impact_analysis
+            } else if (typeof fullDocumentData.analysis.impact_analysis === 'string') {
+              impactAnalysis = JSON.parse(fullDocumentData.analysis.impact_analysis)
+            }
+            console.log("Used analysis.impact_analysis:", impactAnalysis)
+          }
         }
 
         // Final verification
@@ -799,6 +824,7 @@ function Assistant() {
         console.log("keyConcepts:", keyConcepts)
         console.log("keyConcepts length:", keyConcepts.length)
         console.log("swotAnalysis:", swotAnalysis)
+        console.log("impactAnalysis:", impactAnalysis)
         console.log("swotAnalysis keys:", Object.keys(swotAnalysis)) // Changed from .length to Object.keys()
         console.log("swotAnalysis strengths:", swotAnalysis.strengths?.length || 0)
         console.log("swotAnalysis weaknesses:", swotAnalysis.weaknesses?.length || 0)
@@ -827,7 +853,8 @@ function Assistant() {
               key_points: keyPoints,
               risk_flags: riskFlags,
               key_concepts: keyConcepts,
-              swot_analysis: swotAnalysis
+              swot_analysis: swotAnalysis,
+              impact_analysis: impactAnalysis
             },
             // Also include at root level for compatibility
             summary: fullDocumentData.summary,
@@ -837,7 +864,8 @@ function Assistant() {
             key_concepts: keyConcepts,
             word_count: fullDocumentData.word_count,
             analysis_method: fullDocumentData.analysis_method,
-            swot_analysis: swotAnalysis
+            swot_analysis: swotAnalysis,
+            impact_analysis: impactAnalysis
           }
         }
 
