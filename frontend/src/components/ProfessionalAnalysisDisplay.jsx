@@ -113,28 +113,15 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     // Priority 2: Try to load from localStorage FIRST (most important for persistence)
     try {
       const documentKey = generateDocumentKey(results)
-      
-      // Clean up duplicates before loading
-      try {
-        const allKeys = []
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i)
-          if (key && key.startsWith('enhancedDocViewer_analysisControls_') && key !== documentKey) {
-            allKeys.push(key)
+      if (documentKey) {
+        const stored = localStorage.getItem(documentKey)
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          const savedCardMode = parsed.cardMode
+          if (savedCardMode && (savedCardMode === 'insights' || savedCardMode === 'risk' || savedCardMode === 'impact')) {
+            console.log(`💾 Using saved cardMode from localStorage: "${savedCardMode}"`)
+            return savedCardMode
           }
-        }
-        allKeys.forEach(key => localStorage.removeItem(key))
-      } catch (e) {
-        // Ignore cleanup errors
-      }
-      
-      const stored = localStorage.getItem(documentKey)
-      if (stored) {
-        const parsed = JSON.parse(stored)
-        const savedCardMode = parsed.cardMode
-        if (savedCardMode && (savedCardMode === 'insights' || savedCardMode === 'risk' || savedCardMode === 'impact')) {
-          console.log(`💾 Using saved cardMode from localStorage: "${savedCardMode}"`)
-          return savedCardMode
         }
       }
     } catch (error) {
@@ -193,7 +180,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     return key
   })
 
-  // Load settings from localStorage and clean up duplicates
+  // Load settings from localStorage 
   const loadFromStorage = (keyOverride = null) => {
     const targetKey = keyOverride || currentDocumentKey
     
@@ -213,9 +200,6 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     }
     
     try {
-      // First, clean up duplicate session keys
-      cleanupDuplicateKeys(targetKey)
-      
       // Load from specified key
       const stored = localStorage.getItem(targetKey)
       if (stored) {
@@ -250,47 +234,6 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     }
   }
 
-  // Clean up ALL localStorage keys except the current document's key
-  const cleanupDuplicateKeys = (keepKey = null) => {
-    try {
-      const targetKey = keepKey || currentDocumentKey
-      console.log(`🧹 AGGRESSIVE CLEANUP: Removing ALL analysis control keys except: ${targetKey}`)
-      
-      // Find all enhancedDocViewer_analysisControls keys
-      const allKeys = []
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key && key.startsWith('enhancedDocViewer_analysisControls_')) {
-          allKeys.push(key)
-        }
-      }
-      
-      console.log(`🔍 Found ${allKeys.length} total analysis control keys:`, allKeys)
-      
-      // Remove EVERYTHING except the target key
-      let removedCount = 0
-      allKeys.forEach(key => {
-        if (key !== targetKey && targetKey) {
-          console.log(`🗑️  REMOVING: ${key}`)
-          localStorage.removeItem(key)
-          removedCount++
-        } else if (!targetKey) {
-          // If no target key, remove ALL analysis control keys
-          console.log(`🗑️  REMOVING ALL: ${key}`)
-          localStorage.removeItem(key)
-          removedCount++
-        }
-      })
-      
-      if (removedCount > 0) {
-        console.log(`✅ CLEANED UP ${removedCount} localStorage entries, kept: ${targetKey || 'NONE'}`)
-      } else {
-        console.log(`✅ No cleanup needed, localStorage is clean`)
-      }
-    } catch (error) {
-      console.warn('Failed to cleanup duplicate keys:', error)
-    }
-  }
 
   // Save settings to localStorage for current document
   const saveToStorage = (settings) => {
@@ -473,9 +416,6 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       // Update the current document key first
       setCurrentDocumentKey(newDocumentKey)
       
-      // Clean up duplicates first - keep only the new document's key
-      cleanupDuplicateKeys(newDocumentKey)
-      
       // Reset all settings to defaults for new document  
       const defaults = loadFromStorage(newDocumentKey)
       console.log(`🆕 Loading defaults for new document ${newDocumentKey}:`, defaults)
@@ -630,18 +570,6 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
 
   }, [results?.document_id, results?.filename])
 
-  // Clean up duplicates on component mount
-  useEffect(() => {
-    console.log(`🎬 Component mounted - cleaning up localStorage duplicates`)
-    // Clean up ALL analysis control keys except any that might be valid
-    const currentKey = generateDocumentKey(results)
-    if (currentKey) {
-      cleanupDuplicateKeys(currentKey)
-    } else {
-      // If no valid key yet, clean up ALL keys for a fresh start
-      cleanupDuplicateKeys(null)
-    }
-  }, []) // Run only once on mount
   
   // Filter data based on current filters
   const getFilteredInsights = (insights) => {
