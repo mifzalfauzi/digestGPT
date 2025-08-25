@@ -334,11 +334,13 @@ function Assistant() {
       const response = await axios.get(`${BASE_URL}/documents/${documentId}`, {
         withCredentials: true,  // 🔐 Send HttpOnly cookies (access_token)
         signal: documentSwitchAbortController.current?.signal,
-        timeout: 30000 // 30 second timeout to prevent hanging
+        timeout: 60000 // 60 second timeout for chunked documents
       })
 
       // Cache the fresh data
       DocumentCache.cacheDocument(documentId, response.data)
+      console.log('Document response data:', response.data)
+      console.log('Document has impact_analysis:', Boolean(response.data.impact_analysis))
       return response.data
     } catch (error) {
       if (error.name === 'AbortError' || error.code === 'ABORT_ERR' || error.code === 'ERR_CANCELED') {

@@ -183,6 +183,7 @@ Given this document, do the following:
 4. Highlight any risky or confusing parts with 🚩 emoji and explain why.
 5. Identify key concepts/terms that are central to understanding this document.
 6. Perform a comprehensive SWOT analysis with MINIMUM 3 items in each category.
+7. For each key insight and risk identified, analyze the specific business impact including: affected organization/department, impact description, affected areas, impact level, timeline, and required actions.
 
 For each key point and risk flag, please also include a short quote (5-15 words) from the original document that supports your analysis.
 
@@ -199,6 +200,15 @@ SWOT ANALYSIS REQUIREMENTS:
 
 Impact levels: "high", "medium", "low"
 Categories: "technology", "financial", "market", "business", "operational", "regulatory", "competitive", "industry", "product"
+
+IMPACT ANALYSIS REQUIREMENTS:
+- Generate ONE impact analysis entry for EACH key insight identified
+- Generate ONE impact analysis entry for EACH risk flag identified
+- Each insight_point should correspond to a key_point from your analysis
+- Each risk_point should correspond to a risk_flag from your analysis
+- Include specific impacted organization/department (e.g., "IT Department", "Finance Team", "Executive Leadership")
+- Affected areas should be specific business functions (e.g., "Operations", "Compliance", "Customer Relations")
+- Timeline should be: "immediate", "short-term", "medium-term", or "long-term"
 
 CRITICAL: You must respond with ONLY valid JSON. Follow these strict rules:
 - Do not include any text before or after the JSON
@@ -325,6 +335,30 @@ Use this exact JSON structure:
                 "category": "market"
             }}
         ]
+    }},
+    "impact_analysis": {{
+        "insights_impact": [
+            {{
+                "insight_point": "Brief description of the specific insight point from key_points",
+                "impact_description": "Detailed description of the business impact this insight could have",
+                "impacted_organization": "Which organization/department will be affected",
+                "affected_areas": ["Operations", "Finance", "Strategy"],
+                "impact_level": "high",
+                "timeline": "short-term",
+                "action_required": "What specific actions should be taken based on this insight"
+            }}
+        ],
+        "risks_impact": [
+            {{
+                "risk_point": "Brief description of the specific risk point from risk_flags",
+                "impact_description": "Detailed description of the business impact if this risk materializes",
+                "impacted_organization": "Which organization/department will be affected", 
+                "affected_areas": ["Compliance", "Operations", "Legal"],
+                "impact_level": "high",
+                "timeline": "short-term",
+                "action_required": "What specific actions should be taken to mitigate this risk"
+            }}
+        ]
     }}
 }}
 
@@ -362,6 +396,14 @@ IMPORTANT: Each SWOT category MUST have 3-5 items (minimum 3, maximum 5).
             {{"title": "threat2", "description": "description", "impact": "impact", "category": "category"}},
             {{"title": "threat3", "description": "description", "impact": "impact", "category": "category"}}
         ]
+    }},
+    "impact_analysis": {{
+        "insights_impact": [
+            {{"insight_point": "insight description", "impact_description": "impact description", "impacted_organization": "organization", "affected_areas": ["Operations"], "impact_level": "medium", "timeline": "short-term", "action_required": "action"}}
+        ],
+        "risks_impact": [
+            {{"risk_point": "risk description", "impact_description": "impact description", "impacted_organization": "organization", "affected_areas": ["Compliance"], "impact_level": "medium", "timeline": "short-term", "action_required": "mitigation"}}
+        ]
     }}
 }}
 
@@ -370,7 +412,7 @@ Document: {text[:4000]}"""
     try:
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=3000,  # Increased further for minimum 3 items per category
+            max_tokens=4000,  # Increased for impact analysis
             temperature=0.3,
             messages=[
                 {"role": "user", "content": prompt}
@@ -580,6 +622,8 @@ def aggregate_chunk_analyses(chunk_analyses: List[dict]) -> dict:
     all_weaknesses = []
     all_opportunities = []
     all_threats = []
+    all_insights_impact = []
+    all_risks_impact = []
     
     for analysis in chunk_analyses:
         all_key_points.extend(analysis.get("key_points", []))
@@ -592,6 +636,14 @@ def aggregate_chunk_analyses(chunk_analyses: List[dict]) -> dict:
         all_weaknesses.extend(swot.get("weaknesses", []))
         all_opportunities.extend(swot.get("opportunities", []))
         all_threats.extend(swot.get("threats", []))
+        
+        # ✅ FIXED - Collect impact analysis items
+        impact = analysis.get("impact_analysis", {})
+        insights_impact = impact.get("insights_impact", [])
+        risks_impact = impact.get("risks_impact", [])
+        all_insights_impact.extend(insights_impact)
+        all_risks_impact.extend(risks_impact)
+        print(f"Chunk {len(all_insights_impact)} collected {len(insights_impact)} insights impact, {len(risks_impact)} risks impact")
     
     # Remove duplicates based on text content
     def remove_duplicates(items, key_func=lambda x: x.get("text", "").lower()):
@@ -622,6 +674,28 @@ def aggregate_chunk_analyses(chunk_analyses: List[dict]) -> dict:
     unique_weaknesses = remove_swot_duplicates(all_weaknesses)[:10]
     unique_opportunities = remove_swot_duplicates(all_opportunities)[:10]
     unique_threats = remove_swot_duplicates(all_threats)[:10]
+    
+    # Remove duplicates from impact analysis - optimized
+    def remove_impact_duplicates(items):
+        if not items:
+            return []
+        seen = set()
+        unique_items = []
+        for item in items:
+            # Use insight_point or risk_point as the key for deduplication
+            key = item.get("insight_point", item.get("risk_point", ""))
+            if key:
+                key_lower = key.lower()[:50]  # Use first 50 chars for performance
+                if key_lower not in seen:
+                    seen.add(key_lower)
+                    unique_items.append(item)
+                    if len(unique_items) >= 8:  # Early exit when we have enough
+                        break
+        return unique_items
+    
+    unique_insights_impact = remove_impact_duplicates(all_insights_impact)
+    unique_risks_impact = remove_impact_duplicates(all_risks_impact)
+    
     # Create combined summary and problem context
     chunk_count = len(chunk_analyses)
     combined_summary = f"This is a comprehensive analysis of a {chunk_count}-section document covering multiple topics."
@@ -640,6 +714,10 @@ def aggregate_chunk_analyses(chunk_analyses: List[dict]) -> dict:
             "weaknesses": unique_weaknesses,
             "opportunities": unique_opportunities,
             "threats": unique_threats
+        },
+        "impact_analysis": {  # ✅ FIXED - Include impact analysis in return
+            "insights_impact": unique_insights_impact,
+            "risks_impact": unique_risks_impact
         },
         "chunk_count": chunk_count,
         "analysis_method": "chunked"

@@ -64,6 +64,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   const [summary, setSummary] = useState('')
   const [keyConcepts, setKeyConcepts] = useState([])
   const [highlights, setHighlights] = useState([])
+  const [impactData, setImpactData] = useState({ insights_impact: [], risks_impact: [] })
   const [currentInsightIndex, setCurrentInsightIndex] = useState(0)
   const [currentRiskIndex, setCurrentRiskIndex] = useState(0)
   const [copiedItem, setCopiedItem] = useState(null)
@@ -393,6 +394,37 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     setKeyConcepts(processedConcepts)
 
     console.log('Processed key concepts:', processedConcepts)
+
+    // Process impact analysis with fallbacks for different response shapes
+    console.log('Raw impact_analysis from analysisData:', analysisData.impact_analysis)
+    let impactAnalysis = analysisData?.impact_analysis
+    // Fallback 1: some endpoints may place impact_analysis at root
+    if (!impactAnalysis && results?.impact_analysis) {
+      impactAnalysis = results.impact_analysis
+    }
+    // Fallback 2: older records store JSON in `impact` column (string or object)
+    if (!impactAnalysis && results?.impact) {
+      try {
+        impactAnalysis = typeof results.impact === 'string' ? JSON.parse(results.impact) : results.impact
+      } catch (e) {
+        console.warn('Failed to parse results.impact JSON:', e)
+      }
+    }
+    console.log('Resolved impact_analysis:', impactAnalysis)
+    const processedImpactData = {
+      insights_impact: (impactAnalysis?.insights_impact || []).map((impact, index) => ({
+        ...impact,
+        id: `impact-insight-${index}`,
+        insight_index: index
+      })),
+      risks_impact: (impactAnalysis?.risks_impact || []).map((impact, index) => ({
+        ...impact,
+        id: `impact-risk-${index}`,
+        risk_index: index
+      }))
+    }
+    console.log('Processed impact data:', processedImpactData)
+    setImpactData(processedImpactData)
 
     // Create highlights for text interaction
     const newHighlights = [
@@ -1805,17 +1837,21 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                 <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-lg">
                   <Target className="h-6 w-6 text-white" />
                 </div>
-              ) : (
+              ) : cardMode === 'risk' ? (
                 <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg">
                   <Activity className="h-6 w-6 text-white" />
+                </div>
+              ) : (
+                <div className="p-3 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl shadow-lg">
+                  <Target className="h-6 w-6 text-white" />
                 </div>
               )}
               <div>
                 <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
-                  {cardMode === 'insights' ? 'Strategic Insights' : 'Risk Assessment'}
+                  {cardMode === 'insights' ? 'Strategic Insights' : cardMode === 'risk' ? 'Risk Assessment' : 'Impact Analysis'}
                 </CardTitle>
                 <p className="text-sm text-slate-600 dark:text-gray-400 mt-1">
-                  {cardMode === 'insights' ? 'Key findings from your document' : 'Potential risks and mitigation strategies'}
+                  {cardMode === 'insights' ? 'Key findings from your document' : cardMode === 'risk' ? 'Potential risks and mitigation strategies' : 'Business impact assessment of insights and risks'}
                 </p>
               </div>
             </div>
@@ -1835,7 +1871,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                     <Settings className="h-4 w-4" />
                   </Button>
                 </>
-              ) : (
+              ) : cardMode === 'risk' ? (
                 <>
                   <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
                     {risks.length} risks
@@ -1849,6 +1885,12 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                   >
                     <Settings className="h-4 w-4" />
                   </Button>
+                </>
+              ) : (
+                <>
+                  <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                    {impactData.insights_impact.length + impactData.risks_impact.length} impacts
+                  </Badge>
                 </>
               )}
             </div>
@@ -2107,7 +2149,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                 </p>
               </div>
             )
-          ) : (
+          ) : cardMode === 'risk' ? (
             // Risk Assessment View
             risks.length > 0 ? (
               <>
@@ -2374,6 +2416,181 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                 </p>
               </div>
             )
+          ) : (
+            // Impact Analysis View
+            <div className="space-y-6">
+              {/* Insights Impact Table */}
+              {impactData.insights_impact.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-emerald-600" />
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                      Insights Impact Analysis
+                    </h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse border border-emerald-200 dark:border-emerald-700 rounded-lg">
+                      <thead>
+                        <tr className="bg-emerald-50 dark:bg-emerald-950/20">
+                          <th className="border border-emerald-200 dark:border-emerald-700 px-4 py-2 text-left text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                            Insight Points
+                          </th>
+                          <th className="border border-emerald-200 dark:border-emerald-700 px-4 py-2 text-left text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                            Impact of the Point
+                          </th>
+                          <th className="border border-emerald-200 dark:border-emerald-700 px-4 py-2 text-left text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                            Impacted Organisation
+                          </th>
+                          <th className="border border-emerald-200 dark:border-emerald-700 px-4 py-2 text-left text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                            Affected Areas
+                          </th>
+                          <th className="border border-emerald-200 dark:border-emerald-700 px-4 py-2 text-left text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                            Impact Level
+                          </th>
+                          <th className="border border-emerald-200 dark:border-emerald-700 px-4 py-2 text-left text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                            Timeline
+                          </th>
+                          <th className="border border-emerald-200 dark:border-emerald-700 px-4 py-2 text-left text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                            Action Required
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {impactData.insights_impact.map((impact, index) => (
+                          <tr key={impact.id} className="hover:bg-emerald-50/50 dark:hover:bg-emerald-950/10">
+                            <td className="border border-emerald-200 dark:border-emerald-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-300">
+                              {impact.insight_point}
+                            </td>
+                            <td className="border border-emerald-200 dark:border-emerald-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-300">
+                              {impact.impact_description}
+                            </td>
+                            <td className="border border-emerald-200 dark:border-emerald-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-300">
+                              {impact.impacted_organization}
+                            </td>
+                            <td className="border border-emerald-200 dark:border-emerald-700 px-4 py-2 text-sm">
+                              <div className="flex flex-wrap gap-1">
+                                {impact.affected_areas?.map((area, i) => (
+                                  <Badge key={i} variant="outline" className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
+                                    {area}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="border border-emerald-200 dark:border-emerald-700 px-4 py-2 text-sm">
+                              <Badge className={`text-xs ${
+                                impact.impact_level === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' :
+                                impact.impact_level === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
+                                'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                              }`}>
+                                {impact.impact_level}
+                              </Badge>
+                            </td>
+                            <td className="border border-emerald-200 dark:border-emerald-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-300">
+                              {impact.timeline}
+                            </td>
+                            <td className="border border-emerald-200 dark:border-emerald-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-300">
+                              {impact.action_required}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Risks Impact Table */}
+              {impactData.risks_impact.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-red-600" />
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                      Risks Impact Analysis
+                    </h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse border border-red-200 dark:border-red-700 rounded-lg">
+                      <thead>
+                        <tr className="bg-red-50 dark:bg-red-950/20">
+                          <th className="border border-red-200 dark:border-red-700 px-4 py-2 text-left text-sm font-medium text-red-800 dark:text-red-200">
+                            Risk Point
+                          </th>
+                          <th className="border border-red-200 dark:border-red-700 px-4 py-2 text-left text-sm font-medium text-red-800 dark:text-red-200">
+                            Impact of the Point
+                          </th>
+                          <th className="border border-red-200 dark:border-red-700 px-4 py-2 text-left text-sm font-medium text-red-800 dark:text-red-200">
+                            Impacted Organisation
+                          </th>
+                          <th className="border border-red-200 dark:border-red-700 px-4 py-2 text-left text-sm font-medium text-red-800 dark:text-red-200">
+                            Affected Areas
+                          </th>
+                          <th className="border border-red-200 dark:border-red-700 px-4 py-2 text-left text-sm font-medium text-red-800 dark:text-red-200">
+                            Impact Level
+                          </th>
+                          <th className="border border-red-200 dark:border-red-700 px-4 py-2 text-left text-sm font-medium text-red-800 dark:text-red-200">
+                            Timeline
+                          </th>
+                          <th className="border border-red-200 dark:border-red-700 px-4 py-2 text-left text-sm font-medium text-red-800 dark:text-red-200">
+                            Action Required
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {impactData.risks_impact.map((impact, index) => (
+                          <tr key={impact.id} className="hover:bg-red-50/50 dark:hover:bg-red-950/10">
+                            <td className="border border-red-200 dark:border-red-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-300">
+                              {impact.risk_point}
+                            </td>
+                            <td className="border border-red-200 dark:border-red-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-300">
+                              {impact.impact_description}
+                            </td>
+                            <td className="border border-red-200 dark:border-red-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-300">
+                              {impact.impacted_organization}
+                            </td>
+                            <td className="border border-red-200 dark:border-red-700 px-4 py-2 text-sm">
+                              <div className="flex flex-wrap gap-1">
+                                {impact.affected_areas?.map((area, i) => (
+                                  <Badge key={i} variant="outline" className="text-xs bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
+                                    {area}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="border border-red-200 dark:border-red-700 px-4 py-2 text-sm">
+                              <Badge className={`text-xs ${
+                                impact.impact_level === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' :
+                                impact.impact_level === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
+                                'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                              }`}>
+                                {impact.impact_level}
+                              </Badge>
+                            </td>
+                            <td className="border border-red-200 dark:border-red-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-300">
+                              {impact.timeline}
+                            </td>
+                            <td className="border border-red-200 dark:border-red-700 px-4 py-2 text-sm text-slate-700 dark:text-slate-300">
+                              {impact.action_required}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Empty state */}
+              {impactData.insights_impact.length === 0 && impactData.risks_impact.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="p-4 bg-yellow-100 dark:bg-yellow-900/20 rounded-full w-fit mx-auto mb-4">
+                    <Target className="h-8 w-8 text-yellow-500 dark:text-yellow-400" />
+                  </div>
+                  <p className="text-slate-600 dark:text-gray-400">
+                    No impact analysis data available yet.
+                  </p>
+                </div>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>

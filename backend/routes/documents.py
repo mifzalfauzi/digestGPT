@@ -220,6 +220,7 @@ async def upload_and_analyze_document(
             risk_flags=json.dumps(analysis.get("risk_flags", [])),
             key_concepts=json.dumps(analysis.get("key_concepts", [])),
             swot_analysis=json.dumps(analysis.get("swot_analysis", {})), 
+            impact=json.dumps(analysis.get("impact_analysis", {})),
             word_count=word_count,
             analysis_method=analysis.get("analysis_method", "single"),
             file_url=file_url  # Store the file URL for later retrieval
@@ -330,6 +331,7 @@ async def analyze_text_direct(
             risk_flags=json.dumps(analysis.get("risk_flags", [])),
             key_concepts=json.dumps(analysis.get("key_concepts", [])),
             swot_analysis=json.dumps(analysis.get("swot_analysis", {})),
+            impact=json.dumps(analysis.get("impact_analysis", {})),
             word_count=word_count,
             analysis_method=analysis.get("analysis_method", "single"),
             file_url=None  # Text documents don't have file URLs
@@ -470,6 +472,81 @@ async def get_document(
                 "opportunities": [],
                 "threats": []
             }
+        
+        # Parse impact analysis
+        impact_analysis = {
+            "insights_impact": [],
+            "risks_impact": []
+        }
+        if document.impact:
+            try:
+                parsed_impact = json.loads(document.impact)
+                if isinstance(parsed_impact, dict):
+                    impact_analysis = {
+                        "insights_impact": parsed_impact.get("insights_impact", []),
+                        "risks_impact": parsed_impact.get("risks_impact", [])
+                    }
+                print(f"Document {document.id} impact analysis: {len(impact_analysis['insights_impact'])} insights, {len(impact_analysis['risks_impact'])} risks")
+            except json.JSONDecodeError:
+                print(f"Failed to parse impact data for document {document.id}")
+        
+        # If this is an old document without impact analysis, generate it from existing data
+        if not impact_analysis["insights_impact"] and not impact_analysis["risks_impact"]:
+            print(f"No impact analysis found for document {document.id}, generating from existing data")
+            
+            # Generate impact analysis from key_points and risk_flags
+            generated_insights_impact = []
+            generated_risks_impact = []
+            
+            # Process key points into insights impact
+            for i, point in enumerate(key_points[:3]):  # Limit to first 3 for performance
+                if isinstance(point, dict):
+                    point_text = point.get("text", "")
+                elif isinstance(point, str):
+                    point_text = point
+                else:
+                    continue
+                    
+                if point_text:
+                    generated_insights_impact.append({
+                        "insight_point": point_text[:100] + "..." if len(point_text) > 100 else point_text,
+                        "impact_description": f"This insight could have significant implications for business operations and decision-making processes",
+                        "impacted_organization": "Business Operations Team",
+                        "affected_areas": ["Operations", "Strategy", "Decision Making"],
+                        "impact_level": "medium",
+                        "timeline": "medium-term", 
+                        "action_required": "Review and incorporate this insight into relevant business processes and strategic planning"
+                    })
+            
+            # Process risk flags into risks impact  
+            for i, risk in enumerate(risk_flags[:3]):  # Limit to first 3 for performance
+                if isinstance(risk, dict):
+                    risk_text = risk.get("text", "")
+                elif isinstance(risk, str):
+                    risk_text = risk
+                else:
+                    continue
+                    
+                if risk_text:
+                    # Remove emoji from risk text for cleaner display
+                    clean_risk_text = risk_text.replace("🚩", "").strip()
+                    generated_risks_impact.append({
+                        "risk_point": clean_risk_text[:100] + "..." if len(clean_risk_text) > 100 else clean_risk_text,
+                        "impact_description": f"If this risk materializes, it could negatively affect operations and require immediate attention",
+                        "impacted_organization": "Operations and Management Team",
+                        "affected_areas": ["Operations", "Risk Management", "Compliance"],
+                        "impact_level": "medium",
+                        "timeline": "short-term",
+                        "action_required": "Implement risk mitigation strategies and monitor for potential issues"
+                    })
+            
+            # Update impact_analysis with generated data
+            if generated_insights_impact or generated_risks_impact:
+                impact_analysis = {
+                    "insights_impact": generated_insights_impact,
+                    "risks_impact": generated_risks_impact
+                }
+                print(f"Generated impact analysis: {len(generated_insights_impact)} insights, {len(generated_risks_impact)} risks")
             
         print("Parsed SWOT analysis:", swot_analysis)
         print("SWOT analysis type:", type(swot_analysis))
@@ -503,13 +580,15 @@ async def get_document(
         "risk_flags": risk_flags,
         "key_concepts": key_concepts,
         "swot_analysis": swot_analysis,  # ✅ FIXED - Now properly structured
+        "impact_analysis": impact_analysis,  # ✅ FIXED - Add impact_analysis at root level
         "analysis": {
             "summary": document.summary,
             "problem_context": document.problem_context,
             "key_points": key_points,
             "risk_flags": risk_flags,
             "key_concepts": key_concepts,
-            "swot_analysis": swot_analysis  # ✅ FIXED - Now properly structured
+            "swot_analysis": swot_analysis,  # ✅ FIXED - Now properly structured
+            "impact_analysis": impact_analysis
         }
     }
 
