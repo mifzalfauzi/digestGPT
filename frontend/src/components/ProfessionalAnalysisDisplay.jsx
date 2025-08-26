@@ -102,42 +102,6 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   const [isInsightsResetting, setIsInsightsResetting] = useState(false)
   const [isRisksResetting, setIsRisksResetting] = useState(false)
   
-  // Card mode toggle state - initialize from localStorage only, props are fallback
-  const [cardMode, setCardMode] = useState(() => {
-    // Priority 1: Try to load from own localStorage first (highest priority)
-    try {
-      const documentKey = generateDocumentKey(results)
-      if (documentKey) {
-        const stored = localStorage.getItem(documentKey)
-        if (stored) {
-          const parsed = JSON.parse(stored)
-          const savedCardMode = parsed.cardMode
-          if (savedCardMode && (savedCardMode === 'insights' || savedCardMode === 'risk' || savedCardMode === 'impact')) {
-            console.log(`💾 Using saved cardMode from localStorage: "${savedCardMode}"`)
-            return savedCardMode
-          }
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to load initial cardMode from localStorage:', error)
-    }
-    
-    // Priority 2: If storedCardMode is provided from parent, use that
-    if (storedCardMode && (storedCardMode === 'insights' || storedCardMode === 'risk' || storedCardMode === 'impact')) {
-      console.log(`🎯 Using storedCardMode from parent: "${storedCardMode}"`)
-      return storedCardMode
-    }
-    
-    // Priority 3: If activeTab indicates a specific mode, use that as fallback
-    if (activeTab === 'insights' || activeTab === 'risk' || activeTab === 'impact') {
-      console.log(`📱 Using activeTab as fallback: "${activeTab}"`)
-      return activeTab
-    }
-    
-    console.log(`🔄 Using default cardMode: "insights"`)
-    return 'insights'
-  }) // 'insights' or 'risk' or 'impact'
-  
   const insightsDrawerRef = useRef(null)
   const risksDrawerRef = useRef(null)
 
@@ -185,18 +149,13 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     return `enhancedDocViewer_activeTab_${identifier}`
   }
   
-  // Initialize currentDocumentKey properly to avoid false "document change" detection
-  const [currentDocumentKey, setCurrentDocumentKey] = useState(() => {
-    const key = generateDocumentKey(results)
-    if (!key) {
-      console.log(`⏳ Waiting for proper document data before setting key`)
-    }
-    return key
-  })
+  // Initialize currentDocumentKey immediately like SWOTAnalysis does
+  const STORAGE_KEY = generateDocumentKey(results)
+  const [currentDocumentKey, setCurrentDocumentKey] = useState(STORAGE_KEY)
 
   // Load settings from localStorage 
   const loadFromStorage = (keyOverride = null) => {
-    const targetKey = keyOverride || currentDocumentKey
+    const targetKey = keyOverride || STORAGE_KEY  // Use STORAGE_KEY directly to avoid dependency issues
     
     // If no valid key, return defaults without trying to access localStorage
     if (!targetKey) {
@@ -248,6 +207,11 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     }
   }
 
+  // Initialize with stored values (like SWOTAnalysis does)
+  const storedSettings = loadFromStorage()
+
+  // Initialize cardMode with stored value (like SWOTAnalysis does)
+  const [cardMode, setCardMode] = useState(storedSettings.cardMode || 'insights')
 
   // Save settings to localStorage for current document
   const saveToStorage = (settings) => {
@@ -977,10 +941,24 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     }
   }, [cardMode, onTabSync])
 
-  // Auto-save all settings including cardMode to localStorage when any setting changes
+  // Auto-save cardMode to localStorage when it changes (like activeSwotTab in SWOTAnalysis)
   useEffect(() => {
     if (currentDocumentKey) {
+      const currentSettings = loadFromStorage()
+      saveToStorage({
+        ...currentSettings,
+        cardMode: cardMode
+      })
+      console.log(`💾 Auto-saving cardMode: ${cardMode} for ${currentDocumentKey}`)
+    }
+  }, [cardMode, currentDocumentKey])
+
+  // Auto-save all other settings to localStorage when they change
+  useEffect(() => {
+    if (currentDocumentKey) {
+      const currentSettings = loadFromStorage()
       const allSettings = {
+        ...currentSettings,
         insightsChartType,
         showInsightsCharts,
         insightCategoryFilter,
@@ -988,12 +966,12 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
         showRisksCharts,
         riskCategoryFilter,
         riskLevelFilter,
-        cardMode
+        cardMode // Keep current cardMode
       }
-      console.log(`💾 Saving settings for ${currentDocumentKey}:`, allSettings)
+      console.log(`💾 Saving all settings for ${currentDocumentKey}:`, allSettings)
       localStorage.setItem(currentDocumentKey, JSON.stringify(allSettings))
     }
-  }, [cardMode, currentDocumentKey, insightsChartType, showInsightsCharts, insightCategoryFilter, risksChartType, showRisksCharts, riskCategoryFilter, riskLevelFilter])
+  }, [currentDocumentKey, insightsChartType, showInsightsCharts, insightCategoryFilter, risksChartType, showRisksCharts, riskCategoryFilter, riskLevelFilter])
   
   // Update local state when drawers open - cleaned up
   // This was handled in the separate useEffect hooks above
