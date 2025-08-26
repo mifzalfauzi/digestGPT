@@ -36,21 +36,22 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
   const tabContentRefs = useRef({})
   const isInitialRenderRef = useRef(true)
 
-  // Generate document key for activeTab storage with multiple fallbacks
+  // Generate document key for activeTab storage with multiple fallbacks  
   const generateDocumentKey = useCallback(() => {
-    // Try multiple identifiers in order of preference
-    const identifier = results?.id || 
+    // Try multiple identifiers in order of preference - prioritize document_id for consistency
+    const identifier = results?.document_id || 
+                      results?.id || 
                       results?.filename || 
                       file?.name || 
                       window.location.pathname || 
                       'default'
     return `enhancedDocViewer_activeTab_${identifier}`
-  }, [results?.id, results?.filename, file?.name])
+  }, [results?.document_id, results?.id, results?.filename, file?.name])
 
   // Get current document identifier for consistency checks
   const getCurrentDocumentId = useCallback(() => {
-    return results?.id || results?.filename || file?.name || window.location.pathname || 'default'
-  }, [results?.id, results?.filename, file?.name])
+    return results?.document_id || results?.id || results?.filename || file?.name || window.location.pathname || 'default'
+  }, [results?.document_id, results?.id, results?.filename, file?.name])
 
   // Clean up old activeTab entries from localStorage
   const cleanupOldActiveTabEntries = useCallback(() => {
@@ -282,7 +283,7 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
     }
   }, [findScrollableElement])
 
-  // Handle tab change with persistence
+  // Handle tab change with persistence and ProfessionalAnalysisDisplay sync
   const handleTabChange = useCallback((newTab) => {
     // Debug logging for SWOT
     if (activeTab === 'swot' || newTab === 'swot') {
@@ -302,6 +303,9 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
 
     setTabChangeKey(prev => prev + 1)
     setActiveTab(newTab)
+    
+    // Save activeTab immediately to localStorage for cross-component sync
+    saveActiveTabToStorage(newTab)
 
     // Special handling for SWOT tab - longer delays for content loading
     if (newTab === 'swot') {
@@ -328,7 +332,7 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
         restoreTabState(newTab)
       }, 500)
     }
-  }, [activeTab, saveCurrentTabState, restoreTabState])
+  }, [activeTab, saveCurrentTabState, restoreTabState, saveActiveTabToStorage])
 
   // PDF Export functionality
   const exportToPDF = async () => {
@@ -887,6 +891,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
         
         // Skip if we don't have a proper document identifier yet
         if (currentDocId === 'default' || currentDocId === window.location.pathname) {
+          console.log(`⏸️  Skipping activeTab restoration - no proper document identifier yet`)
           return
         }
         
@@ -897,17 +902,26 @@ This business plan effectively balances growth ambitions with comprehensive risk
           const parsed = JSON.parse(stored)
           // Only restore if the stored data is recent (within 7 days)
           if (parsed.timestamp && Date.now() - parsed.timestamp < (7 * 24 * 60 * 60 * 1000)) {
-            console.log(`📂 Restored activeTab "${parsed.activeTab}" from localStorage for ${documentKey}`)
-            setActiveTab(parsed.activeTab || 'analysis')
+            const restoredTab = parsed.activeTab || 'analysis'
+            console.log(`📂 Restored activeTab "${restoredTab}" from localStorage for ${documentKey}`)
+            setActiveTab(restoredTab)
             isInitialRenderRef.current = false // Prevent auto-save from triggering
+            
+            // If this is the insights tab, check if we need to restore cardMode too
+            if (restoredTab === 'insights') {
+              console.log(`🎯 Restored insights tab - ProfessionalAnalysisDisplay should sync cardMode`)
+            }
           } else {
             console.log('🧹 Stored activeTab is too old, using default')
+            setActiveTab('analysis')
           }
         } else {
           console.log(`📝 No stored activeTab found for ${documentKey}, using default`)
+          setActiveTab('analysis')
         }
       } catch (error) {
         console.warn('Failed to restore activeTab from localStorage:', error)
+        setActiveTab('analysis') // Fallback to default
       }
     }
 
@@ -917,6 +931,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
         hasResults: !!results,
         hasFile: !!file,
         resultsId: results?.id,
+        resultsDocumentId: results?.document_id,
         resultsFilename: results?.filename,
         fileName: file?.name
       })
@@ -1958,6 +1973,14 @@ This business plan effectively balances growth ambitions with comprehensive risk
                 forceListMode={highlightClickData.forceListMode}
                 forceCardMode={highlightClickData.forceCardMode}
                 selectedItemIndex={highlightClickData.selectedItemIndex}
+                activeTab={activeTab}
+                onActiveTabChange={(newTab) => {
+                  // Handle activeTab changes from ProfessionalAnalysisDisplay
+                  if (newTab !== activeTab) {
+                    console.log(`🔄 ProfessionalAnalysisDisplay requested tab change to: ${newTab}`)
+                    handleTabChange(newTab)
+                  }
+                }}
               />
             </div>
 

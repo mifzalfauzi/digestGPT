@@ -58,7 +58,7 @@ import {
   Cell
 } from 'recharts';
 
-function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighlight, onActiveHighlightChange, showSummary = true, forceListMode = false, forceCardMode = null, selectedItemIndex = null, activeTab = null, storedCardMode = null, onTabSync = null }) {
+function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighlight, onActiveHighlightChange, showSummary = true, forceListMode = false, forceCardMode = null, selectedItemIndex = null, activeTab = null, storedCardMode = null, onTabSync = null, onActiveTabChange = null }) {
   const [insights, setInsights] = useState([])
   const [risks, setRisks] = useState([])
   const [summary, setSummary] = useState('')
@@ -104,13 +104,35 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   
   // Card mode toggle state - initialize from storage if available, synchronized with activeTab
   const [cardMode, setCardMode] = useState(() => {
-    // Priority 1: If storedCardMode is provided from parent, use that
+    // Priority 1: Check activeTab from EnhancedDocumentViewer localStorage first (most important for cross-component sync)
+    try {
+      if (results) {
+        const activeTabKey = generateActiveTabKey(results)
+        if (activeTabKey) {
+          const storedActiveTab = localStorage.getItem(activeTabKey)
+          if (storedActiveTab) {
+            const parsed = JSON.parse(storedActiveTab)
+            const tabValue = parsed.activeTab
+            if (tabValue === 'insights') {
+              console.log(`🔄 Using activeTab from EnhancedDocumentViewer localStorage: "${tabValue}"`)
+              return 'insights' // Map insights tab to insights cardMode
+            }
+            // For other tabs, use default cardMode but acknowledge the stored tab
+            console.log(`📝 ActiveTab "${tabValue}" found but not insights - using default cardMode`)
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load activeTab from EnhancedDocumentViewer localStorage:', error)
+    }
+    
+    // Priority 2: If storedCardMode is provided from parent, use that
     if (storedCardMode && (storedCardMode === 'insights' || storedCardMode === 'risk' || storedCardMode === 'impact')) {
       console.log(`🎯 Using storedCardMode from parent: "${storedCardMode}"`)
       return storedCardMode
     }
     
-    // Priority 2: Try to load from localStorage FIRST (most important for persistence)
+    // Priority 3: Try to load from own localStorage 
     try {
       const documentKey = generateDocumentKey(results)
       if (documentKey) {
@@ -119,7 +141,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
           const parsed = JSON.parse(stored)
           const savedCardMode = parsed.cardMode
           if (savedCardMode && (savedCardMode === 'insights' || savedCardMode === 'risk' || savedCardMode === 'impact')) {
-            console.log(`💾 Using saved cardMode from localStorage: "${savedCardMode}"`)
+            console.log(`💾 Using saved cardMode from own localStorage: "${savedCardMode}"`)
             return savedCardMode
           }
         }
@@ -128,7 +150,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       console.warn('Failed to load initial cardMode from localStorage:', error)
     }
     
-    // Priority 3: If activeTab indicates a specific mode, use that as fallback
+    // Priority 4: If activeTab indicates a specific mode, use that as fallback
     if (activeTab === 'insights' || activeTab === 'risk' || activeTab === 'impact') {
       console.log(`📱 Using activeTab as fallback: "${activeTab}"`)
       return activeTab
@@ -169,6 +191,21 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     console.log(`🔑 Using storage key: ${key}`)
     
     return key
+  }
+  
+  // Generate activeTab storage key that matches EnhancedDocumentViewer
+  const generateActiveTabKey = (resultsData) => {
+    if (!resultsData?.document_id && !resultsData?.id && !resultsData?.filename) {
+      return null
+    }
+    
+    const identifier = resultsData?.id || 
+                      resultsData?.filename || 
+                      resultsData?.document_id || 
+                      window.location.pathname || 
+                      'default'
+    
+    return `enhancedDocViewer_activeTab_${identifier}`
   }
   
   // Initialize currentDocumentKey properly to avoid false "document change" detection
@@ -939,22 +976,18 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   // Sync cardMode with storedCardMode changes from parent component
   useEffect(() => {
     if (storedCardMode && (storedCardMode === 'insights' || storedCardMode === 'risk' || storedCardMode === 'impact')) {
-      if (cardMode !== storedCardMode) {
-        console.log(`🔄 Syncing cardMode from "${cardMode}" to "${storedCardMode}" based on storedCardMode`)
-        setCardMode(storedCardMode)
-      }
+      console.log(`🔄 Syncing cardMode to "${storedCardMode}" based on storedCardMode prop`)
+      setCardMode(storedCardMode)
     }
-  }, [storedCardMode, cardMode])
+  }, [storedCardMode])
 
   // Sync cardMode with activeTab changes from parent component
   useEffect(() => {
     if (activeTab && (activeTab === 'insights' || activeTab === 'risk' || activeTab === 'impact')) {
-      if (cardMode !== activeTab) {
-        console.log(`🔄 Syncing cardMode from "${cardMode}" to "${activeTab}" based on activeTab`)
-        setCardMode(activeTab)
-      }
+      console.log(`🔄 Syncing cardMode to "${activeTab}" based on activeTab prop`)
+      setCardMode(activeTab)
     }
-  }, [activeTab, cardMode])
+  }, [activeTab])
 
   // Notify parent component when cardMode changes (for reverse sync)
   useEffect(() => {
@@ -962,7 +995,30 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       console.log(`📤 Notifying parent of cardMode change to "${cardMode}"`)
       onTabSync(cardMode)
     }
-  }, [cardMode, onTabSync])
+    
+    // Additional sync with EnhancedDocumentViewer activeTab
+    if (cardMode === 'insights' && results) {
+      const activeTabKey = generateActiveTabKey(results)
+      if (activeTabKey) {
+        try {
+          const existingActiveTab = localStorage.getItem(activeTabKey)
+          let tabData = { activeTab: 'insights', timestamp: Date.now() }
+          if (existingActiveTab) {
+            const parsed = JSON.parse(existingActiveTab)
+            tabData = { ...parsed, activeTab: 'insights' }
+          }
+          localStorage.setItem(activeTabKey, JSON.stringify(tabData))
+          
+          // Notify parent about activeTab change
+          if (onActiveTabChange) {
+            onActiveTabChange('insights')
+          }
+        } catch (error) {
+          console.warn('Failed to sync cardMode change with activeTab:', error)
+        }
+      }
+    }
+  }, [cardMode, onTabSync, results, onActiveTabChange])
 
   // Auto-save all settings including cardMode to localStorage when any setting changes
   useEffect(() => {
@@ -979,8 +1035,32 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       }
       console.log(`💾 Saving settings for ${currentDocumentKey}:`, allSettings)
       localStorage.setItem(currentDocumentKey, JSON.stringify(allSettings))
+      
+      // Also sync activeTab in EnhancedDocumentViewer when cardMode changes
+      if (results) {
+        const activeTabKey = generateActiveTabKey(results)
+        if (activeTabKey && cardMode === 'insights') {
+          try {
+            const existingActiveTab = localStorage.getItem(activeTabKey)
+            let tabData = { activeTab: 'insights', timestamp: Date.now() }
+            if (existingActiveTab) {
+              const parsed = JSON.parse(existingActiveTab)
+              tabData = { ...parsed, activeTab: 'insights' }
+            }
+            localStorage.setItem(activeTabKey, JSON.stringify(tabData))
+            console.log(`🔄 Synced activeTab to "insights" in EnhancedDocumentViewer localStorage`)
+            
+            // Notify parent component about the tab change if callback provided
+            if (onActiveTabChange) {
+              onActiveTabChange('insights')
+            }
+          } catch (error) {
+            console.warn('Failed to sync activeTab with EnhancedDocumentViewer:', error)
+          }
+        }
+      }
     }
-  }, [cardMode, currentDocumentKey, insightsChartType, showInsightsCharts, insightCategoryFilter, risksChartType, showRisksCharts, riskCategoryFilter, riskLevelFilter])
+  }, [cardMode, currentDocumentKey, insightsChartType, showInsightsCharts, insightCategoryFilter, risksChartType, showRisksCharts, riskCategoryFilter, riskLevelFilter, results, onActiveTabChange])
   
   // Update local state when drawers open - cleaned up
   // This was handled in the separate useEffect hooks above
@@ -1946,7 +2026,16 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
           <Button
             variant={cardMode === 'insights' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setCardMode('insights')}
+            onClick={() => {
+              setCardMode('insights')
+              // Sync with EnhancedDocumentViewer activeTab
+              if (results && onActiveTabChange) {
+                const activeTabKey = generateActiveTabKey(results)
+                if (activeTabKey) {
+                  onActiveTabChange('insights')
+                }
+              }
+            }}
             className={`flex items-center gap-2 px-4 py-2 transition-all duration-200 rounded-none border-b-2 
               ${
                 cardMode === 'insights'
@@ -1960,7 +2049,16 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
           <Button
             variant={cardMode === 'risk' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setCardMode('risk')}
+            onClick={() => {
+              setCardMode('risk')
+              // For risk mode, keep activeTab as 'insights' since there's no separate risk tab
+              if (results && onActiveTabChange) {
+                const activeTabKey = generateActiveTabKey(results)
+                if (activeTabKey) {
+                  onActiveTabChange('insights')
+                }
+              }
+            }}
             className={`flex items-center gap-2 px-4 py-2 rounded-none transition-all duration-200 border-b-2 ${
               cardMode === 'risk'
                 ? 'text-red-400 border-red-400 bg-transparent dark:hover:bg-transparent'
@@ -1973,7 +2071,16 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
           <Button
             variant={cardMode === 'impact' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setCardMode('impact')}
+            onClick={() => {
+              setCardMode('impact')
+              // For impact mode, keep activeTab as 'insights' since there's no separate impact tab
+              if (results && onActiveTabChange) {
+                const activeTabKey = generateActiveTabKey(results)
+                if (activeTabKey) {
+                  onActiveTabChange('insights')
+                }
+              }
+            }}
             className={`flex items-center gap-2 px-4 py-2 rounded-none transition-all duration-200 border-b-2 ${
               cardMode === 'impact'
                 ? 'text-yellow-400 border-yellow-400 bg-transparent dark:hover:bg-transparent'
