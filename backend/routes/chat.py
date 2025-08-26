@@ -499,6 +499,9 @@ async def chat_with_document(
         db.add(chat_entry)
         db.commit()
         db.refresh(chat_entry)
+        
+        # Store timestamp immediately after refresh to avoid connection issues
+        timestamp_iso = chat_entry.timestamp.isoformat()
 
         # Update usage tracking
         increment_chat_usage(current_user.id, db)
@@ -513,7 +516,7 @@ async def chat_with_document(
             document_id=chat_request.document_id,
             user_message=chat_request.message,
             ai_response=ai_response,
-            timestamp=chat_entry.timestamp.isoformat(),
+            timestamp=timestamp_iso,
         )
 
     except HTTPException:
