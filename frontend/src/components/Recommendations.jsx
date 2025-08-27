@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { 
     Target, 
     TrendingUp, 
@@ -24,6 +25,7 @@ import {
 import MarkdownRenderer from './MarkdownRenderer'
 
 function Recommendations({ results, isDemoMode = false, bypassAPI = false }) {
+    const [activeTab, setActiveTab] = useState('overview')
     const [copiedItem, setCopiedItem] = useState(null)
     const [feedbackGiven, setFeedbackGiven] = useState({})
 
@@ -192,9 +194,9 @@ function Recommendations({ results, isDemoMode = false, bypassAPI = false }) {
     }
 
     return (
-        <div className="px-4 pb-4 space-y-6">
+        <div className="px-4 pb-4 h-full flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4 flex-shrink-0">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl shadow-lg">
                         <Target className="h-5 w-5 text-white" />
@@ -215,265 +217,329 @@ function Recommendations({ results, isDemoMode = false, bypassAPI = false }) {
                 )}
             </div>
 
-            {/* Problem Framing */}
-            {recommendationsData?.problem_framing && (
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center gap-2">
-                            <AlertCircle className="h-5 w-5 text-orange-600" />
-                            <CardTitle className="text-lg">Problem Framing</CardTitle>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="bg-orange-50/80 dark:bg-orange-950/30 rounded-xl p-4 border border-orange-200/50 dark:border-orange-800/30 relative">
-                            <div className="absolute top-3 right-3 flex gap-1">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleCopy(recommendationsData.problem_framing, 'problem-framing')}
-                                    className="h-7 w-7 p-0 hover:bg-orange-100 dark:hover:bg-orange-900/20"
-                                >
-                                    <Copy className={`h-3 w-3 ${copiedItem === 'problem-framing' ? 'text-orange-600' : 'text-gray-500'}`} />
-                                </Button>
-                            </div>
-                            <MarkdownRenderer
-                                content={recommendationsData.problem_framing}
-                                className="text-slate-800 dark:text-slate-100 leading-relaxed"
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+            {/* Tabbed Content */}
+            <div className="flex-1 overflow-hidden">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+                    <TabsList className="grid w-full grid-cols-5 bg-transparent border-none h-auto mb-4">
+                        <TabsTrigger 
+                            value="overview" 
+                            className="relative flex items-center justify-center gap-1 bg-transparent border-none rounded-none text-xs py-2 px-3 transition-all duration-200 hover:text-orange-500 dark:hover:text-orange-300 data-[state=active]:text-orange-600 dark:data-[state=active]:text-orange-400 before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-[2px] before:w-0 before:bg-orange-500 before:transition-all before:duration-300 data-[state=active]:before:w-full"
+                        >
+                            <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                            <span className="hidden md:inline">Problem</span>
+                        </TabsTrigger>
+                        <TabsTrigger 
+                            value="options" 
+                            className="relative flex items-center justify-center gap-1 bg-transparent border-none rounded-none text-xs py-2 px-3 transition-all duration-200 hover:text-blue-500 dark:hover:text-blue-300 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-[2px] before:w-0 before:bg-blue-500 before:transition-all before:duration-300 data-[state=active]:before:w-full"
+                        >
+                            <TrendingUp className="h-3 w-3 flex-shrink-0" />
+                            <span className="hidden md:inline">Options</span>
+                        </TabsTrigger>
+                        <TabsTrigger 
+                            value="actions" 
+                            className="relative flex items-center justify-center gap-1 bg-transparent border-none rounded-none text-xs py-2 px-3 transition-all duration-200 hover:text-purple-500 dark:hover:text-purple-300 data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-400 before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-[2px] before:w-0 before:bg-purple-500 before:transition-all before:duration-300 data-[state=active]:before:w-full"
+                        >
+                            <Zap className="h-3 w-3 flex-shrink-0" />
+                            <span className="hidden md:inline">Actions</span>
+                        </TabsTrigger>
+                        <TabsTrigger 
+                            value="metrics" 
+                            className="relative flex items-center justify-center gap-1 bg-transparent border-none rounded-none text-xs py-2 px-3 transition-all duration-200 hover:text-green-500 dark:hover:text-green-300 data-[state=active]:text-green-600 dark:data-[state=active]:text-green-400 before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-[2px] before:w-0 before:bg-green-500 before:transition-all before:duration-300 data-[state=active]:before:w-full"
+                        >
+                            <BarChart3 className="h-3 w-3 flex-shrink-0" />
+                            <span className="hidden md:inline">Metrics</span>
+                        </TabsTrigger>
+                        <TabsTrigger 
+                            value="decision" 
+                            className="relative flex items-center justify-center gap-1 bg-transparent border-none rounded-none text-xs py-2 px-3 transition-all duration-200 hover:text-blue-500 dark:hover:text-blue-300 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-[2px] before:w-0 before:bg-blue-500 before:transition-all before:duration-300 data-[state=active]:before:w-full"
+                        >
+                            <Flag className="h-3 w-3 flex-shrink-0" />
+                            <span className="hidden md:inline">Decision</span>
+                        </TabsTrigger>
+                    </TabsList>
+                    
+                    <Separator className="mb-4" />
 
-            {/* Strategic Options */}
-            {recommendationsData?.strategic_options && (
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center gap-2">
-                            <TrendingUp className="h-5 w-5 text-blue-600" />
-                            <CardTitle className="text-lg">Strategic Options</CardTitle>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid gap-4">
-                            {recommendationsData.strategic_options.map((option, index) => (
-                                <div key={index} className="border rounded-xl p-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20">
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div>
-                                            <h4 className="font-bold text-lg text-slate-900 dark:text-white">
-                                                {option.title}
+                    <div className="flex-1 overflow-hidden">
+                        {/* Problem Framing Tab */}
+                        <TabsContent value="overview" className="h-full overflow-y-auto mt-0">
+                            {recommendationsData?.problem_framing ? (
+                                <Card>
+                                    <CardHeader>
+                                        <div className="flex items-center gap-2">
+                                            <AlertCircle className="h-5 w-5 text-orange-600" />
+                                            <CardTitle className="text-lg">Problem Framing</CardTitle>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="bg-orange-50/80 dark:bg-orange-950/30 rounded-xl p-4 border border-orange-200/50 dark:border-orange-800/30 relative">
+                                            <div className="absolute top-3 right-3 flex gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleCopy(recommendationsData.problem_framing, 'problem-framing')}
+                                                    className="h-7 w-7 p-0 hover:bg-orange-100 dark:hover:bg-orange-900/20"
+                                                >
+                                                    <Copy className={`h-3 w-3 ${copiedItem === 'problem-framing' ? 'text-orange-600' : 'text-gray-500'}`} />
+                                                </Button>
+                                            </div>
+                                            <MarkdownRenderer
+                                                content={recommendationsData.problem_framing}
+                                                className="text-slate-800 dark:text-slate-100 leading-relaxed"
+                                            />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                <div className="text-center py-8">
+                                    <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                    <p className="text-gray-500">No problem framing available</p>
+                                </div>
+                            )}
+                        </TabsContent>
+
+                        {/* Strategic Options Tab */}
+                        <TabsContent value="options" className="h-full overflow-y-auto mt-0">
+                            {recommendationsData?.strategic_options ? (
+                                <div className="space-y-4">
+                                    {recommendationsData.strategic_options.map((option, index) => (
+                                        <Card key={index}>
+                                            <CardContent className="p-4">
+                                                <div className="border rounded-xl p-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20">
+                                                    <div className="flex items-start justify-between mb-3">
+                                                        <div>
+                                                            <h4 className="font-bold text-lg text-slate-900 dark:text-white">
+                                                                {option.title}
+                                                            </h4>
+                                                            <p className="text-slate-600 dark:text-gray-400 mt-1">
+                                                                {option.description}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex flex-col gap-2 items-end">
+                                                            <Badge className={getRiskColor(option.risk_level)}>
+                                                                {option.risk_level} risk
+                                                            </Badge>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid md:grid-cols-2 gap-4">
+                                                        <div>
+                                                            <h5 className="font-semibold text-green-700 dark:text-green-400 mb-2 flex items-center gap-1">
+                                                                <CheckCircle2 className="h-4 w-4" />
+                                                                Pros
+                                                            </h5>
+                                                            <ul className="space-y-1">
+                                                                {option.pros?.map((pro, idx) => (
+                                                                    <li key={idx} className="text-sm text-slate-700 dark:text-gray-300 flex items-start gap-2">
+                                                                        <span className="w-1 h-1 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
+                                                                        {pro}
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                        <div>
+                                                            <h5 className="font-semibold text-red-700 dark:text-red-400 mb-2 flex items-center gap-1">
+                                                                <AlertCircle className="h-4 w-4" />
+                                                                Cons
+                                                            </h5>
+                                                            <ul className="space-y-1">
+                                                                {option.cons?.map((con, idx) => (
+                                                                    <li key={idx} className="text-sm text-slate-700 dark:text-gray-300 flex items-start gap-2">
+                                                                        <span className="w-1 h-1 bg-red-500 rounded-full mt-2 flex-shrink-0"></span>
+                                                                        {con}
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t border-slate-200 dark:border-gray-700">
+                                                        <div className="flex items-center gap-1 text-sm">
+                                                            <Clock className="h-4 w-4 text-slate-500" />
+                                                            <span className="text-slate-600 dark:text-gray-400">Timeline:</span>
+                                                            <span className="font-medium">{option.timeline}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1 text-sm">
+                                                            <DollarSign className="h-4 w-4 text-slate-500" />
+                                                            <span className="text-slate-600 dark:text-gray-400">Investment:</span>
+                                                            <span className="font-medium">{option.investment_required}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8">
+                                    <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                    <p className="text-gray-500">No strategic options available</p>
+                                </div>
+                            )}
+                        </TabsContent>
+
+                        {/* Action Items Tab */}
+                        <TabsContent value="actions" className="h-full overflow-y-auto mt-0">
+                            {recommendationsData?.action_items ? (
+                                <div className="space-y-4">
+                                    {recommendationsData.action_items.map((item, index) => (
+                                        <Card key={index}>
+                                            <CardContent className="p-4">
+                                                <div className="border rounded-lg p-4 bg-gradient-to-r from-purple-50/30 to-pink-50/30 dark:from-purple-950/10 dark:to-pink-950/10">
+                                                    <div className="flex items-start justify-between mb-3">
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <Badge className={getPriorityColor(item.priority)}>
+                                                                    {item.priority} priority
+                                                                </Badge>
+                                                                <Badge variant="outline" className="text-xs">
+                                                                    {item.category}
+                                                                </Badge>
+                                                            </div>
+                                                            <h4 className="font-semibold text-slate-900 dark:text-white mb-1">
+                                                                {item.action}
+                                                            </h4>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid sm:grid-cols-2 gap-4 text-sm">
+                                                        <div>
+                                                            <div className="flex items-center gap-1 mb-1">
+                                                                <Users className="h-3 w-3 text-slate-500" />
+                                                                <span className="text-slate-600 dark:text-gray-400">Owner:</span>
+                                                            </div>
+                                                            <p className="font-medium pl-4">{item.owner}</p>
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-1 mb-1">
+                                                                <Calendar className="h-3 w-3 text-slate-500" />
+                                                                <span className="text-slate-600 dark:text-gray-400">Timeline:</span>
+                                                            </div>
+                                                            <p className="font-medium pl-4">{item.timeline}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {item.success_metrics && (
+                                                        <div className="mt-3 pt-3 border-t border-slate-200 dark:border-gray-700">
+                                                            <div className="flex items-center gap-1 mb-1">
+                                                                <BarChart3 className="h-3 w-3 text-slate-500" />
+                                                                <span className="text-xs font-medium text-slate-600 dark:text-gray-400">Success Metrics:</span>
+                                                            </div>
+                                                            <p className="text-sm text-slate-700 dark:text-gray-300 pl-4">
+                                                                {item.success_metrics}
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8">
+                                    <Zap className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                    <p className="text-gray-500">No action items available</p>
+                                </div>
+                            )}
+                        </TabsContent>
+
+                        {/* Key Metrics Tab */}
+                        <TabsContent value="metrics" className="h-full overflow-y-auto mt-0">
+                            {recommendationsData?.key_metrics ? (
+                                <div className="grid sm:grid-cols-2 gap-4">
+                                    {recommendationsData.key_metrics.map((metric, index) => (
+                                        <Card key={index}>
+                                            <CardContent className="p-4">
+                                                <div className="border rounded-lg p-4 bg-gradient-to-r from-green-50/30 to-emerald-50/30 dark:from-green-950/10 dark:to-emerald-950/10">
+                                                    <h4 className="font-semibold text-slate-900 dark:text-white mb-2">
+                                                        {metric.name}
+                                                    </h4>
+                                                    <div className="space-y-2 text-sm">
+                                                        <div>
+                                                            <span className="text-slate-600 dark:text-gray-400">Target: </span>
+                                                            <span className="font-medium text-green-700 dark:text-green-400">
+                                                                {metric.target}
+                                                            </span>
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-slate-600 dark:text-gray-400">Timeframe: </span>
+                                                            <span className="font-medium">{metric.timeframe}</span>
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-slate-600 dark:text-gray-400">Measurement: </span>
+                                                            <span className="text-slate-700 dark:text-gray-300">
+                                                                {metric.measurement}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8">
+                                    <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                    <p className="text-gray-500">No key metrics available</p>
+                                </div>
+                            )}
+                        </TabsContent>
+
+                        {/* Decision Point Tab */}
+                        <TabsContent value="decision" className="h-full overflow-y-auto mt-0">
+                            {recommendationsData?.decision_point ? (
+                                <Card className="border-l-4 border-l-blue-500">
+                                    <CardHeader>
+                                        <div className="flex items-center gap-2">
+                                            <Flag className="h-5 w-5 text-blue-600" />
+                                            <CardTitle className="text-lg">Recommended Decision</CardTitle>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="bg-blue-50/80 dark:bg-blue-950/30 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/30">
+                                            <h4 className="font-bold text-blue-900 dark:text-blue-100 mb-2">
+                                                {recommendationsData.decision_point.recommendation}
                                             </h4>
-                                            <p className="text-slate-600 dark:text-gray-400 mt-1">
-                                                {option.description}
+                                            <p className="text-slate-700 dark:text-gray-300 mb-4">
+                                                {recommendationsData.decision_point.rationale}
                                             </p>
-                                        </div>
-                                        <div className="flex flex-col gap-2 items-end">
-                                            <Badge className={getRiskColor(option.risk_level)}>
-                                                {option.risk_level} risk
-                                            </Badge>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid md:grid-cols-2 gap-4">
-                                        <div>
-                                            <h5 className="font-semibold text-green-700 dark:text-green-400 mb-2 flex items-center gap-1">
-                                                <CheckCircle2 className="h-4 w-4" />
-                                                Pros
-                                            </h5>
-                                            <ul className="space-y-1">
-                                                {option.pros?.map((pro, idx) => (
-                                                    <li key={idx} className="text-sm text-slate-700 dark:text-gray-300 flex items-start gap-2">
-                                                        <span className="w-1 h-1 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                                                        {pro}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                        <div>
-                                            <h5 className="font-semibold text-red-700 dark:text-red-400 mb-2 flex items-center gap-1">
-                                                <AlertCircle className="h-4 w-4" />
-                                                Cons
-                                            </h5>
-                                            <ul className="space-y-1">
-                                                {option.cons?.map((con, idx) => (
-                                                    <li key={idx} className="text-sm text-slate-700 dark:text-gray-300 flex items-start gap-2">
-                                                        <span className="w-1 h-1 bg-red-500 rounded-full mt-2 flex-shrink-0"></span>
-                                                        {con}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t border-slate-200 dark:border-gray-700">
-                                        <div className="flex items-center gap-1 text-sm">
-                                            <Clock className="h-4 w-4 text-slate-500" />
-                                            <span className="text-slate-600 dark:text-gray-400">Timeline:</span>
-                                            <span className="font-medium">{option.timeline}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1 text-sm">
-                                            <DollarSign className="h-4 w-4 text-slate-500" />
-                                            <span className="text-slate-600 dark:text-gray-400">Investment:</span>
-                                            <span className="font-medium">{option.investment_required}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Action Items */}
-            {recommendationsData?.action_items && (
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center gap-2">
-                            <Zap className="h-5 w-5 text-purple-600" />
-                            <CardTitle className="text-lg">Action Plan</CardTitle>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {recommendationsData.action_items.map((item, index) => (
-                                <div key={index} className="border rounded-lg p-4 bg-gradient-to-r from-purple-50/30 to-pink-50/30 dark:from-purple-950/10 dark:to-pink-950/10">
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <Badge className={getPriorityColor(item.priority)}>
-                                                    {item.priority} priority
-                                                </Badge>
-                                                <Badge variant="outline" className="text-xs">
-                                                    {item.category}
-                                                </Badge>
+                                            
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <div className="flex items-center gap-1 mb-1">
+                                                        <ArrowRight className="h-4 w-4 text-blue-600" />
+                                                        <span className="font-medium text-slate-900 dark:text-white">Next Steps:</span>
+                                                    </div>
+                                                    <p className="text-slate-700 dark:text-gray-300 pl-5">
+                                                        {recommendationsData.decision_point.next_steps}
+                                                    </p>
+                                                </div>
+                                                
+                                                {recommendationsData.decision_point.review_date && (
+                                                    <div>
+                                                        <div className="flex items-center gap-1 mb-1">
+                                                            <Calendar className="h-4 w-4 text-blue-600" />
+                                                            <span className="font-medium text-slate-900 dark:text-white">Review Date:</span>
+                                                        </div>
+                                                        <p className="text-slate-700 dark:text-gray-300 pl-5">
+                                                            {recommendationsData.decision_point.review_date}
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
-                                            <h4 className="font-semibold text-slate-900 dark:text-white mb-1">
-                                                {item.action}
-                                            </h4>
                                         </div>
-                                    </div>
-
-                                    <div className="grid sm:grid-cols-2 gap-4 text-sm">
-                                        <div>
-                                            <div className="flex items-center gap-1 mb-1">
-                                                <Users className="h-3 w-3 text-slate-500" />
-                                                <span className="text-slate-600 dark:text-gray-400">Owner:</span>
-                                            </div>
-                                            <p className="font-medium pl-4">{item.owner}</p>
-                                        </div>
-                                        <div>
-                                            <div className="flex items-center gap-1 mb-1">
-                                                <Calendar className="h-3 w-3 text-slate-500" />
-                                                <span className="text-slate-600 dark:text-gray-400">Timeline:</span>
-                                            </div>
-                                            <p className="font-medium pl-4">{item.timeline}</p>
-                                        </div>
-                                    </div>
-
-                                    {item.success_metrics && (
-                                        <div className="mt-3 pt-3 border-t border-slate-200 dark:border-gray-700">
-                                            <div className="flex items-center gap-1 mb-1">
-                                                <BarChart3 className="h-3 w-3 text-slate-500" />
-                                                <span className="text-xs font-medium text-slate-600 dark:text-gray-400">Success Metrics:</span>
-                                            </div>
-                                            <p className="text-sm text-slate-700 dark:text-gray-300 pl-4">
-                                                {item.success_metrics}
-                                            </p>
-                                        </div>
-                                    )}
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                <div className="text-center py-8">
+                                    <Flag className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                    <p className="text-gray-500">No decision recommendation available</p>
                                 </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Key Metrics */}
-            {recommendationsData?.key_metrics && (
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center gap-2">
-                            <BarChart3 className="h-5 w-5 text-green-600" />
-                            <CardTitle className="text-lg">Key Performance Metrics</CardTitle>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid sm:grid-cols-2 gap-4">
-                            {recommendationsData.key_metrics.map((metric, index) => (
-                                <div key={index} className="border rounded-lg p-4 bg-gradient-to-r from-green-50/30 to-emerald-50/30 dark:from-green-950/10 dark:to-emerald-950/10">
-                                    <h4 className="font-semibold text-slate-900 dark:text-white mb-2">
-                                        {metric.name}
-                                    </h4>
-                                    <div className="space-y-2 text-sm">
-                                        <div>
-                                            <span className="text-slate-600 dark:text-gray-400">Target: </span>
-                                            <span className="font-medium text-green-700 dark:text-green-400">
-                                                {metric.target}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <span className="text-slate-600 dark:text-gray-400">Timeframe: </span>
-                                            <span className="font-medium">{metric.timeframe}</span>
-                                        </div>
-                                        <div>
-                                            <span className="text-slate-600 dark:text-gray-400">Measurement: </span>
-                                            <span className="text-slate-700 dark:text-gray-300">
-                                                {metric.measurement}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Decision Point */}
-            {recommendationsData?.decision_point && (
-                <Card className="border-l-4 border-l-blue-500">
-                    <CardHeader>
-                        <div className="flex items-center gap-2">
-                            <Flag className="h-5 w-5 text-blue-600" />
-                            <CardTitle className="text-lg">Recommended Decision</CardTitle>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="bg-blue-50/80 dark:bg-blue-950/30 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/30">
-                            <h4 className="font-bold text-blue-900 dark:text-blue-100 mb-2">
-                                {recommendationsData.decision_point.recommendation}
-                            </h4>
-                            <p className="text-slate-700 dark:text-gray-300 mb-4">
-                                {recommendationsData.decision_point.rationale}
-                            </p>
-                            
-                            <div className="space-y-3">
-                                <div>
-                                    <div className="flex items-center gap-1 mb-1">
-                                        <ArrowRight className="h-4 w-4 text-blue-600" />
-                                        <span className="font-medium text-slate-900 dark:text-white">Next Steps:</span>
-                                    </div>
-                                    <p className="text-slate-700 dark:text-gray-300 pl-5">
-                                        {recommendationsData.decision_point.next_steps}
-                                    </p>
-                                </div>
-                                
-                                {recommendationsData.decision_point.review_date && (
-                                    <div>
-                                        <div className="flex items-center gap-1 mb-1">
-                                            <Calendar className="h-4 w-4 text-blue-600" />
-                                            <span className="font-medium text-slate-900 dark:text-white">Review Date:</span>
-                                        </div>
-                                        <p className="text-slate-700 dark:text-gray-300 pl-5">
-                                            {recommendationsData.decision_point.review_date}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+                            )}
+                        </TabsContent>
+                    </div>
+                </Tabs>
+            </div>
         </div>
     )
 }
