@@ -1746,12 +1746,12 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
             </div>
             {/* Show tabs only in list mode */}
             {viewMode === 'list' && (
-              <TabsList className="grid w-full grid-cols-4 h-auto">
+              <TabsList className="grid w-full grid-cols-4 h-auto bg-transparent">
                 {Object.entries(tabConfigs).map(([key, config]) => (
                   <TabsTrigger
                     key={key}
                     value={key}
-                    className="flex items-center gap-2 py-2 px-3 data-[state=active]:bg-white dark:data-[state=active]:bg-black"
+                    className="flex items-center gap-2 py-2 px-3  data-[state=active]:bg-white dark:data-[state=active]:bg-black data-[state=active]:rounded-none"
                   >
                     <div className={config.color}>{config.icon}</div>
                     <span className="text-xs sm:text-sm">{config.label}</span>
