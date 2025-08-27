@@ -22,7 +22,7 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
   const [activeHighlight, setActiveHighlight] = useState(null)
 
   const [highlights, setHighlights] = useState([])
-  const [activeTab, setActiveTab] = useState('analysis')
+  const [activeTab, setActiveTab] = useState('swot')
   const [tabChangeKey, setTabChangeKey] = useState(0)
   const [docxContent, setDocxContent] = useState(null)
   const [docxLoading, setDocxLoading] = useState(false)
@@ -886,7 +886,10 @@ This business plan effectively balances growth ambitions with comprehensive risk
     })
   }, [])
 
-  // Restore activeTab from localStorage when document data becomes available
+  // Track previous document ID to detect document changes
+  const previousDocIdRef = useRef()
+  
+  // Restore activeTab from localStorage when document data becomes available or changes
   useEffect(() => {
     const restoreActiveTab = () => {
       try {
@@ -899,6 +902,15 @@ This business plan effectively balances growth ambitions with comprehensive risk
           return
         }
         
+        // Check if this is a document change
+        const isDocumentChange = previousDocIdRef.current !== currentDocId
+        if (isDocumentChange) {
+          console.log(`🔄 Document changed from "${previousDocIdRef.current}" to "${currentDocId}"`)
+          previousDocIdRef.current = currentDocId
+          // Reset the initial render flag when document changes to ensure restoration works
+          isInitialRenderRef.current = false
+        }
+        
         console.log(`🔍 Attempting to restore activeTab for document: ${currentDocId}`)
         
         const stored = localStorage.getItem(documentKey)
@@ -906,7 +918,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
           const parsed = JSON.parse(stored)
           // Only restore if the stored data is recent (within 7 days)
           if (parsed.timestamp && Date.now() - parsed.timestamp < (7 * 24 * 60 * 60 * 1000)) {
-            const restoredTab = parsed.activeTab || 'analysis'
+            const restoredTab = parsed.activeTab || 'swot'
             console.log(`📂 Restored activeTab "${restoredTab}" from localStorage for ${documentKey}`)
             setActiveTab(restoredTab)
             isInitialRenderRef.current = false // Prevent auto-save from triggering
@@ -916,16 +928,16 @@ This business plan effectively balances growth ambitions with comprehensive risk
               console.log(`🎯 Restored insights tab - ProfessionalAnalysisDisplay should sync cardMode`)
             }
           } else {
-            console.log('🧹 Stored activeTab is too old, using default')
-            setActiveTab('analysis')
+            console.log('🧹 Stored activeTab is too old, using default (swot)')
+            setActiveTab('swot')
           }
         } else {
-          console.log(`📝 No stored activeTab found for ${documentKey}, using default`)
-          setActiveTab('analysis')
+          console.log(`📝 No stored activeTab found for ${documentKey}, using default (swot)`)
+          setActiveTab('swot')
         }
       } catch (error) {
         console.warn('Failed to restore activeTab from localStorage:', error)
-        setActiveTab('analysis') // Fallback to default
+        setActiveTab('swot') // Fallback to default
       }
     }
 
@@ -939,29 +951,48 @@ This business plan effectively balances growth ambitions with comprehensive risk
         resultsFilename: results?.filename,
         fileName: file?.name
       })
-      restoreActiveTab()
+      
+      // Add small delay for document switches to allow React state updates to settle
+      const currentDocId = getCurrentDocumentId()
+      const isDocumentChange = previousDocIdRef.current !== currentDocId
+      
+      if (isDocumentChange) {
+        console.log('📋 Document switch detected - adding delay for state settlement')
+        setTimeout(() => {
+          restoreActiveTab()
+        }, 100)
+      } else {
+        restoreActiveTab()
+      }
     } else {
       console.log('⏳ Waiting for document data before restoring activeTab...')
     }
-  }, [results, file, generateDocumentKey, getCurrentDocumentId])
+  }, [results, file, generateDocumentKey, getCurrentDocumentId, results?.document_id, results?.id, results?.filename, file?.name])
 
   // Set default tab based on document availability (only if no stored preference)
   useEffect(() => {
+    // Skip if we don't have proper document data yet
+    if (!results && !file) {
+      return
+    }
+    
     // Check if we have a stored activeTab preference for this document
     const documentKey = generateDocumentKey()
+    const currentDocId = getCurrentDocumentId()
+    
+    // Skip if we don't have a proper document identifier yet  
+    if (currentDocId === 'default' || currentDocId === window.location.pathname) {
+      return
+    }
+    
     const hasStoredTab = localStorage.getItem(documentKey)
     
-    // Only set default if no stored preference and still on initial 'analysis'
-    if (!hasStoredTab && (activeTab === 'analysis')) {
-      if (hasDocumentViewer) {
-        setActiveTab("analysis")
-      } else if (isDemoMode || bypassAPI) {
-        setActiveTab("analysis") 
-      } else {
-        setActiveTab("analysis")
-      }
+    // Only set default if no stored preference and we're still on the initial tab
+    if (!hasStoredTab && (activeTab === 'analysis' || activeTab === 'swot')) {
+      console.log(`📝 No stored activeTab found for ${documentKey}, keeping default`)
+      // Don't call setActiveTab here - let the restoration useEffect handle it
     }
-  }, [hasDocumentViewer, isDemoMode, bypassAPI, generateDocumentKey, activeTab])
+  }, [hasDocumentViewer, isDemoMode, bypassAPI, generateDocumentKey, getCurrentDocumentId, results, file])
 
   // Add scroll event listeners to track scroll position changes
   useEffect(() => {
@@ -1896,6 +1927,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                 results={results}
                 isDemoMode={isDemoMode}
                 bypassAPI={bypassAPI}
+                docId={getCurrentDocumentId()}
               />
             </div>
 

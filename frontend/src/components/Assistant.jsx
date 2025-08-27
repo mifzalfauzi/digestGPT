@@ -631,7 +631,6 @@ function Assistant() {
     documentSwitchAbortController.current = new AbortController()
 
     setIsDocumentSwitching(true)
-    setSelectedDocumentId(documentId)
     setError("")
 
     try {
@@ -639,7 +638,8 @@ function Assistant() {
       const currentDoc = documents.find(d => d.id === documentId)
 
     if (currentDoc) {
-      // Handle current session document
+      // Handle current session document - set selectedDocumentId immediately since we already have the data
+      setSelectedDocumentId(documentId)
       if (currentDoc.status === 'error') {
         setErrorDocument(currentDoc)
         setErrorModalOpen(true)
@@ -894,6 +894,10 @@ function Assistant() {
         if (!existingDoc) {
           setDocuments(prev => [sessionDocument, ...prev])
         }
+
+        // CRITICAL: Set selectedDocumentId AFTER document data is available
+        // This ensures EnhancedDocumentViewer's restoration useEffect has the correct results data
+        setSelectedDocumentId(documentId)
 
       } catch (error) {
         console.error('Error loading historical document:', error)

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -24,10 +24,68 @@ import {
 } from "lucide-react"
 import MarkdownRenderer from './MarkdownRenderer'
 
-function Recommendations({ results, isDemoMode = false, bypassAPI = false }) {
+function Recommendations({ results, isDemoMode = false, bypassAPI = false, docId }) {
     const [activeTab, setActiveTab] = useState('overview')
     const [copiedItem, setCopiedItem] = useState(null)
     const [feedbackGiven, setFeedbackGiven] = useState({})
+
+    // Tab persistence hook
+    const useTabPersistence = (defaultTab = 'overview') => {
+        const getStorageKey = useCallback(() => {
+            return docId ? `enhancedDocViewer_recommendationsTab_${docId}` : null
+        }, [docId])
+
+        const loadFromStorage = useCallback(() => {
+            const key = getStorageKey()
+            if (!key) return defaultTab
+
+            try {
+                const stored = localStorage.getItem(key)
+                if (stored) {
+                    const data = JSON.parse(stored)
+                    if (Date.now() - data.timestamp < 7 * 24 * 60 * 60 * 1000) {
+                        return data.tab
+                    } else {
+                        localStorage.removeItem(key)
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading recommendations tab from storage:', error)
+            }
+            return defaultTab
+        }, [getStorageKey, defaultTab])
+
+        const saveToStorage = useCallback((tab) => {
+            const key = getStorageKey()
+            if (!key) return
+
+            try {
+                localStorage.setItem(key, JSON.stringify({
+                    tab,
+                    timestamp: Date.now()
+                }))
+            } catch (error) {
+                console.error('Error saving recommendations tab to storage:', error)
+            }
+        }, [getStorageKey])
+
+        return { loadFromStorage, saveToStorage }
+    }
+
+    const { loadFromStorage, saveToStorage } = useTabPersistence('overview')
+
+    // Load tab state on mount or when docId changes
+    useEffect(() => {
+        const savedTab = loadFromStorage()
+        setActiveTab(savedTab)
+    }, [loadFromStorage])
+
+    // Save tab state when it changes
+    useEffect(() => {
+        if (docId) {
+            saveToStorage(activeTab)
+        }
+    }, [activeTab, docId, saveToStorage])
 
     // Mock data for demo/preview mode
     const mockRecommendations = {
