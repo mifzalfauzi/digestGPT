@@ -17,7 +17,10 @@ import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import axios from 'axios' // Added axios import
 function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, isDemoMode = false, bypassAPI = false }) {
+  console.log('results', results)
+
   const [activeHighlight, setActiveHighlight] = useState(null)
+
   const [highlights, setHighlights] = useState([])
   const [activeTab, setActiveTab] = useState('analysis')
   const [tabChangeKey, setTabChangeKey] = useState(0)
@@ -865,7 +868,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
 
   // Initialize scroll positions from localStorage on mount
   useEffect(() => {
-    const tabs = ['analysis', 'swot', 'insights', 'document', 'document-viewer']
+    const tabs = ['analysis', 'swot', 'insights', 'document', 'recommendations']
     tabs.forEach(tabId => {
       try {
         const storageKey = `enhancedDocViewer_${tabId}_scroll`
@@ -1555,6 +1558,23 @@ This business plan effectively balances growth ambitions with comprehensive risk
                 <span className="hidden md:inline">Overview</span>
                 <span className="md:hidden"></span>
               </TabsTrigger>
+              <TabsTrigger value="recommendations" className="
+  relative
+  flex items-center justify-center gap-1
+  bg-transparent border-none rounded-none
+  text-xs py-2 sm:py-3 px-2 sm:px-3
+  transition-all duration-200
+  hover:text-blue-500 dark:hover:text-blue-300
+
+  data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400
+  before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-[2px]
+  before:w-0 before:bg-blue-500 before:transition-all before:duration-300
+  data-[state=active]:before:w-full
+">
+                  <Lightbulb className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                <span className="hidden md:inline">Recommendations</span>
+                <span className="md:hidden"></span>
+              </TabsTrigger>
                 <TabsTrigger value="swot" className="
     relative
     flex items-center justify-center gap-1
@@ -1573,23 +1593,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
                 <span className="md:hidden"></span>
               </TabsTrigger>
 
-              <TabsTrigger value="recommendations" className="
-  relative
-  flex items-center justify-center gap-1
-  bg-transparent border-none rounded-none
-  text-xs py-2 sm:py-3 px-2 sm:px-3
-  transition-all duration-200
-  hover:text-blue-500 dark:hover:text-blue-300
-
-  data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400
-  before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-[2px]
-  before:w-0 before:bg-blue-500 before:transition-all before:duration-300
-  data-[state=active]:before:w-full
-">
-                  <Lightbulb className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
-                <span className="hidden md:inline">Recommendations</span>
-                <span className="md:hidden"></span>
-              </TabsTrigger>
+              
               <TabsTrigger value="insights" className="
   relative
   flex items-center justify-center gap-1
@@ -1886,6 +1890,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
             <div className={`h-full mt-1 sm:mt-2 overflow-y-auto ${activeTab === 'recommendations' ? 'block' : 'hidden'
                 }`}
               ref={el => tabContentRefs.current['recommendations'] = el}
+              
             >
               <Recommendations 
                 results={results}

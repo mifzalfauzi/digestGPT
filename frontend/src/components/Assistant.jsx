@@ -830,6 +830,7 @@ function Assistant() {
         console.log("swotAnalysis weaknesses:", swotAnalysis.weaknesses?.length || 0)
         console.log("swotAnalysis opportunities:", swotAnalysis.opportunities?.length || 0)
         console.log("swotAnalysis threats:", swotAnalysis.threats?.length || 0)
+        console.log("recommendations:", fullDocumentData.recommendations)
         console.log("========================")
 
         // Create a document object for the current session
@@ -854,7 +855,8 @@ function Assistant() {
               risk_flags: riskFlags,
               key_concepts: keyConcepts,
               swot_analysis: swotAnalysis,
-              impact_analysis: impactAnalysis
+              impact_analysis: impactAnalysis,
+              recommendations: fullDocumentData.recommendations
             },
             // Also include at root level for compatibility
             summary: fullDocumentData.summary,
@@ -865,7 +867,8 @@ function Assistant() {
             word_count: fullDocumentData.word_count,
             analysis_method: fullDocumentData.analysis_method,
             swot_analysis: swotAnalysis,
-            impact_analysis: impactAnalysis
+            impact_analysis: impactAnalysis,
+            recommendations: fullDocumentData.recommendations
           }
         }
 

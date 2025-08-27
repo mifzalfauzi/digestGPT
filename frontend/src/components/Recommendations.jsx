@@ -4,14 +4,14 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { 
-    Target, 
-    TrendingUp, 
-    AlertCircle, 
-    CheckCircle2, 
-    Clock, 
-    ArrowRight, 
-    Lightbulb, 
+import {
+    Target,
+    TrendingUp,
+    AlertCircle,
+    CheckCircle2,
+    Clock,
+    ArrowRight,
+    Lightbulb,
     BarChart3,
     Users,
     DollarSign,
@@ -48,7 +48,7 @@ function Recommendations({ results, isDemoMode = false, bypassAPI = false }) {
                 pros: ["Reduced risk exposure", "Learning-based approach", "Resource optimization"],
                 cons: ["Slower market capture", "Potential competitor advantage"],
                 risk_level: "low",
-                timeline: "12-18 months", 
+                timeline: "12-18 months",
                 investment_required: "Medium"
             },
             {
@@ -71,7 +71,7 @@ function Recommendations({ results, isDemoMode = false, bypassAPI = false }) {
                 success_metrics: "Market size, competitive landscape, regulatory requirements documented"
             },
             {
-                priority: "high", 
+                priority: "high",
                 category: "Financial",
                 action: "Secure additional funding round for expansion capital",
                 owner: "Finance Team",
@@ -82,7 +82,7 @@ function Recommendations({ results, isDemoMode = false, bypassAPI = false }) {
                 priority: "medium",
                 category: "Technology",
                 action: "Complete AI platform localization for target markets",
-                owner: "Product Team", 
+                owner: "Product Team",
                 timeline: "12 weeks",
                 success_metrics: "Multi-language support, local compliance features ready"
             },
@@ -91,7 +91,7 @@ function Recommendations({ results, isDemoMode = false, bypassAPI = false }) {
                 category: "Operations",
                 action: "Establish regional partnerships and distribution channels",
                 owner: "Business Development",
-                timeline: "10 weeks", 
+                timeline: "10 weeks",
                 success_metrics: "3+ strategic partnerships signed, distribution network operational"
             },
             {
@@ -112,14 +112,14 @@ function Recommendations({ results, isDemoMode = false, bypassAPI = false }) {
             },
             {
                 name: "Revenue Growth",
-                target: "40% YoY revenue increase", 
+                target: "40% YoY revenue increase",
                 timeframe: "12 months",
                 measurement: "Quarterly revenue reports and projections"
             },
             {
                 name: "Customer Acquisition Cost",
                 target: "Reduce CAC by 25%",
-                timeframe: "9 months", 
+                timeframe: "9 months",
                 measurement: "Monthly CAC analysis by region and channel"
             },
             {
@@ -155,7 +155,80 @@ function Recommendations({ results, isDemoMode = false, bypassAPI = false }) {
         console.log(`Feedback given for ${itemId}: ${type}`)
     }
 
-    const recommendationsData = isDemoMode || bypassAPI ? mockRecommendations : results?.analysis?.recommendations || results?.recommendations
+    // Enhanced data resolution with multiple fallback paths and better debugging
+    const recommendationsData = (() => {
+        if (isDemoMode || bypassAPI) {
+            console.log('Using mock recommendations data')
+            return mockRecommendations
+        }
+
+        // Debug what we're receiving
+        console.log('Recommendations - results object:', results)
+        console.log('Recommendations - results.analysis:', results?.analysis)
+        console.log('Recommendations - results.analysis.recommendations:', results?.analysis?.recommendations)
+        console.log('Recommendations - results.recommendations:', results?.recommendations)
+
+        // Try multiple paths to find recommendations data
+        let recommendations = null
+
+        // Path 1: results.analysis.recommendations (most common)
+        if (results?.analysis?.recommendations) {
+            recommendations = results.analysis.recommendations
+            console.log('Found recommendations at results.analysis.recommendations:', recommendations)
+        }
+        // Path 2: results.recommendations (direct)
+        else if (results?.recommendations) {
+            recommendations = results.recommendations
+            console.log('Found recommendations at results.recommendations:', recommendations)
+        }
+        // Path 3: Check if recommendations data is directly in analysis object (our case)
+        else if (results?.analysis && typeof results.analysis === 'object') {
+            // Look for recommendations in any nested structure
+            const analysisKeys = Object.keys(results.analysis)
+            console.log('Available analysis keys:', analysisKeys)
+
+            if (analysisKeys.includes('recommendations')) {
+                recommendations = results.analysis.recommendations
+                console.log('Found recommendations in analysis keys:', recommendations)
+            } else {
+                // Check if recommendation fields are directly in analysis
+                const hasRecommendationFields = analysisKeys.some(key =>
+                    ['problem_framing', 'strategic_options', 'action_items', 'key_metrics', 'decision_point'].includes(key)
+                )
+
+                if (hasRecommendationFields) {
+                    // Build recommendations object from individual fields in analysis
+                    recommendations = {
+                        problem_framing: results.analysis.problem_framing,
+                        strategic_options: results.analysis.strategic_options,
+                        action_items: results.analysis.action_items,
+                        key_metrics: results.analysis.key_metrics,
+                        decision_point: results.analysis.decision_point
+                    }
+                    console.log('Built recommendations from analysis fields:', recommendations)
+                }
+            }
+        }
+
+        if (recommendations) {
+            // Validate that we have actual recommendation data
+            const hasData = recommendations.problem_framing ||
+                recommendations.strategic_options ||
+                recommendations.action_items ||
+                recommendations.key_metrics ||
+                recommendations.decision_point
+
+            if (hasData) {
+                console.log('Valid recommendations data found:', recommendations)
+                return recommendations
+            } else {
+                console.log('Recommendations object exists but appears empty:', recommendations)
+            }
+        }
+
+        console.log('No recommendations data found, returning null')
+        return null
+    })()
 
     const getPriorityColor = (priority) => {
         switch (priority) {
@@ -194,18 +267,18 @@ function Recommendations({ results, isDemoMode = false, bypassAPI = false }) {
     }
 
     return (
-        <div className="px-4 pb-4 h-full flex flex-col">
+        <div className="px-8 p-4 pb-4 h-full flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between mb-4 flex-shrink-0">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                     <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl shadow-lg">
                         <Target className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                             Strategic Recommendations
                         </h2>
-                        <p className="text-sm text-slate-600 dark:text-gray-400">
+                        <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
                             Decision-ready insights and action plans
                         </p>
                     </div>
@@ -221,72 +294,74 @@ function Recommendations({ results, isDemoMode = false, bypassAPI = false }) {
             <div className="flex-1 overflow-hidden">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
                     <TabsList className="grid w-full grid-cols-5 bg-transparent border-none h-auto mb-4">
-                        <TabsTrigger 
-                            value="overview" 
+                        <TabsTrigger
+                            value="overview"
                             className="relative flex items-center justify-center gap-1 bg-transparent border-none rounded-none text-xs py-2 px-3 transition-all duration-200 hover:text-orange-500 dark:hover:text-orange-300 data-[state=active]:text-orange-600 dark:data-[state=active]:text-orange-400 before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-[2px] before:w-0 before:bg-orange-500 before:transition-all before:duration-300 data-[state=active]:before:w-full"
                         >
                             <AlertCircle className="h-3 w-3 flex-shrink-0" />
                             <span className="hidden md:inline">Problem</span>
                         </TabsTrigger>
-                        <TabsTrigger 
-                            value="options" 
+                        <TabsTrigger
+                            value="options"
                             className="relative flex items-center justify-center gap-1 bg-transparent border-none rounded-none text-xs py-2 px-3 transition-all duration-200 hover:text-blue-500 dark:hover:text-blue-300 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-[2px] before:w-0 before:bg-blue-500 before:transition-all before:duration-300 data-[state=active]:before:w-full"
                         >
                             <TrendingUp className="h-3 w-3 flex-shrink-0" />
                             <span className="hidden md:inline">Options</span>
                         </TabsTrigger>
-                        <TabsTrigger 
-                            value="actions" 
+                        <TabsTrigger
+                            value="actions"
                             className="relative flex items-center justify-center gap-1 bg-transparent border-none rounded-none text-xs py-2 px-3 transition-all duration-200 hover:text-purple-500 dark:hover:text-purple-300 data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-400 before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-[2px] before:w-0 before:bg-purple-500 before:transition-all before:duration-300 data-[state=active]:before:w-full"
                         >
                             <Zap className="h-3 w-3 flex-shrink-0" />
                             <span className="hidden md:inline">Actions</span>
                         </TabsTrigger>
-                        <TabsTrigger 
-                            value="metrics" 
+                        <TabsTrigger
+                            value="metrics"
                             className="relative flex items-center justify-center gap-1 bg-transparent border-none rounded-none text-xs py-2 px-3 transition-all duration-200 hover:text-green-500 dark:hover:text-green-300 data-[state=active]:text-green-600 dark:data-[state=active]:text-green-400 before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-[2px] before:w-0 before:bg-green-500 before:transition-all before:duration-300 data-[state=active]:before:w-full"
                         >
                             <BarChart3 className="h-3 w-3 flex-shrink-0" />
                             <span className="hidden md:inline">Metrics</span>
                         </TabsTrigger>
-                        <TabsTrigger 
-                            value="decision" 
+                        <TabsTrigger
+                            value="decision"
                             className="relative flex items-center justify-center gap-1 bg-transparent border-none rounded-none text-xs py-2 px-3 transition-all duration-200 hover:text-blue-500 dark:hover:text-blue-300 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-[2px] before:w-0 before:bg-blue-500 before:transition-all before:duration-300 data-[state=active]:before:w-full"
                         >
                             <Flag className="h-3 w-3 flex-shrink-0" />
                             <span className="hidden md:inline">Decision</span>
                         </TabsTrigger>
                     </TabsList>
-                    
-                    <Separator className="mb-4" />
+                    {/*                     
+                    <Separator className="mb-4" /> */}
 
                     <div className="flex-1 overflow-hidden">
                         {/* Problem Framing Tab */}
                         <TabsContent value="overview" className="h-full overflow-y-auto mt-0">
                             {recommendationsData?.problem_framing ? (
-                                <Card>
+                                <Card className="border-none bg-transparent">
                                     <CardHeader>
                                         <div className="flex items-center gap-2">
                                             <AlertCircle className="h-5 w-5 text-orange-600" />
-                                            <CardTitle className="text-lg">Problem Framing</CardTitle>
+                                            <CardTitle className="text-sm">Problem Framing</CardTitle>
                                         </div>
                                     </CardHeader>
                                     <CardContent>
                                         <div className="bg-orange-50/80 dark:bg-orange-950/30 rounded-xl p-4 border border-orange-200/50 dark:border-orange-800/30 relative">
-                                            <div className="absolute top-3 right-3 flex gap-1">
+
+                                            <MarkdownRenderer
+                                                content={recommendationsData.problem_framing}
+                                                className="text-slate-800 dark:text-slate-100 leading-relaxed text-sm"
+                                            />
+
+                                            <div className="absolute bottom-3 right-2 flex gap-1">
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => handleCopy(recommendationsData.problem_framing, 'problem-framing')}
-                                                    className="h-7 w-7 p-0 hover:bg-orange-100 dark:hover:bg-orange-900/20"
+                                                    className="h-7 w-7 p-0 hover:bg-orange-100 dark:hover:bg-orange-900/20 mt-2"
                                                 >
                                                     <Copy className={`h-3 w-3 ${copiedItem === 'problem-framing' ? 'text-orange-600' : 'text-gray-500'}`} />
                                                 </Button>
                                             </div>
-                                            <MarkdownRenderer
-                                                content={recommendationsData.problem_framing}
-                                                className="text-slate-800 dark:text-slate-100 leading-relaxed"
-                                            />
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -301,17 +376,17 @@ function Recommendations({ results, isDemoMode = false, bypassAPI = false }) {
                         {/* Strategic Options Tab */}
                         <TabsContent value="options" className="h-full overflow-y-auto mt-0">
                             {recommendationsData?.strategic_options ? (
-                                <div className="space-y-4">
+                                <div className="space-y-4 ">
                                     {recommendationsData.strategic_options.map((option, index) => (
-                                        <Card key={index}>
+                                        <Card key={index} className="border-none bg-transparent ">
                                             <CardContent className="p-4">
-                                                <div className="border rounded-xl p-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20">
+                                                <div className=" p-4 bg-transparent ">
                                                     <div className="flex items-start justify-between mb-3">
                                                         <div>
-                                                            <h4 className="font-bold text-lg text-slate-900 dark:text-white">
+                                                            <h4 className="font-bold text-sm text-slate-900 dark:text-white">
                                                                 {option.title}
                                                             </h4>
-                                                            <p className="text-slate-600 dark:text-gray-400 mt-1">
+                                                            <p className="text-slate-600 dark:text-gray-400 mt-1 text-xs">
                                                                 {option.description}
                                                             </p>
                                                         </div>
@@ -383,9 +458,9 @@ function Recommendations({ results, isDemoMode = false, bypassAPI = false }) {
                             {recommendationsData?.action_items ? (
                                 <div className="space-y-4">
                                     {recommendationsData.action_items.map((item, index) => (
-                                        <Card key={index}>
+                                        <Card key={index} className="border-none bg-transparent">
                                             <CardContent className="p-4">
-                                                <div className="border rounded-lg p-4 bg-gradient-to-r from-purple-50/30 to-pink-50/30 dark:from-purple-950/10 dark:to-pink-950/10">
+                                                <div className="p-4 bg-transparent">
                                                     <div className="flex items-start justify-between mb-3">
                                                         <div className="flex-1">
                                                             <div className="flex items-center gap-2 mb-2">
@@ -448,9 +523,9 @@ function Recommendations({ results, isDemoMode = false, bypassAPI = false }) {
                             {recommendationsData?.key_metrics ? (
                                 <div className="grid sm:grid-cols-2 gap-4">
                                     {recommendationsData.key_metrics.map((metric, index) => (
-                                        <Card key={index}>
+                                        <Card key={index} className="border-none bg-transparent">
                                             <CardContent className="p-4">
-                                                <div className="border rounded-lg p-4 bg-gradient-to-r from-green-50/30 to-emerald-50/30 dark:from-green-950/10 dark:to-emerald-950/10">
+                                                <div className="p-4 bg-transparent ">
                                                     <h4 className="font-semibold text-slate-900 dark:text-white mb-2">
                                                         {metric.name}
                                                     </h4>
@@ -488,22 +563,23 @@ function Recommendations({ results, isDemoMode = false, bypassAPI = false }) {
                         {/* Decision Point Tab */}
                         <TabsContent value="decision" className="h-full overflow-y-auto mt-0">
                             {recommendationsData?.decision_point ? (
-                                <Card className="border-l-4 border-l-blue-500">
+                                <Card className="border-none bg-transparent">
                                     <CardHeader>
                                         <div className="flex items-center gap-2">
                                             <Flag className="h-5 w-5 text-blue-600" />
                                             <CardTitle className="text-lg">Recommended Decision</CardTitle>
                                         </div>
                                     </CardHeader>
+                                    <Separator className="mb-4" />
                                     <CardContent>
-                                        <div className="bg-blue-50/80 dark:bg-blue-950/30 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/30">
+                                        <div className="p-4 bg-transparent">
                                             <h4 className="font-bold text-blue-900 dark:text-blue-100 mb-2">
                                                 {recommendationsData.decision_point.recommendation}
                                             </h4>
                                             <p className="text-slate-700 dark:text-gray-300 mb-4">
                                                 {recommendationsData.decision_point.rationale}
                                             </p>
-                                            
+
                                             <div className="space-y-3">
                                                 <div>
                                                     <div className="flex items-center gap-1 mb-1">
@@ -514,7 +590,7 @@ function Recommendations({ results, isDemoMode = false, bypassAPI = false }) {
                                                         {recommendationsData.decision_point.next_steps}
                                                     </p>
                                                 </div>
-                                                
+
                                                 {recommendationsData.decision_point.review_date && (
                                                     <div>
                                                         <div className="flex items-center gap-1 mb-1">
