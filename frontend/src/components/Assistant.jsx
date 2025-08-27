@@ -2004,22 +2004,7 @@ This business plan effectively balances ambitious growth objectives with compreh
 
                 {/* Simple Header */}
                 <div className="text-center">
-                  {/* <div className="inline-flex items-center gap-3">
-                    <div className="relative">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                        <FileText className="h-6 w-6 text-white" />
-                      </div>
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                        <Sparkles className="h-2.5 w-2.5 text-white" />
-                      </div>
-                    </div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-800 dark:from-white dark:via-blue-200 dark:to-indigo-200 bg-clip-text text-transparent">
-                      DigesText
-                    </h1>
-                  </div> */}
-                  {/* <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
-                    AI-powered document analysis
-                  </p> */}
+                  
                 </div>
 
               

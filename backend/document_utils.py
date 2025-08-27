@@ -183,7 +183,8 @@ Given this document, do the following:
 4. Highlight any risky or confusing parts with 🚩 emoji and explain why.
 5. Identify key concepts/terms that are central to understanding this document.
 6. Perform a comprehensive SWOT analysis with MINIMUM 3 items in each category.
-7. For each key insight and risk identified, analyze the specific business impact including: affected organization/department, impact description, affected areas, impact level, timeline, and required actions.
+7. Generate strategic recommendations including problem framing, strategic options, action items, key metrics, and a decision point.
+8. For each key insight and risk identified, analyze the specific business impact including: affected organization/department, impact description, affected areas, impact level, timeline, and required actions.
 
 For each key point and risk flag, please also include a short quote (5-15 words) from the original document that supports your analysis.
 
@@ -336,6 +337,53 @@ Use this exact JSON structure:
             }}
         ]
     }},
+    "recommendations": {{
+        "problem_framing": "Clear statement of the core problem or challenge this document addresses and why decisive action is needed",
+        "strategic_options": [
+            {{
+                "title": "Option 1 Name",
+                "description": "Description of this strategic approach",
+                "pros": ["Advantage 1", "Advantage 2", "Advantage 3"],
+                "cons": ["Disadvantage 1", "Disadvantage 2"],
+                "risk_level": "low/medium/high",
+                "timeline": "Expected duration",
+                "investment_required": "Low/Medium/High"
+            }},
+            {{
+                "title": "Option 2 Name", 
+                "description": "Description of alternative approach",
+                "pros": ["Advantage 1", "Advantage 2"],
+                "cons": ["Disadvantage 1", "Disadvantage 2"],
+                "risk_level": "low/medium/high",
+                "timeline": "Expected duration",
+                "investment_required": "Low/Medium/High"
+            }}
+        ],
+        "action_items": [
+            {{
+                "priority": "high/medium/low",
+                "category": "Strategic/Financial/Technology/Operations/HR",
+                "action": "Specific action to be taken",
+                "owner": "Responsible team/department",
+                "timeline": "Time to complete",
+                "success_metrics": "How to measure success"
+            }}
+        ],
+        "key_metrics": [
+            {{
+                "name": "Metric Name",
+                "target": "Specific target or goal",
+                "timeframe": "When to achieve this",
+                "measurement": "How to track progress"
+            }}
+        ],
+        "decision_point": {{
+            "recommendation": "Recommended course of action",
+            "rationale": "Why this is the best choice",
+            "next_steps": "Immediate actions to take",
+            "review_date": "When to reassess progress"
+        }}
+    }},
     "impact_analysis": {{
         "insights_impact": [
             {{
@@ -396,6 +444,24 @@ IMPORTANT: Each SWOT category MUST have 3-5 items (minimum 3, maximum 5).
             {{"title": "threat2", "description": "description", "impact": "impact", "category": "category"}},
             {{"title": "threat3", "description": "description", "impact": "impact", "category": "category"}}
         ]
+    }},
+    "recommendations": {{
+        "problem_framing": "Core problem statement",
+        "strategic_options": [
+            {{"title": "Option 1", "description": "description", "pros": ["pro1", "pro2"], "cons": ["con1"], "risk_level": "medium", "timeline": "6 months", "investment_required": "Medium"}}
+        ],
+        "action_items": [
+            {{"priority": "high", "category": "Strategic", "action": "action description", "owner": "team", "timeline": "4 weeks", "success_metrics": "success criteria"}}
+        ],
+        "key_metrics": [
+            {{"name": "Metric 1", "target": "target value", "timeframe": "timeframe", "measurement": "how to measure"}}
+        ],
+        "decision_point": {{
+            "recommendation": "recommended action",
+            "rationale": "why this choice",
+            "next_steps": "immediate steps",
+            "review_date": "when to review"
+        }}
     }},
     "impact_analysis": {{
         "insights_impact": [

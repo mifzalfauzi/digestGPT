@@ -220,6 +220,7 @@ async def upload_and_analyze_document(
             risk_flags=json.dumps(analysis.get("risk_flags", [])),
             key_concepts=json.dumps(analysis.get("key_concepts", [])),
             swot_analysis=json.dumps(analysis.get("swot_analysis", {})), 
+            recommendations=json.dumps(analysis.get("recommendations", {})),
             impact=json.dumps(analysis.get("impact_analysis", {})),
             word_count=word_count,
             analysis_method=analysis.get("analysis_method", "single"),
@@ -331,6 +332,7 @@ async def analyze_text_direct(
             risk_flags=json.dumps(analysis.get("risk_flags", [])),
             key_concepts=json.dumps(analysis.get("key_concepts", [])),
             swot_analysis=json.dumps(analysis.get("swot_analysis", {})),
+            recommendations=json.dumps(analysis.get("recommendations", {})),
             impact=json.dumps(analysis.get("impact_analysis", {})),
             word_count=word_count,
             analysis_method=analysis.get("analysis_method", "single"),
@@ -490,6 +492,17 @@ async def get_document(
             except json.JSONDecodeError:
                 print(f"Failed to parse impact data for document {document.id}")
         
+        # Parse recommendations
+        recommendations = {}
+        if document.recommendations:
+            try:
+                recommendations = json.loads(document.recommendations)
+                if not isinstance(recommendations, dict):
+                    recommendations = {}
+            except json.JSONDecodeError:
+                print(f"Failed to parse recommendations data for document {document.id}")
+                recommendations = {}
+        
         # If this is an old document without impact analysis, generate it from existing data
         if not impact_analysis["insights_impact"] and not impact_analysis["risks_impact"]:
             print(f"No impact analysis found for document {document.id}, generating from existing data")
@@ -580,6 +593,7 @@ async def get_document(
         "risk_flags": risk_flags,
         "key_concepts": key_concepts,
         "swot_analysis": swot_analysis,  # ✅ FIXED - Now properly structured
+        "recommendations": recommendations,  # ✅ Add recommendations at root level
         "impact_analysis": impact_analysis,  # ✅ FIXED - Add impact_analysis at root level
         "analysis": {
             "summary": document.summary,
@@ -588,6 +602,7 @@ async def get_document(
             "risk_flags": risk_flags,
             "key_concepts": key_concepts,
             "swot_analysis": swot_analysis,  # ✅ FIXED - Now properly structured
+            "recommendations": recommendations,  # ✅ Add recommendations to analysis section
             "impact_analysis": impact_analysis
         }
     }

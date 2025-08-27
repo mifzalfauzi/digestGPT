@@ -12,6 +12,7 @@ import MarkdownRenderer from './MarkdownRenderer'
 import DocxViewer from './DocxViewer'
 import mammoth from 'mammoth'
 import SWOTAnalysis from './SWOTAnalysis'
+import Recommendations from './Recommendations'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import axios from 'axios' // Added axios import
@@ -1641,83 +1642,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
           </div>
 
           <div className="flex-1 overflow-hidden dark:bg-[#121212]">
-            {/* Render all tabs but only show the active one */}
-
-            {/* Document Viewer Tab (PDF or DOCX) */}
-            {/* {hasDocumentViewer && (
-              <div
-                className={`h-full mt-1 sm:mt-2 px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter ${activeTab === 'document-viewer' ? 'block' : 'hidden'
-                  }`}
-                ref={el => tabContentRefs.current['document-viewer'] = el}
-              >
-                {isPDF ? (
-                  <Card className="h-full border-0 shadow-xl">
-                    <CardContent className="p-0 h-full">
-                      <div className="h-full border border-slate-200 dark:border-gray-600 rounded-xl overflow-hidden relative">
-                        {!results && (
-                          <div className="absolute inset-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm flex items-center justify-center z-10">
-                            <div className="text-center space-y-3">
-                              <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                              <div>
-                                <p className="text-sm font-medium text-slate-700 dark:text-gray-300">Analyzing Document</p>
-                                <p className="text-xs text-slate-500 dark:text-gray-400">PDF will be available once analysis completes</p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        {getFileUrl() ? (
-                          <>
-                            
-                            <object
-                              data={getFileUrl()}
-                              type="application/pdf"
-                              className="w-full h-full"
-                            >
-                              <iframe
-                                src={getFileUrl()}
-                                className="w-full h-full"
-                                title="PDF Document"
-                                onLoad={() => console.log('PDF iframe loaded successfully')}
-                                onError={(e) => console.log('PDF iframe error:', e)}
-                              />
-                            </object>
-                           
-                            <div className="absolute bottom-4 right-4">
-                              <a
-                                href={getFileUrl()}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-                              >
-                                Open PDF ↗
-                              </a>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="flex items-center justify-center h-full">
-                            <div className="text-center space-y-3">
-                              <div className="w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full"></div>
-                              <div>
-                                <p className="text-sm font-medium text-slate-700 dark:text-gray-300">PDF URL Not Available</p>
-                                <p className="text-xs text-slate-500 dark:text-gray-400">Unable to generate PDF viewing URL</p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <DocxViewer
-                    file={file}
-                    onTextExtracted={(text) => {
-                     
-                      console.log('DOCX text extracted:', text)
-                    }}
-                  />
-                )}
-              </div>
-            )} */}
+            
 
             {/* SWOT Tab */}
             <div
@@ -1958,9 +1883,20 @@ This business plan effectively balances growth ambitions with comprehensive risk
               </div>
             </div>
 
+            <div className={`h-full mt-1 sm:mt-2 overflow-y-auto ${activeTab === 'recommendations' ? 'block' : 'hidden'
+                }`}
+              ref={el => tabContentRefs.current['recommendations'] = el}
+            >
+              <Recommendations 
+                results={results}
+                isDemoMode={isDemoMode}
+                bypassAPI={bypassAPI}
+              />
+            </div>
+
             {/* Insights & Risks Tab */}
             <div
-              className={`h-full mt-1 sm:mt-2 overflow-y-auto animate-tab-enter ${activeTab === 'insights' ? 'block' : 'hidden'
+              className={`h-full mt-1 sm:mt-2 overflow-y-auto ${activeTab === 'insights' ? 'block' : 'hidden'
                 }`}
               ref={el => tabContentRefs.current['insights'] = el}
             >
