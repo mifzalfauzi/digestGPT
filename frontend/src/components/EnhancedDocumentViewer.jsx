@@ -5,6 +5,7 @@ import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Separator } from './ui/separator'
 import { Eye, FileText, Brain, TrendingUp, Clock, Lightbulb, Sparkles, Target, AlertTriangle, CheckCircle2, BookOpen, Key, ArrowBigDown, Download, Copy, ThumbsUp, ThumbsDown, Info, Menu, ExternalLink } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import ProfessionalAnalysisDisplay from './ProfessionalAnalysisDisplay'
 import KeyConceptsDisplay from './KeyConceptsDisplay'
 import HighlightableText from './HighlightableText'
@@ -40,6 +41,52 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
   const tabContentRefs = useRef({})
   const isInitialRenderRef = useRef(true)
 
+  // Get docId from URL params as fallback
+  const [searchParams] = useSearchParams()
+  const urlDocId = searchParams.get('docId')
+
+  // Overview subtab state management - similar to Recommendations.jsx
+  const getOverviewSubtabStorageKey = useCallback((currentDocId) => {
+    return currentDocId ? `enhancedDocViewer_overviewSubtab_${currentDocId}` : null
+  }, [])
+
+  const loadOverviewSubtabFromStorage = useCallback((currentDocId) => {
+    const key = getOverviewSubtabStorageKey(currentDocId)
+    if (!key) return 'executive-summary'
+
+    try {
+      const stored = localStorage.getItem(key)
+      if (stored) {
+        const data = JSON.parse(stored)
+        if (Date.now() - data.timestamp < 7 * 24 * 60 * 60 * 1000) {
+          console.log(`Loaded overview subtab for document ${currentDocId}:`, data.subtab)
+          return data.subtab
+        } else {
+          localStorage.removeItem(key)
+          console.log(`Expired overview subtab data removed for document ${currentDocId}`)
+        }
+      }
+    } catch (error) {
+      console.error('Error loading overview subtab from storage:', error)
+    }
+    return 'executive-summary'
+  }, [getOverviewSubtabStorageKey])
+
+  const saveOverviewSubtabToStorage = useCallback((subtab, currentDocId) => {
+    const key = getOverviewSubtabStorageKey(currentDocId)
+    if (!key) return
+
+    try {
+      localStorage.setItem(key, JSON.stringify({
+        subtab,
+        timestamp: Date.now()
+      }))
+      console.log(`Saved overview subtab for document ${currentDocId}:`, subtab)
+    } catch (error) {
+      console.error('Error saving overview subtab to storage:', error)
+    }
+  }, [getOverviewSubtabStorageKey])
+
   // Generate document key for activeTab storage with multiple fallbacks  
   const generateDocumentKey = useCallback(() => {
     // Try multiple identifiers in order of preference - prioritize document_id for consistency
@@ -56,6 +103,12 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
   const getCurrentDocumentId = useCallback(() => {
     return results?.document_id || results?.id || results?.filename || file?.name || window.location.pathname || 'default'
   }, [results?.document_id, results?.id, results?.filename, file?.name])
+
+  // Get docId for subtab persistence
+  const docId = getCurrentDocumentId() || urlDocId
+
+  // Initialize overview subtab state with localStorage value for current docId
+  const [overviewActiveSubtab, setOverviewActiveSubtab] = useState(() => loadOverviewSubtabFromStorage(docId))
 
   // Clean up old activeTab entries from localStorage
   const cleanupOldActiveTabEntries = useCallback(() => {
@@ -1073,6 +1126,29 @@ This business plan effectively balances growth ambitions with comprehensive risk
     }
   }, [saveCurrentTabState])
 
+  // Handle docId changes and restore overview subtab state
+  useEffect(() => {
+    if (docId) {
+      console.log(`Overview subtab: docId changed to ${docId}`)
+      const savedSubtab = loadOverviewSubtabFromStorage(docId)
+      setOverviewActiveSubtab(savedSubtab)
+    } else {
+      // Reset to default if no docId
+      setOverviewActiveSubtab('executive-summary')
+    }
+  }, [docId, loadOverviewSubtabFromStorage])
+
+  // Auto-save overview subtab state when it changes (with debouncing)
+  useEffect(() => {
+    if (!docId) return
+
+    const timeoutId = setTimeout(() => {
+      saveOverviewSubtabToStorage(overviewActiveSubtab, docId)
+    }, 300) // 300ms debounce
+
+    return () => clearTimeout(timeoutId)
+  }, [overviewActiveSubtab, docId, saveOverviewSubtabToStorage])
+
   // Handle clicking outside the menu to close it
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -1701,220 +1777,219 @@ This business plan effectively balances growth ambitions with comprehensive risk
               />
             </div>
 
-            {/* AI Analysis Summary Tab */}
+            {/* AI Analysis Summary Tab with Subtabs */}
             <div
-              className={`h-full overflow-y-auto lg:px-4 pb-2 sm:pb-4 ${activeTab === 'analysis' ? 'block' : 'hidden'
+              className={`h-full overflow-y-auto px-8 p-4 pb-4 ${activeTab === 'analysis' ? 'block' : 'hidden'
                 }`}
               ref={el => tabContentRefs.current['analysis'] = el}
             >
-              <Card className="border-0 dark:bg-[#121212]">
-                <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl shadow-lg">
-                        <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl shadow-lg">
+                    <Brain className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                      Overview Analysis
+                    </h2>
+                    <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
+                      Executive summary and problem context
+                    </p>
+                  </div>
+                </div>
+                {/* Document Analyzed Timestamp */}
+                {results?.analyzed_at && (
+                  <div className="flex items-center gap-2 bg-gradient-to-r from-slate-50/80 to-gray-50/80 dark:from-gray-800/80 dark:to-gray-900/80 rounded-lg p-2 border border-slate-200/50 dark:border-gray-700/50">
+                    <div className="p-1 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
+                      <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-xs font-medium text-slate-700 dark:text-gray-300">
+                        Analyzed
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-gray-400">
+                        {new Date(results.analyzed_at).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Subtabbed Content */}
+              <div className="flex-1 overflow-hidden">
+                <Tabs value={overviewActiveSubtab} onValueChange={setOverviewActiveSubtab} className="h-full flex flex-col">
+                  <TabsList className="grid w-full grid-cols-2 bg-transparent border-none h-auto mb-4">
+                    <TabsTrigger
+                      value="executive-summary"
+                      className="relative flex items-center justify-center gap-1 bg-transparent border-none rounded-none text-xs py-2 px-3 transition-all duration-200 hover:text-purple-500 dark:hover:text-purple-300 data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-400 before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-[2px] before:w-0 before:bg-purple-500 before:transition-all before:duration-300 data-[state=active]:before:w-full"
+                    >
+                      <Brain className="h-3 w-3 flex-shrink-0" />
+                      <span className="hidden md:inline">Executive Summary</span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="problem-context"
+                      className="relative flex items-center justify-center gap-1 bg-transparent border-none rounded-none text-xs py-2 px-3 transition-all duration-200 hover:text-orange-500 dark:hover:text-orange-300 data-[state=active]:text-orange-600 dark:data-[state=active]:text-orange-400 before:content-[''] before:absolute before:bottom-0 before:left-0 before:h-[2px] before:w-0 before:bg-orange-500 before:transition-all before:duration-300 data-[state=active]:before:w-full"
+                    >
+                      <Info className="h-3 w-3 flex-shrink-0" />
+                      <span className="hidden md:inline">Problem Context</span>
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* Main Content Area - Only this part changes */}
+                  <div className="flex-1 overflow-y-auto">
+                    <Card className="border-none bg-transparent mb-4">
+                      <CardContent className="p-4">
+                        {/* Executive Summary Content */}
+                        {overviewActiveSubtab === 'executive-summary' && (
+                          <div className="bg-gradient-to-r from-purple-50/80 to-blue-50/80 dark:from-purple-950/30 dark:to-blue-950/30 rounded-2xl p-3 sm:p-4 border border-purple-200/50 dark:border-purple-800/30 relative">
+                            {/* Add action buttons at bottom right */}
+                            <div className="absolute bottom-3 right-3 flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleCopy(results?.analysis?.summary || '', 'summary')}
+                                className="h-7 w-7 p-0 hover:bg-purple-100 dark:hover:bg-purple-900/20"
+                                title="Copy summary"
+                              >
+                                <Copy className={`h-3 w-3 ${copiedItem === 'summary' ? 'text-purple-600' : 'text-gray-500'}`} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleFeedback('summary', 'positive')}
+                                className={`h-7 w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${feedbackGiven['summary'] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
+                                  }`}
+                                title="Helpful summary"
+                              >
+                                <ThumbsUp className={`h-3 w-3 ${feedbackGiven['summary'] === 'positive' ? 'text-green-600' : 'text-gray-500'
+                                  }`} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleFeedback('summary', 'negative')}
+                                className={`h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${feedbackGiven['summary'] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
+                                  }`}
+                                title="Not helpful"
+                              >
+                                <ThumbsDown className={`h-3 w-3 ${feedbackGiven['summary'] === 'negative' ? 'text-red-600' : 'text-gray-500'
+                                  }`} />
+                              </Button>
+                            </div>
+
+                            <MarkdownRenderer
+                              content={results?.analysis?.summary || 'Comprehensive analysis will appear here after document processing...'}
+                              className="text-slate-800 dark:text-slate-100 leading-relaxed text-sm font-medium"
+                            />
+                          </div>
+                        )}
+
+                        {/* Problem Context Content */}
+                        {overviewActiveSubtab === 'problem-context' && (
+                          <>
+                            {(
+                              (results?.problem_context && results.problem_context.trim()) ||
+                              (results?.analysis?.problem_context && results.analysis.problem_context.trim())
+                            ) ? (
+                              <div>
+                                {/* <div className="flex items-center gap-2 mb-3">
+                                  <Info className="h-5 w-5 text-orange-600" />
+                                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">Problem Context</h3>
+                                </div> */}
+                                <div className="bg-orange-50/80 dark:bg-orange-950/30 rounded-xl p-4 border border-orange-200/50 dark:border-orange-800/30 relative">
+                                  <MarkdownRenderer
+                                    content={
+                                      (results?.problem_context && results.problem_context.trim()) ||
+                                      (results?.analysis?.problem_context && results.analysis.problem_context.trim()) ||
+                                      'Problem context information not available for this document.'
+                                    }
+                                    className="text-slate-800 dark:text-slate-100 leading-relaxed text-sm"
+                                  />
+
+                                  <div className="absolute bottom-3 right-2 flex gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleCopy(
+                                        (results?.problem_context && results.problem_context.trim()) ||
+                                        (results?.analysis?.problem_context && results.analysis.problem_context.trim()) ||
+                                        '', 'problem_context'
+                                      )}
+                                      className="h-7 w-7 p-0 hover:bg-orange-100 dark:hover:bg-orange-900/20 mt-2"
+                                    >
+                                      <Copy className={`h-3 w-3 ${copiedItem === 'problem_context' ? 'text-orange-600' : 'text-gray-500'}`} />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-center py-8">
+                                <Info className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                <p className="text-gray-500">No problem context available</p>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Quick Stats - Always visible */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
+                      <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-emerald-200/50 dark:border-emerald-800/30">
+                        <div className="flex items-center gap-1">
+                          <Target className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-emerald-600 dark:text-emerald-400" />
+                          <span className="text-xs font-medium text-emerald-800 dark:text-emerald-200">Insights</span>
+                        </div>
+                        <p className="text-sm sm:text-base lg:text-lg font-bold text-emerald-900 dark:text-emerald-100 mt-1">
+                          {isDemoMode ? '12' : bypassAPI ? '4' : (results?.analysis?.key_points?.length || 0)}
+                        </p>
                       </div>
-                      <div className="min-w-0">
-                        <CardTitle className="text-sm sm:text-base lg:text-lg font-bold text-slate-900 dark:text-white">
-                          Executive Summary
-                        </CardTitle>
-                        <p className="text-xs text-slate-600 dark:text-gray-400 mt-1">
-                          Summary by <span className="text-center inline-block font-bold">
-                            Elva
-                            <span className="text-red-500">*</span>
-                          </span>
+
+                      <div className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-red-200/50 dark:border-red-800/30">
+                        <div className="flex items-center gap-1">
+                          <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-red-600 dark:text-red-400" />
+                          <span className="text-xs font-medium text-red-800 dark:text-red-200">Risks</span>
+                        </div>
+                        <p className="text-sm sm:text-base lg:text-lg font-bold text-red-900 dark:text-red-100 mt-1">
+                          {isDemoMode ? '3' : bypassAPI ? '3' : (results?.analysis?.risk_flags?.length || 0)}
+                        </p>
+                      </div>
+
+                      <div className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-amber-200/50 dark:border-amber-800/30">
+                        <div className="flex items-center gap-1">
+                          <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-amber-600 dark:text-amber-400" />
+                          <span className="text-xs font-medium text-amber-800 dark:text-amber-200">Concepts</span>
+                        </div>
+                        <p className="text-sm sm:text-base lg:text-lg font-bold text-amber-900 dark:text-amber-100 mt-1">
+                          {isDemoMode ? '3' : bypassAPI ? '3' : (results?.analysis?.key_concepts?.length || 0)}
+                        </p>
+                      </div>
+
+                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-blue-200/50 dark:border-blue-800/30">
+                        <div className="flex items-center gap-1">
+                          <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-blue-600 dark:text-blue-400" />
+                          <span className="text-xs font-medium text-blue-800 dark:text-blue-200">Status</span>
+                        </div>
+                        <p className="text-sm sm:text-base lg:text-lg font-bold text-blue-900 dark:text-blue-100 mt-1">
+                          {isDemoMode ? 'Demo' : bypassAPI ? 'Preview' : 'Done'}
                         </p>
                       </div>
                     </div>
 
+                    <Separator className="my-4 dark:bg-gray-700" />
 
-                    {/* Document Analyzed Timestamp */}
-                    {results?.analyzed_at && (
-                      <div className="flex items-center gap-2 bg-gradient-to-r from-slate-50/80 to-gray-50/80 dark:from-gray-800/80 dark:to-gray-900/80 rounded-lg p-2 border border-slate-200/50 dark:border-gray-700/50">
-                        <div className="p-1 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
-                          <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" />
-                        </div>
-                        <div className="text-left">
-                          <p className="text-xs font-medium text-slate-700 dark:text-gray-300">
-                            Analyzed
-                          </p>
-                          <p className="text-xs text-slate-500 dark:text-gray-400">
-                            {new Date(results.analyzed_at).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2 sm:space-y-3 px-3 sm:px-4">
-                  <div className="bg-gradient-to-r from-purple-50/80 to-blue-50/80 dark:from-purple-950/30 dark:to-blue-950/30 rounded-2xl p-3 sm:p-4 border border-purple-200/50 dark:border-purple-800/30 relative">
-                    {/* Add action buttons at top right */}
-                    <div className="absolute bottom-3 right-3 flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleCopy(results?.analysis?.summary || '', 'summary')}
-                        className="h-7 w-7 p-0 hover:bg-purple-100 dark:hover:bg-purple-900/20"
-                        title="Copy summary"
-                      >
-                        <Copy className={`h-3 w-3 ${copiedItem === 'summary' ? 'text-purple-600' : 'text-gray-500'}`} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleFeedback('summary', 'positive')}
-                        className={`h-7 w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${feedbackGiven['summary'] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
-                          }`}
-                        title="Helpful summary"
-                      >
-                        <ThumbsUp className={`h-3 w-3 ${feedbackGiven['summary'] === 'positive' ? 'text-green-600' : 'text-gray-500'
-                          }`} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleFeedback('summary', 'negative')}
-                        className={`h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${feedbackGiven['summary'] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
-                          }`}
-                        title="Not helpful"
-                      >
-                        <ThumbsDown className={`h-3 w-3 ${feedbackGiven['summary'] === 'negative' ? 'text-red-600' : 'text-gray-500'
-                          }`} />
-                      </Button>
-                    </div>
-
-                    <MarkdownRenderer
-                      content={results?.analysis?.summary || 'Comprehensive analysis will appear here after document processing...'}
-                      className="text-slate-800 dark:text-slate-100 leading-relaxed text-sm font-medium"
-                    />
-                  </div>
-
-                  {/* Problem/Context Section - Moved after summary for better UX flow */}
-                  {(
-                    (results?.problem_context && results.problem_context.trim()) ||
-                    (results?.analysis?.problem_context && results.analysis.problem_context.trim())
-                  ) && (
-                      <div className="mb-3">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="p-1.5 bg-gradient-to-br from-orange-500 to-amber-600 rounded-lg shadow-sm">
-                            <Info className="h-3 w-3 text-white" />
-                          </div>
-                          <div>
-                            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                              Problem / Context
-                            </h3>
-                            <p className="text-xs text-slate-600 dark:text-gray-400">
-                              Why are we analyzing this? What triggered the need?
-                            </p>
-                          </div>
-                        </div>
-                        <div className="bg-gradient-to-r from-orange-50/80 to-amber-50/80 dark:from-orange-950/30 dark:to-amber-950/30 rounded-xl p-3 border border-orange-200/50 dark:border-orange-800/30 relative">
-                          {/* Add action buttons at top right */}
-                          <div className="absolute bottom-2 right-2 flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleCopy(
-                                (results?.problem_context && results.problem_context.trim()) ||
-                                (results?.analysis?.problem_context && results.analysis.problem_context.trim()) ||
-                                '', 'problem_context'
-                              )}
-                              className="h-6 w-6 p-0 hover:bg-orange-100 dark:hover:bg-orange-900/20"
-                              title="Copy problem context"
-                            >
-                              <Copy className={`h-2.5 w-2.5 ${copiedItem === 'problem_context' ? 'text-orange-600' : 'text-gray-500'}`} />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleFeedback('problem_context', 'positive')}
-                              className={`h-6 w-6 p-0 hover:bg-green-100 dark:hover:bg-green-900/20 ${feedbackGiven['problem_context'] === 'positive' ? 'bg-green-100 dark:bg-green-900/20' : ''
-                                }`}
-                              title="Helpful context"
-                            >
-                              <ThumbsUp className={`h-2.5 w-2.5 ${feedbackGiven['problem_context'] === 'positive' ? 'text-green-600' : 'text-gray-500'
-                                }`} />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleFeedback('problem_context', 'negative')}
-                              className={`h-6 w-6 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ${feedbackGiven['problem_context'] === 'negative' ? 'bg-red-100 dark:bg-red-900/20' : ''
-                                }`}
-                              title="Not helpful"
-                            >
-                              <ThumbsDown className={`h-2.5 w-2.5 ${feedbackGiven['problem_context'] === 'negative' ? 'text-red-600' : 'text-gray-500'
-                                }`} />
-                            </Button>
-                          </div>
-
-                          <MarkdownRenderer
-                            content={
-                              (results?.problem_context && results.problem_context.trim()) ||
-                              (results?.analysis?.problem_context && results.analysis.problem_context.trim()) ||
-                              'Problem context information not available for this document.'
-                            }
-                            className="text-slate-800 dark:text-slate-100 leading-relaxed text-xs font-medium"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                  {/* Quick Stats - Responsive Grid */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-3 sm:mt-3">
-                    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-emerald-200/50 dark:border-emerald-800/30">
-                      <div className="flex items-center gap-1">
-                        <Target className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-emerald-600 dark:text-emerald-400" />
-                        <span className="text-xs font-medium text-emerald-800 dark:text-emerald-200">Insights</span>
-                      </div>
-                      <p className="text-sm sm:text-base lg:text-lg font-bold text-emerald-900 dark:text-emerald-100 mt-1">
-                        {isDemoMode ? '12' : bypassAPI ? '4' : (results?.analysis?.key_points?.length || 0)}
-                      </p>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-red-200/50 dark:border-red-800/30">
-                      <div className="flex items-center gap-1">
-                        <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-red-600 dark:text-red-400" />
-                        <span className="text-xs font-medium text-red-800 dark:text-red-200">Risks</span>
-                      </div>
-                      <p className="text-sm sm:text-base lg:text-lg font-bold text-red-900 dark:text-red-100 mt-1">
-                        {isDemoMode ? '3' : bypassAPI ? '3' : (results?.analysis?.risk_flags?.length || 0)}
-                      </p>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-amber-200/50 dark:border-amber-800/30">
-                      <div className="flex items-center gap-1">
-                        <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-amber-600 dark:text-amber-400" />
-                        <span className="text-xs font-medium text-amber-800 dark:text-amber-200">Concepts</span>
-                      </div>
-                      <p className="text-sm sm:text-base lg:text-lg font-bold text-amber-900 dark:text-amber-100 mt-1">
-                        {isDemoMode ? '3' : bypassAPI ? '3' : (results?.analysis?.key_concepts?.length || 0)}
-                      </p>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-2 sm:p-2.5 lg:p-3 border border-blue-200/50 dark:border-blue-800/30">
-                      <div className="flex items-center gap-1">
-                        <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-blue-600 dark:text-blue-400" />
-                        <span className="text-xs font-medium text-blue-800 dark:text-blue-200">Status</span>
-                      </div>
-                      <p className="text-sm sm:text-base lg:text-lg font-bold text-blue-900 dark:text-blue-100 mt-1">
-                        {isDemoMode ? 'Demo' : bypassAPI ? 'Preview' : 'Done'}
-                      </p>
+                    {/* Key Concepts Section - Always visible */}
+                    <div className="mt-3 sm:mt-4">
+                      <KeyConceptsDisplay
+                        concepts={isDemoMode ? results?.key_concepts || [] : bypassAPI ? results?.analysis?.key_concepts || [] : (results?.analysis?.key_concepts || [])}
+                        onExplainConcept={onExplainConcept}
+                        isDemoMode={isDemoMode}
+                        bypassAPI={bypassAPI}
+                      />
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-
-              <Separator className="my-4 dark:bg-gray-700" />
-
-              {/* Key Concepts Section */}
-              <div className="mt-3 sm:mt-4">
-                <KeyConceptsDisplay
-                  concepts={isDemoMode ? results?.key_concepts || [] : bypassAPI ? results?.analysis?.key_concepts || [] : (results?.analysis?.key_concepts || [])}
-                  onExplainConcept={onExplainConcept}
-                  isDemoMode={isDemoMode}
-                  bypassAPI={bypassAPI}
-                />
+                </Tabs>
               </div>
             </div>
 
