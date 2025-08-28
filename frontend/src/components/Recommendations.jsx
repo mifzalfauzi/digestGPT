@@ -635,7 +635,7 @@ function Recommendations({ results, isDemoMode = false, bypassAPI = false, docId
                         {/* Decision Point Tab */}
                         <TabsContent value="decision" className="h-full overflow-y-auto mt-0">
                             {recommendationsData?.decision_point ? (
-                                <Card className="border-none bg-transparent">
+                                <Card className="border-none bg-transparent mt-2">
                                     <CardHeader>
                                         <div className="flex items-center gap-2">
                                             <Flag className="h-5 w-5 text-blue-600" />

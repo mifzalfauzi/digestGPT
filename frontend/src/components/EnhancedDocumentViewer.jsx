@@ -1959,7 +1959,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
 
             {/* Interactive Document Text Tab */}
             <div
-              className={`h-full mt-1 sm:mt-2 overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 animate-tab-enter scroll-smooth ${activeTab === 'document' ? 'block' : 'hidden'
+              className={`h-full overflow-y-auto px-2 sm:px-3 lg:px-4 pb-2 sm:pb-4 scroll-smooth ${activeTab === 'document' ? 'block' : 'hidden'
                 }`}
               ref={el => tabContentRefs.current['document'] = el}
               style={{ scrollBehavior: 'smooth' }}

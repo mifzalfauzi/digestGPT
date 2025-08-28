@@ -47,6 +47,8 @@ import {
   ResponsiveContainer,
   LineChart as ReLineChart,
   Line,
+  BarChart as ReBarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -76,23 +78,23 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
   const [risksDrawerOpen, setRisksDrawerOpen] = useState(false)
   
   // Insights controls
-  const [insightsChartType, setInsightsChartType] = useState('line')
+  const [insightsChartType, setInsightsChartType] = useState('bar')
   const [showInsightsCharts, setShowInsightsCharts] = useState(true)
   const [insightCategoryFilter, setInsightCategoryFilter] = useState('all')
   
   // Risks controls
-  const [risksChartType, setRisksChartType] = useState('line')
+  const [risksChartType, setRisksChartType] = useState('bar')
   const [showRisksCharts, setShowRisksCharts] = useState(true)
   const [riskCategoryFilter, setRiskCategoryFilter] = useState('all')
   const [riskLevelFilter, setRiskLevelFilter] = useState('all')
   
   // Local state for insights drawer controls
-  const [localInsightsChartType, setLocalInsightsChartType] = useState('line')
+  const [localInsightsChartType, setLocalInsightsChartType] = useState('bar')
   const [localShowInsightsCharts, setLocalShowInsightsCharts] = useState(true)
   const [localInsightCategoryFilter, setLocalInsightCategoryFilter] = useState('all')
   
   // Local state for risks drawer controls
-  const [localRisksChartType, setLocalRisksChartType] = useState('line')
+  const [localRisksChartType, setLocalRisksChartType] = useState('bar')
   const [localShowRisksCharts, setLocalShowRisksCharts] = useState(true)
   const [localRiskCategoryFilter, setLocalRiskCategoryFilter] = useState('all')
   const [localRiskLevelFilter, setLocalRiskLevelFilter] = useState('all')
@@ -161,10 +163,10 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     if (!targetKey) {
       console.log(`📝 No valid key available, using defaults`)
       return {
-        insightsChartType: 'line',
+        insightsChartType: 'bar',
         showInsightsCharts: true,
         insightCategoryFilter: 'all',
-        risksChartType: 'line',
+        risksChartType: 'bar',
         showRisksCharts: true,
         riskCategoryFilter: 'all',
         riskLevelFilter: 'all',
@@ -179,10 +181,10 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
         const parsed = JSON.parse(stored)
         console.log(`📥 Loaded settings from ${targetKey}:`, parsed)
         return {
-          insightsChartType: parsed.insightsChartType || 'line',
+          insightsChartType: parsed.insightsChartType || 'bar',
           showInsightsCharts: parsed.showInsightsCharts !== undefined ? parsed.showInsightsCharts : true,
           insightCategoryFilter: parsed.insightCategoryFilter || 'all',
-          risksChartType: parsed.risksChartType || 'line',
+          risksChartType: parsed.risksChartType || 'bar',
           showRisksCharts: parsed.showRisksCharts !== undefined ? parsed.showRisksCharts : true,
           riskCategoryFilter: parsed.riskCategoryFilter || 'all',
           riskLevelFilter: parsed.riskLevelFilter || 'all',
@@ -196,10 +198,10 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     // Return defaults if no stored settings found
     console.log(`📝 Using default settings for ${targetKey}`)
     return {
-      insightsChartType: 'line',
+      insightsChartType: 'bar',
       showInsightsCharts: true,
       insightCategoryFilter: 'all',
-      risksChartType: 'line',
+      risksChartType: 'bar',
       showRisksCharts: true,
       riskCategoryFilter: 'all',
       riskLevelFilter: 'all',
@@ -319,10 +321,10 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
       scrollPercentage: 0,
       timestamp: Date.now()
     },
-    insightsChartType: 'line',
+    insightsChartType: 'bar',
     showInsightsCharts: true,
     insightCategoryFilter: 'all',
-    risksChartType: 'line',
+    risksChartType: 'bar',
     showRisksCharts: true,
     riskCategoryFilter: 'all',
     riskLevelFilter: 'all',
@@ -1043,7 +1045,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     setIsInsightsResetting(true)
 
     // Reset insights local state to default options
-    setLocalInsightsChartType('line')
+    setLocalInsightsChartType('bar')
     setLocalShowInsightsCharts(true)
     setLocalInsightCategoryFilter('all')
 
@@ -1061,7 +1063,7 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     setIsRisksResetting(true)
 
     // Reset risks local state to default options
-    setLocalRisksChartType('line')
+    setLocalRisksChartType('bar')
     setLocalShowRisksCharts(true)
     setLocalRiskCategoryFilter('all')
     setLocalRiskLevelFilter('all')
@@ -1312,14 +1314,58 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     return (
       <div className=" p-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
         <div className="flex items-center gap-2 mb-3">
-          <LineChart className="h-4 w-4 text-emerald-600" />
+          {chartType === 'bar' ? (
+            <BarChart3 className="h-4 w-4 text-emerald-600" />
+          ) : chartType === 'line' ? (
+            <LineChart className="h-4 w-4 text-emerald-600" />
+          ) : (
+            <Target className="h-4 w-4 text-emerald-600" />
+          )}
           <h4 className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
-            Insights {chartType === 'line' ? 'Trend Analysis' : 'Distribution Analysis'}
+            Insights {chartType === 'bar' ? 'Distribution' : chartType === 'line' ? 'Trend Analysis' : 'Bubble Analysis'}
           </h4>
         </div>
         <div className="w-full h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
-            {chartType === 'line' ? (
+            {chartType === 'bar' ? (
+              <ReBarChart 
+                data={processedData}
+                margin={{ top: 20, right: 30, left: 0, bottom: 10 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.5} />
+                <XAxis 
+                  dataKey="category" 
+                  tick={{ fontSize: 12, fill: '#64748b' }}
+                  tickMargin={10}
+                />
+                <YAxis 
+                  tick={{ fontSize: 12, fill: '#64748b' }}
+                  tickMargin={5}
+                  allowDecimals={false}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'white', 
+                    border: '1px solid #e2e8f0', 
+                    borderRadius: '8px',
+                    padding: '8px 12px'
+                  }}
+                />
+                <Legend 
+                  wrapperStyle={{ paddingTop: 10 }}
+                />
+                <Bar 
+                  dataKey="value" 
+                  fill="#10b981"
+                  name="Insights Count"
+                  radius={[4, 4, 0, 0]}
+                >
+                  {processedData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                  ))}
+                </Bar>
+              </ReBarChart>
+            ) : chartType === 'line' ? (
               <ReLineChart 
                 data={processedData}
                 margin={{ top: 20, right: 30, left: 0, bottom: 10 }}
@@ -1438,12 +1484,76 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
         <div className="flex items-center gap-2 mb-3">
           <BarChart3 className="h-4 w-4 text-red-600" />
           <h4 className="text-sm font-semibold text-red-800 dark:text-red-200">
-            Risk Assessment {chartType === 'line' ? 'Trend Analysis' : 'Severity Distribution'}
+            Risk Assessment {chartType === 'bar' ? 'Distribution' : chartType === 'line' ? 'Trend Analysis' : 'Severity Distribution'}
           </h4>
         </div>
         <div className="w-full h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
-            {chartType === 'line' ? (
+            {chartType === 'bar' ? (
+              <ReBarChart 
+                data={processedData}
+                margin={{ top: 20, right: 30, left: 0, bottom: 10 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.5} />
+                <XAxis 
+                  dataKey="category" 
+                  tick={{ fontSize: 12, fill: '#64748b' }}
+                  tickMargin={10}
+                />
+                <YAxis 
+                  tick={{ fontSize: 12, fill: '#64748b' }}
+                  tickMargin={5}
+                  allowDecimals={false}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'white', 
+                    border: '1px solid #e2e8f0', 
+                    borderRadius: '8px',
+                    padding: '8px 12px'
+                  }}
+                  formatter={(value, name) => [
+                    value,
+                    name === 'total' ? 'Total Risks' :
+                    name === 'critical' ? 'Critical Risks' :
+                    name === 'high' ? 'High Risks' :
+                    name === 'medium' ? 'Medium Risks' :
+                    name === 'low' ? 'Low Risks' : name
+                  ]}
+                />
+                <Legend 
+                  wrapperStyle={{ paddingTop: 10 }}
+                />
+                <Bar 
+                  dataKey="critical" 
+                  stackId="a"
+                  fill={severityColors.critical}
+                  name="Critical Risks"
+                  radius={[0, 0, 0, 0]}
+                />
+                <Bar 
+                  dataKey="high" 
+                  stackId="a"
+                  fill={severityColors.high}
+                  name="High Risks"
+                  radius={[0, 0, 0, 0]}
+                />
+                <Bar 
+                  dataKey="medium" 
+                  stackId="a"
+                  fill={severityColors.medium}
+                  name="Medium Risks"
+                  radius={[0, 0, 0, 0]}
+                />
+                <Bar 
+                  dataKey="low" 
+                  stackId="a"
+                  fill={severityColors.low}
+                  name="Low Risks"
+                  radius={[4, 4, 0, 0]}
+                />
+              </ReBarChart>
+            ) : chartType === 'line' ? (
               <ReLineChart 
                 data={processedData}
                 margin={{ top: 20, right: 30, left: 0, bottom: 10 }}
@@ -1687,6 +1797,12 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="z-[60]">
+                      <SelectItem value="bar">
+                        <div className="flex items-center gap-2">
+                          <BarChart3 className="h-4 w-4" />
+                          Bar Chart
+                        </div>
+                      </SelectItem>
                       <SelectItem value="line">
                         <div className="flex items-center gap-2">
                           <LineChart className="h-4 w-4" />
@@ -1840,6 +1956,12 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="z-[60]">
+                      <SelectItem value="bar">
+                        <div className="flex items-center gap-2">
+                          <BarChart3 className="h-4 w-4" />
+                          Bar Chart
+                        </div>
+                      </SelectItem>
                       <SelectItem value="line">
                         <div className="flex items-center gap-2">
                           <LineChart className="h-4 w-4" />
