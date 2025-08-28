@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
+import { useSearchParams } from "react-router-dom"
 import { Badge } from "./ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { Button } from "./ui/button"
@@ -60,9 +61,16 @@ import {
 
 export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = false }) {
   const BASE_URL = import.meta.env.VITE_API_BASE_URL
+
+  // const [docId, setDocId] = useState(null)
+  const [searchParams] = useSearchParams()
+  const docId = searchParams.get('docId') || null
+
+
   
   // Generate document-specific storage key
-  const generateDocumentKey = (swotData) => {
+  const generateDocumentKey = (swotData, docId) => {
+    if (docId) return `swot-controls-${docId}`
     if (!swotData) return 'swot-controls-default'
     
     // Create a simple hash from the SWOT data to identify unique documents
@@ -76,50 +84,195 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     return `swot-controls-${Math.abs(hash)}`
   }
   
-  const STORAGE_KEY = generateDocumentKey(swot)
-  const [currentDocumentKey, setCurrentDocumentKey] = useState(STORAGE_KEY)
+  const [currentDocumentKey, setCurrentDocumentKey] = useState(() => generateDocumentKey(swot, docId))
 
   // Load settings from localStorage for current document
-  const loadFromStorage = () => {
+  const loadFromStorage = useCallback((documentKey) => {
+    if (!documentKey) return {}
+    
     try {
-      const stored = localStorage.getItem(currentDocumentKey)
+      const stored = localStorage.getItem(documentKey)
       if (stored) {
-        const parsed = JSON.parse(stored)
-        return {
-          chartType: parsed.chartType || 'line',
-          priorityFilter: parsed.priorityFilter || 'all',
-          categoryFilter: parsed.categoryFilter || 'all',
-          itemCategoryFilter: parsed.itemCategoryFilter || 'all',
-          showCharts: parsed.showCharts !== undefined ? parsed.showCharts : true,
-          activeSwotTab: parsed.activeSwotTab || 'strengths',
-          viewMode: parsed.viewMode || 'list'
-        }
+        return JSON.parse(stored)
       }
     } catch (error) {
       console.warn('Failed to load SWOT settings from localStorage:', error)
     }
+    return {}
+  }, [])
+
+  // Initialize states with values from localStorage or defaults
+  const initializeStates = () => {
+    const initialKey = generateDocumentKey(swot, docId)
+    const stored = loadFromStorage(initialKey)
+    
+    if (stored && Object.keys(stored).length > 0) {
+      console.log('Initializing SWOT component with stored settings:', initialKey, stored)
+      return {
+        activeSwotTab: stored.activeSwotTab || 'strengths',
+        chartType: stored.chartType || 'line',
+        priorityFilter: stored.priorityFilter || 'all',
+        categoryFilter: stored.categoryFilter || 'all',
+        itemCategoryFilter: stored.itemCategoryFilter || 'all',
+        showCharts: stored.showCharts !== undefined ? stored.showCharts : true,
+        viewMode: stored.viewMode || 'list'
+      }
+    }
+    
+    console.log('Initializing SWOT component with default settings for:', initialKey)
     return {
+      activeSwotTab: 'strengths',
       chartType: 'line',
       priorityFilter: 'all',
       categoryFilter: 'all',
       itemCategoryFilter: 'all',
       showCharts: true,
-      activeSwotTab: 'strengths',
       viewMode: 'list'
     }
   }
 
+  const initialStates = initializeStates()
+  
+  // State initialization
+  const [currentPage, setCurrentPage] = useState({
+    strengths: 0,
+    weaknesses: 0,
+    opportunities: 0,
+    threats: 0,
+  })
+  const [activeSwotTab, setActiveSwotTab] = useState(initialStates.activeSwotTab)
+  const [copiedItems, setCopiedItems] = useState(new Set())
+  const [itemRatings, setItemRatings] = useState({})
+  const [viewMode, setViewMode] = useState(initialStates.viewMode)
+  const [viewMenuOpen, setViewMenuOpen] = useState(false)
+  const [controlsDrawerOpen, setControlsDrawerOpen] = useState(false)
+  const [controlsKey, setControlsKey] = useState(0)
+  const [isResetting, setIsResetting] = useState(false)
+
+  // Chart and filtering state
+  const [chartType, setChartType] = useState(initialStates.chartType)
+  const [priorityFilter, setPriorityFilter] = useState(initialStates.priorityFilter)
+  const [categoryFilter, setCategoryFilter] = useState(initialStates.categoryFilter)
+  const [itemCategoryFilter, setItemCategoryFilter] = useState(initialStates.itemCategoryFilter)
+  const [showCharts, setShowCharts] = useState(initialStates.showCharts)
+
+  // Local state for drawer controls
+  const [localChartType, setLocalChartType] = useState(initialStates.chartType)
+  const [localPriorityFilter, setLocalPriorityFilter] = useState(initialStates.priorityFilter)
+  const [localCategoryFilter, setLocalCategoryFilter] = useState(initialStates.categoryFilter)
+  const [localItemCategoryFilter, setLocalItemCategoryFilter] = useState(initialStates.itemCategoryFilter)
+  const [localShowCharts, setLocalShowCharts] = useState(initialStates.showCharts)
+
+  // Refs
+  const controlsDrawerRef = useRef(null)
+  const viewMenuRef = useRef(null)
+
   // Save settings to localStorage for current document
-  const saveToStorage = (settings) => {
+  const saveToStorage = useCallback((settings) => {
+    if (!currentDocumentKey) return
+    
     try {
       localStorage.setItem(currentDocumentKey, JSON.stringify(settings))
     } catch (error) {
       console.warn('Failed to save SWOT settings to localStorage:', error)
     }
-  }
+  }, [currentDocumentKey])
 
-  // Initialize with stored values
-  const storedSettings = loadFromStorage()
+  // Handle docId changes and localStorage state restoration
+  useEffect(() => {
+    const newKey = generateDocumentKey(swot, docId)
+    
+    // Only proceed if the document key has actually changed
+    if (newKey !== currentDocumentKey) {
+      console.log(`Document changed from ${currentDocumentKey} to ${newKey}`)
+      setCurrentDocumentKey(newKey)
+
+      // Load the stored settings for the new document
+      const stored = loadFromStorage(newKey)
+      if (stored && Object.keys(stored).length > 0) {
+        console.log('Loading stored settings for document:', newKey, stored)
+        setActiveSwotTab(stored.activeSwotTab || 'strengths')
+        setChartType(stored.chartType || 'line')
+        setPriorityFilter(stored.priorityFilter || 'all')
+        setCategoryFilter(stored.categoryFilter || 'all')
+        setItemCategoryFilter(stored.itemCategoryFilter || 'all')
+        setShowCharts(stored.showCharts !== undefined ? stored.showCharts : true)
+        setViewMode(stored.viewMode || 'list')
+        
+        // Also update local drawer states
+        setLocalChartType(stored.chartType || 'line')
+        setLocalPriorityFilter(stored.priorityFilter || 'all')
+        setLocalCategoryFilter(stored.categoryFilter || 'all')
+        setLocalItemCategoryFilter(stored.itemCategoryFilter || 'all')
+        setLocalShowCharts(stored.showCharts !== undefined ? stored.showCharts : true)
+      } else {
+        console.log('No stored settings found, using defaults for document:', newKey)
+        // Reset to defaults for new document
+        const defaults = {
+          activeSwotTab: 'strengths',
+          chartType: 'line',
+          priorityFilter: 'all',
+          categoryFilter: 'all',
+          itemCategoryFilter: 'all',
+          showCharts: true,
+          viewMode: 'list'
+        }
+        
+        setActiveSwotTab(defaults.activeSwotTab)
+        setChartType(defaults.chartType)
+        setPriorityFilter(defaults.priorityFilter)
+        setCategoryFilter(defaults.categoryFilter)
+        setItemCategoryFilter(defaults.itemCategoryFilter)
+        setShowCharts(defaults.showCharts)
+        setViewMode(defaults.viewMode)
+        
+        // Also reset local drawer states
+        setLocalChartType(defaults.chartType)
+        setLocalPriorityFilter(defaults.priorityFilter)
+        setLocalCategoryFilter(defaults.categoryFilter)
+        setLocalItemCategoryFilter(defaults.itemCategoryFilter)
+        setLocalShowCharts(defaults.showCharts)
+      }
+      
+      // Reset pagination for new document
+      setCurrentPage({
+        strengths: 0,
+        weaknesses: 0,
+        opportunities: 0,
+        threats: 0,
+      })
+      
+      // Close any open UI elements
+      setControlsDrawerOpen(false)
+      setViewMenuOpen(false)
+    }
+  }, [docId, swot, currentDocumentKey, loadFromStorage])
+
+  // Auto-save settings to localStorage when they change (debounced)
+  useEffect(() => {
+    if (!currentDocumentKey) return
+
+    const timeoutId = setTimeout(() => {
+      const settingsToSave = {
+        activeSwotTab,
+        chartType,
+        priorityFilter,
+        categoryFilter,
+        itemCategoryFilter,
+        showCharts,
+        viewMode
+      }
+      
+      try {
+        localStorage.setItem(currentDocumentKey, JSON.stringify(settingsToSave))
+        console.log('Auto-saved SWOT settings for document:', currentDocumentKey)
+      } catch (error) {
+        console.warn('Failed to auto-save SWOT settings:', error)
+      }
+    }, 500) // 500ms debounce
+
+    return () => clearTimeout(timeoutId)
+  }, [activeSwotTab, chartType, priorityFilter, categoryFilter, itemCategoryFilter, showCharts, viewMode, currentDocumentKey])
 
   // Simple persistence using ref with default values
   const persistedState = useRef({
@@ -129,50 +282,23 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       opportunities: 0,
       threats: 0,
     },
-    activeSwotTab: storedSettings.activeSwotTab,
-    viewMode: storedSettings.viewMode,
+    activeSwotTab: 'strengths',
+    viewMode: 'list',
     copiedItems: new Set(),
     itemRatings: {},
-    chartType: storedSettings.chartType,
-    priorityFilter: storedSettings.priorityFilter,
-    categoryFilter: storedSettings.categoryFilter,
-    itemCategoryFilter: storedSettings.itemCategoryFilter,
-    showCharts: storedSettings.showCharts,
-    localChartType: storedSettings.chartType,
-    localPriorityFilter: storedSettings.priorityFilter,
-    localCategoryFilter: storedSettings.categoryFilter,
-    localItemCategoryFilter: storedSettings.itemCategoryFilter,
-    localShowCharts: storedSettings.showCharts,
+    chartType: 'line',
+    priorityFilter: 'all',
+    categoryFilter: 'all',
+    itemCategoryFilter: 'all',
+    showCharts: true,
+    localChartType: 'line',
+    localPriorityFilter: 'all',
+    localCategoryFilter: 'all',
+    localItemCategoryFilter: 'all',
+    localShowCharts: true,
     controlsKey: 0,
     isInitialized: false
   })
-
-  // FIXED: Initialize states with persisted values
-  const [currentPage, setCurrentPage] = useState(persistedState.current.currentPage)
-  const [activeSwotTab, setActiveSwotTab] = useState(persistedState.current.activeSwotTab)
-  const [copiedItems, setCopiedItems] = useState(persistedState.current.copiedItems)
-  const [itemRatings, setItemRatings] = useState(persistedState.current.itemRatings)
-  const [viewMode, setViewMode] = useState(persistedState.current.viewMode)
-  const [viewMenuOpen, setViewMenuOpen] = useState(false) // Always start closed
-  const [controlsDrawerOpen, setControlsDrawerOpen] = useState(false) // Always start closed
-  const controlsDrawerRef = useRef(null)
-  const viewMenuRef = useRef(null)
-  const [controlsKey, setControlsKey] = useState(persistedState.current.controlsKey)
-  const [isResetting, setIsResetting] = useState(false) // Always start false
-
-  // FIXED: Chart and filtering state - Initialize with persisted values
-  const [chartType, setChartType] = useState(persistedState.current.chartType)
-  const [priorityFilter, setPriorityFilter] = useState(persistedState.current.priorityFilter)
-  const [categoryFilter, setCategoryFilter] = useState(persistedState.current.categoryFilter)
-  const [itemCategoryFilter, setItemCategoryFilter] = useState(persistedState.current.itemCategoryFilter)
-  const [showCharts, setShowCharts] = useState(persistedState.current.showCharts)
-
-  // FIXED: Local state for drawer controls - Initialize with persisted values
-  const [localChartType, setLocalChartType] = useState(persistedState.current.localChartType)
-  const [localPriorityFilter, setLocalPriorityFilter] = useState(persistedState.current.localPriorityFilter)
-  const [localCategoryFilter, setLocalCategoryFilter] = useState(persistedState.current.localCategoryFilter)
-  const [localItemCategoryFilter, setLocalItemCategoryFilter] = useState(persistedState.current.localItemCategoryFilter)
-  const [localShowCharts, setLocalShowCharts] = useState(persistedState.current.localShowCharts)
 
   const ITEMS_PER_PAGE = 3
 
@@ -217,86 +343,7 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     }
   }, [viewMenuOpen])
 
-  // Handle document changes - reset state only for truly new documents
-  useEffect(() => {
-    const newDocumentKey = generateDocumentKey(swot)
-    
-    // Only reset if this is a genuinely different document
-    if (newDocumentKey !== currentDocumentKey) {
-      console.log('New document detected, resetting SWOT drawer state')
-      
-      // Reset all settings to defaults for new document
-      const defaults = {
-        chartType: 'line',
-        priorityFilter: 'all',
-        categoryFilter: 'all',
-        itemCategoryFilter: 'all',
-        showCharts: true,
-        activeSwotTab: 'strengths',
-        viewMode: 'list'
-      }
-      
-      setChartType(defaults.chartType)
-      setPriorityFilter(defaults.priorityFilter)
-      setCategoryFilter(defaults.categoryFilter)
-      setItemCategoryFilter(defaults.itemCategoryFilter)
-      setShowCharts(defaults.showCharts)
-      setActiveSwotTab(defaults.activeSwotTab)
-      setViewMode(defaults.viewMode)
-      
-      setLocalChartType(defaults.chartType)
-      setLocalPriorityFilter(defaults.priorityFilter)
-      setLocalCategoryFilter(defaults.categoryFilter)
-      setLocalItemCategoryFilter(defaults.itemCategoryFilter)
-      setLocalShowCharts(defaults.showCharts)
-      
-      // Close controls drawer if open
-      setControlsDrawerOpen(false)
-      
-      // Update current document key
-      setCurrentDocumentKey(newDocumentKey)
-    } else {
-      // Same document - load persisted settings if available
-      const stored = loadFromStorage()
-      if (stored) {
-        setChartType(stored.chartType)
-        setPriorityFilter(stored.priorityFilter)
-        setCategoryFilter(stored.categoryFilter)
-        setItemCategoryFilter(stored.itemCategoryFilter)
-        setShowCharts(stored.showCharts)
-        setActiveSwotTab(stored.activeSwotTab)
-        setViewMode(stored.viewMode)
-        
-        setLocalChartType(stored.chartType)
-        setLocalPriorityFilter(stored.priorityFilter)
-        setLocalCategoryFilter(stored.categoryFilter)
-        setLocalItemCategoryFilter(stored.itemCategoryFilter)
-        setLocalShowCharts(stored.showCharts)
-      }
-    }
-  }, [swot, currentDocumentKey])
 
-  // Auto-save activeSwotTab to localStorage when it changes
-  useEffect(() => {
-    if (currentDocumentKey) {
-      const currentSettings = loadFromStorage()
-      saveToStorage({
-        ...currentSettings,
-        activeSwotTab: activeSwotTab
-      })
-    }
-  }, [activeSwotTab, currentDocumentKey])
-
-  // Auto-save viewMode to localStorage when it changes
-  useEffect(() => {
-    if (currentDocumentKey) {
-      const currentSettings = loadFromStorage()
-      saveToStorage({
-        ...currentSettings,
-        viewMode: viewMode
-      })
-    }
-  }, [viewMode, currentDocumentKey])
 
   // Update local state when drawer opens or main state changes
   useEffect(() => {
@@ -311,6 +358,8 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
 
   // Save controls function
   const saveControls = () => {
+    if (!currentDocumentKey) return
+    
     // Update main state
     setChartType(localChartType)
     setPriorityFilter(localPriorityFilter)
@@ -318,8 +367,8 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     setItemCategoryFilter(localItemCategoryFilter)
     setShowCharts(localShowCharts)
     
-    // Save to localStorage for persistence across refreshes (only controls, not UI state)
-    saveToStorage({
+    // Immediately save to localStorage (overriding debounce for user-initiated saves)
+    const settingsToSave = {
       chartType: localChartType,
       priorityFilter: localPriorityFilter,
       categoryFilter: localCategoryFilter,
@@ -327,7 +376,14 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
       showCharts: localShowCharts,
       activeSwotTab: activeSwotTab,  // Keep current active tab
       viewMode: viewMode  // Keep current view mode
-    })
+    }
+    
+    try {
+      localStorage.setItem(currentDocumentKey, JSON.stringify(settingsToSave))
+      console.log('Manually saved SWOT settings for document:', currentDocumentKey)
+    } catch (error) {
+      console.warn('Failed to save SWOT settings:', error)
+    }
     
     setControlsDrawerOpen(false)
   }
