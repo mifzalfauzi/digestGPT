@@ -1784,7 +1784,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
               ref={el => tabContentRefs.current['analysis'] = el}
             >
               {/* Header */}
-              <div className="flex items-center justify-between mb-4 flex-shrink-0">
+              <div className="flex items-center justify-between mb-4 mt-2 flex-shrink-0">
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl shadow-lg">
                     <Brain className="h-5 w-5 text-white" />
