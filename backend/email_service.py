@@ -83,7 +83,7 @@ class EmailService:
             <style>
                 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                 .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+                .header { color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
                 .content { background: white; padding: 30px; border: 1px solid #e0e0e0; }
                 .footer { background: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 10px 10px; font-size: 14px; color: #666; }
                 .success-badge { background: #28a745; color: white; padding: 8px 16px; border-radius: 20px; display: inline-block; margin-bottom: 20px; }
@@ -94,18 +94,13 @@ class EmailService:
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>🎉 Payment Successful!</h1>
+                    
                     <p>Welcome to {{ plan_name }} Plan</p>
                 </div>
                 <div class="content">
-                    <div class="success-badge">✅ Payment Confirmed</div>
-                    
-                    <p>Hi {{ user_name }},</p>
-                    
-                    <p>Thank you for subscribing to DocuChat! Your payment has been processed successfully and your {{ plan_name }} plan is now active.</p>
                     
                     <div class="details">
-                        <h3>📋 Subscription Details</h3>
+                        <h3>Subscription Details</h3>
                         <p><strong>Plan:</strong> {{ plan_name }}</p>
                         <p><strong>Amount:</strong> {{ amount }}</p>
                         <p><strong>Invoice ID:</strong> {{ invoice_id }}</p>
@@ -114,9 +109,9 @@ class EmailService:
                     
                     {% if invoice_download_url %}
                     <div class="details" style="background: #e8f5e8; border: 2px solid #28a745;">
-                        <h3 style="color: #28a745;">📄 Your Invoice</h3>
+                        <h3 style="color: #28a745;">Your Invoice</h3>
                         <p>Click the button below to download your PDF invoice:</p>
-                        <a href="{{ invoice_download_url }}" class="button" style="background: #28a745; color: white;">📥 Download Invoice PDF</a>
+                        <a href="{{ invoice_download_url }}" class="button" style="background: #28a745; color: white;">Download Invoice PDF</a>
                         <p style="font-size: 12px; color: #666; margin-top: 10px;">
                             <strong>Note:</strong> This link is valid for 30 days from the purchase date.
                         </p>
@@ -125,10 +120,10 @@ class EmailService:
                     
                     <p>You can now enjoy:</p>
                     <ul>
-                        <li>📄 Enhanced document analysis</li>
-                        <li>💬 Advanced AI chat features</li>
-                        <li>📊 Premium insights and reports</li>
-                        <li>🎯 Priority support</li>
+                        <li>Enhanced document analysis</li>
+                        <li>Advanced AI chat features</li>
+                        <li>Premium insights and reports</li>
+                        <li>Priority support</li>
                     </ul>
                     
                     <a href="https://your-domain.com/assistant" class="button">Start Using DocuChat →</a>
@@ -139,7 +134,7 @@ class EmailService:
                 </div>
                 <div class="footer">
                     <p>This is an automated message. Please do not reply to this email.</p>
-                    <p>© 2024 DocuChat. All rights reserved.</p>
+                    <p>© 2025 DocuChat. All rights reserved.</p>
                 </div>
             </div>
         </body>
@@ -207,18 +202,18 @@ class EmailService:
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>⚠️ Payment Failed</h1>
+                    <h1>Payment Failed</h1>
                     <p>Subscription to {{ plan_name }} Plan</p>
                 </div>
                 <div class="content">
-                    <div class="error-badge">❌ Payment Not Processed</div>
+                    <div class="error-badge">Payment Not Processed</div>
                     
                     <p>Hi {{ user_name }},</p>
                     
                     <p>We were unable to process your payment for the {{ plan_name }} plan subscription.</p>
                     
                     <div class="details">
-                        <h3>📋 Attempted Transaction</h3>
+                        <h3>Attempted Transaction</h3>
                         <p><strong>Plan:</strong> {{ plan_name }}</p>
                         <p><strong>Amount:</strong> {{ amount }}</p>
                         {% if error_message %}
@@ -249,7 +244,7 @@ class EmailService:
                 </div>
                 <div class="footer">
                     <p>This is an automated message. Please do not reply to this email.</p>
-                    <p>© 2024 DocuChat. All rights reserved.</p>
+                    <p>© 2025 DocuChat. All rights reserved.</p>
                 </div>
             </div>
         </body>
