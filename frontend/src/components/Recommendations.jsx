@@ -639,16 +639,16 @@ function Recommendations({ results, isDemoMode = false, bypassAPI = false, docId
                                     <CardHeader>
                                         <div className="flex items-center gap-2">
                                             <Flag className="h-5 w-5 text-blue-600" />
-                                            <CardTitle className="text-lg">Recommended Decision</CardTitle>
+                                            <CardTitle className="text-md">Recommended Decision</CardTitle>
                                         </div>
                                     </CardHeader>
                                     <Separator className="mb-4" />
                                     <CardContent>
                                         <div className="p-4 bg-transparent">
-                                            <h4 className="font-bold text-blue-900 dark:text-blue-100 mb-2">
+                                            <h4 className="font-bold text-blue-900 dark:text-blue-100 mb-2 text-md">
                                                 {recommendationsData.decision_point.recommendation}
                                             </h4>
-                                            <p className="text-slate-700 dark:text-gray-300 mb-4">
+                                            <p className="text-slate-700 dark:text-gray-300 mb-4 text-md">
                                                 {recommendationsData.decision_point.rationale}
                                             </p>
 
@@ -658,7 +658,7 @@ function Recommendations({ results, isDemoMode = false, bypassAPI = false, docId
                                                         <ArrowRight className="h-4 w-4 text-blue-600" />
                                                         <span className="font-medium text-slate-900 dark:text-white">Next Steps:</span>
                                                     </div>
-                                                    <p className="text-slate-700 dark:text-gray-300 pl-5">
+                                                    <p className="text-slate-700 dark:text-gray-300 pl-5 text-xs">
                                                         {recommendationsData.decision_point.next_steps}
                                                     </p>
                                                 </div>
@@ -669,7 +669,7 @@ function Recommendations({ results, isDemoMode = false, bypassAPI = false, docId
                                                             <Calendar className="h-4 w-4 text-blue-600" />
                                                             <span className="font-medium text-slate-900 dark:text-white">Review Date:</span>
                                                         </div>
-                                                        <p className="text-slate-700 dark:text-gray-300 pl-5">
+                                                        <p className="text-slate-700 dark:text-gray-300 pl-5 text-xs">
                                                             {recommendationsData.decision_point.review_date}
                                                         </p>
                                                     </div>
