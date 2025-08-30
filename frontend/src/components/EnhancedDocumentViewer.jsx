@@ -14,6 +14,7 @@ import DocxViewer from './DocxViewer'
 import mammoth from 'mammoth'
 import SWOTAnalysis from './SWOTAnalysis'
 import Recommendations from './Recommendations'
+import { MessageCircle } from 'lucide-react'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import axios from 'axios' // Added axios import
@@ -23,7 +24,7 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
   const [activeHighlight, setActiveHighlight] = useState(null)
 
   const [highlights, setHighlights] = useState([])
-  const [activeTab, setActiveTab] = useState('swot')
+  const [activeTab, setActiveTab] = useState('analysis')
   const [tabChangeKey, setTabChangeKey] = useState(0)
   const [docxContent, setDocxContent] = useState(null)
   const [docxLoading, setDocxLoading] = useState(false)
@@ -44,6 +45,8 @@ function EnhancedDocumentViewer({ results, file, inputMode, onExplainConcept, is
   // Get docId from URL params as fallback
   const [searchParams] = useSearchParams()
   const urlDocId = searchParams.get('docId')
+
+  console.log('urlDocId', results?.document_id)
 
   // Overview subtab state management - similar to Recommendations.jsx
   const getOverviewSubtabStorageKey = useCallback((currentDocId) => {
@@ -1595,6 +1598,8 @@ This business plan effectively balances growth ambitions with comprehensive risk
 
                 )}
 
+               
+
                 {/* Export Analysis to PDF Option */}
                 <button
                   onClick={() => {
@@ -1616,7 +1621,17 @@ This business plan effectively balances growth ambitions with comprehensive risk
                     </>
                   )}
                 </button>
-
+                {getFileUrl() && (
+                <a
+                href={`/sendticket?docId=${results?.document_id}`}
+                className='w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700'
+                onClick={() => setIsMenuOpen(false)}
+                target='_parent'
+                >
+                  <MessageCircle className="h-4 w-4 text-blue-500" />
+                  <span className='text-sm'>Report Issue</span>
+                </a>
+                )}
 
                 {/* Divider */}
                 {getFileUrl() && (

@@ -19,6 +19,7 @@ import StripeSuccess from './components/StripeSuccess'
 import StripeCancel from './components/StripeCancel'
 import CheckingAuthPage from './pages/CheckingAuth'
 import PublicSharePage from './pages/PublicSharePage'
+import SendTicket from './components/SendTicket'
 
 // Simplified Protected Route Component
 function ProtectedRoute({ children }) {
@@ -74,6 +75,11 @@ function AppContent() {
         <Route path="/assistant/document/:documentId" element={
           <ProtectedRoute>
             <Assistant />
+          </ProtectedRoute>
+        } />
+        <Route path="/sendticket" element={
+          <ProtectedRoute>
+            <SendTicket />
           </ProtectedRoute>
         } />
         <Route path="/assistant/collection/:collectionId" element={
