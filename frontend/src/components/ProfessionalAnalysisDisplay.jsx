@@ -1105,6 +1105,44 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
     }
   }
 
+  // Copy table with formatting for Google Docs/Canva
+  const copyTableToClipboard = async (tableType) => {
+    try {
+      const data = tableType === 'insights' ? impactData.insights_impact : impactData.risks_impact
+      if (!data || data.length === 0) return
+
+      // Create formatted table text with tabs for proper structure
+      const headers = tableType === 'insights' 
+        ? ['Insight Points', 'Impact of the Point', 'Impacted Organisation', 'Affected Areas', 'Impact Level', 'Timeline', 'Action Required']
+        : ['Risk Point', 'Impact of the Point', 'Impacted Organisation', 'Affected Areas', 'Impact Level', 'Timeline', 'Action Required']
+      
+      const headerRow = headers.join('\t')
+      
+      const dataRows = data.map(impact => {
+        const affectedAreas = impact.affected_areas ? impact.affected_areas.join(', ') : ''
+        const pointText = tableType === 'insights' ? impact.insight_point : impact.risk_point
+        
+        return [
+          pointText || '',
+          impact.impact_description || '',
+          impact.impacted_organization || '',
+          affectedAreas,
+          impact.impact_level || '',
+          impact.timeline || '',
+          impact.action_required || ''
+        ].join('\t')
+      })
+
+      const tableText = [headerRow, ...dataRows].join('\n')
+
+      await navigator.clipboard.writeText(tableText)
+      setCopiedItem(`${tableType}-table`)
+      setTimeout(() => setCopiedItem(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy table: ', err)
+    }
+  }
+
   // Handle feedback
   const handleFeedback = (itemId, type) => {
     setFeedbackGiven(prev => ({
@@ -2720,11 +2758,26 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
               {/* Insights Impact Table */}
               {impactData.insights_impact.length > 0 && (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Target className="h-5 w-5 text-emerald-600" />
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                      Insights Impact Analysis
-                    </h3>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-5 w-5 text-emerald-600" />
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                        Insights Impact Analysis
+                      </h3>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyTableToClipboard('insights')}
+                      className="h-8 w-8 p-0 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/20"
+                      title="Copy table"
+                    >
+                      {copiedItem === 'insights-table' ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse border border-emerald-200 dark:border-emerald-700 rounded-lg">
@@ -2800,11 +2853,26 @@ function ProfessionalAnalysisDisplay({ results, onHighlightClick, activeHighligh
               {/* Risks Impact Table */}
               {impactData.risks_impact.length > 0 && (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-red-600" />
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                      Risks Impact Analysis
-                    </h3>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-red-600" />
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                        Risks Impact Analysis
+                      </h3>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyTableToClipboard('risks')}
+                      className="h-8 w-8 p-0 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/20"
+                      title="Copy table"
+                    >
+                      {copiedItem === 'risks-table' ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse border border-red-200 dark:border-red-700 rounded-lg">

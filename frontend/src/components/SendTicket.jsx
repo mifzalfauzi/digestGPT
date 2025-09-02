@@ -253,7 +253,7 @@ function SendTicket() {
                     <ModalFooter>
                         <Button 
                             onClick={handleModalClose}
-                            className={modalContent.type === 'success' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+                            className={modalContent.type === 'success' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}
                         >
                             {modalContent.type === 'success' ? 'Continue' : 'Try Again'}
                         </Button>

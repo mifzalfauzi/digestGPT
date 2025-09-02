@@ -974,7 +974,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
           const parsed = JSON.parse(stored)
           // Only restore if the stored data is recent (within 7 days)
           if (parsed.timestamp && Date.now() - parsed.timestamp < (7 * 24 * 60 * 60 * 1000)) {
-            const restoredTab = parsed.activeTab || 'swot'
+            const restoredTab = parsed.activeTab || 'analysis'
             console.log(`📂 Restored activeTab "${restoredTab}" from localStorage for ${documentKey}`)
             setActiveTab(restoredTab)
             isInitialRenderRef.current = false // Prevent auto-save from triggering
@@ -984,16 +984,16 @@ This business plan effectively balances growth ambitions with comprehensive risk
               console.log(`🎯 Restored insights tab - ProfessionalAnalysisDisplay should sync cardMode`)
             }
           } else {
-            console.log('🧹 Stored activeTab is too old, using default (swot)')
-            setActiveTab('swot')
+            console.log('🧹 Stored activeTab is too old, using default (analysis)')
+            setActiveTab('analysis')
           }
         } else {
-          console.log(`📝 No stored activeTab found for ${documentKey}, using default (swot)`)
-          setActiveTab('swot')
+          console.log(`📝 No stored activeTab found for ${documentKey}, using default (analysis)`)
+          setActiveTab('analysis')
         }
       } catch (error) {
         console.warn('Failed to restore activeTab from localStorage:', error)
-        setActiveTab('swot') // Fallback to default
+        setActiveTab('analysis') // Fallback to default
       }
     }
 
@@ -1045,7 +1045,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
     
     // Only set default if no stored preference and we're still on the initial tab
     if (!hasStoredTab && (activeTab === 'analysis' || activeTab === 'swot')) {
-      console.log(`📝 No stored activeTab found for ${documentKey}, keeping default`)
+      console.log(`📝 No stored activeTab found for ${documentKey}, keeping default (analysis)`)
       // Don't call setActiveTab here - let the restoration useEffect handle it
     }
   }, [hasDocumentViewer, isDemoMode, bypassAPI, generateDocumentKey, getCurrentDocumentId, results, file])
