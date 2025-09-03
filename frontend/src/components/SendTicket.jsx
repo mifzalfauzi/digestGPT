@@ -17,13 +17,14 @@ function SendTicket() {
     const navigate = useNavigate()
     const [message, setMessage] = useState('')
     const [isModalOpen, setIsModalOpen] = useState(false)
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [modalContent, setModalContent] = useState({ type: '', title: '', message: '' })
     const BASE_URL = import.meta.env.VITE_API_BASE_URL
 
     const docId = searchParams.get('docId')
 
-    const handleSendTicket = async () => {
+    const handleConfirmSubmit = () => {
         if (!message.trim()) {
             toast.error('Please enter a message before sending the ticket')
             return
@@ -40,10 +41,19 @@ function SendTicket() {
             return
         }
 
+        setIsConfirmModalOpen(true)
+    }
+
+    const handleConfirmModalClose = () => {
+        setIsConfirmModalOpen(false)
+    }
+
+    const handleSendTicket = async () => {
+        setIsConfirmModalOpen(false)
         setIsLoading(true)
 
         try {
-            const response = await axios.post(`${BASE_URL}/send-ticket`, {
+            const response = await axios.post(`${BASE_URL}/issues/create-issue`, {
                 docId: docId,
                 email: user.email,
                 message: message.trim()
@@ -93,7 +103,7 @@ function SendTicket() {
     const handleModalClose = () => {
         setIsModalOpen(false)
         if (modalContent.type === 'success') {
-            navigate('/')
+            navigate(`/assistant/document/${docId}`)
         } else if (modalContent.type === 'error' && modalContent.title === 'Authentication Required') {
             navigate('/signin')
         }
@@ -210,7 +220,7 @@ function SendTicket() {
 
                         {/* Submit Button */}
                         <Button 
-                            onClick={handleSendTicket} 
+                            onClick={handleConfirmSubmit} 
                             disabled={isLoading || !message.trim()}
                             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"
                             size="lg"
@@ -230,6 +240,75 @@ function SendTicket() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Confirmation Modal */}
+            <Modal isOpen={isConfirmModalOpen} onClose={handleConfirmModalClose}>
+                <ModalCloseButton onClose={handleConfirmModalClose} />
+                <ModalContent>
+                    <ModalHeader>
+                        <ModalTitle className="flex items-center gap-2">
+                            <MessageSquare className="w-5 h-5 text-blue-600" />
+                            Confirm Ticket Submission
+                        </ModalTitle>
+                    </ModalHeader>
+                    <ModalBody>
+                        <div className="space-y-4">
+                            <p className="text-gray-600 dark:text-gray-300">
+                                Please review your ticket details before submitting:
+                            </p>
+                            
+                            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg space-y-3">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Email:</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">{user?.email}</p>
+                                </div>
+                                
+                                <div>
+                                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Document ID:</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 truncate">{docId}</p>
+                                </div>
+                                
+                                <div>
+                                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Message:</p>
+                                    <div className="text-sm text-gray-600 dark:text-gray-400 max-h-32 overflow-y-auto bg-white dark:bg-gray-700 p-2 rounded border">
+                                        {message}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <p className="text-sm text-gray-500">
+                                Are you sure you want to submit this support ticket?
+                            </p>
+                        </div>
+                    </ModalBody>
+                    <ModalFooter className="flex gap-2">
+                        <Button 
+                            onClick={handleConfirmModalClose}
+                            variant="outline"
+                            className="flex-1"
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            onClick={handleSendTicket}
+                            className="bg-blue-600 hover:bg-blue-700 text-white flex-1"
+                            disabled={isLoading}
+                        >
+                            {isLoading ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                                    Submitting...
+                                </>
+                            ) : (
+                                <>
+                                    <Send className="w-4 h-4 mr-2" />
+                                    Submit Ticket
+                                </>
+                            )}
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
 
             {/* Success/Error Modal */}
             <Modal isOpen={isModalOpen} onClose={handleModalClose}>

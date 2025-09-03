@@ -217,4 +217,27 @@ class PublicChatView(Base):
     # View details
     viewed_at = Column(DateTime(timezone=True), server_default=func.now())
     session_duration = Column(Integer, nullable=True)  # How long they stayed (seconds)
+    
+    
+class Invoice(Base):    
+    __tablename__ = "invoices"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    invoice_id = Column(String, nullable=False)
+    invoice_date = Column(DateTime(timezone=True), nullable=False)
+    file_url = Column(String, nullable=True)  # Add file URL for PDF viewing
+    uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
 
+class Issues(Base):
+    __tablename__ = "issues"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id"), nullable=True)
+    issue_id = Column(String, nullable=False)
+    issue_date = Column(DateTime(timezone=True), server_default=func.now())
+    issue_description = Column(Text, nullable=False)
+    issue_status = Column(String, nullable=False, default="open")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
