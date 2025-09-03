@@ -1547,6 +1547,7 @@ This business plan effectively balances growth ambitions with comprehensive risk
   }
 
   return (
+    <>
     <div className="h-full flex flex-col bg-gradient-to-b from-slate-50 to-white dark:from-gray-900 dark:to-gray-800">
       {/* Enhanced Header - Fixed at top */}
       <div className=" flex-shrink-0 px-2 sm:px-3 lg:px-4 py-2 sm:py-3 bg-white/80 dark:bg-[#121212] backdrop-blur-sm">
@@ -1579,79 +1580,6 @@ This business plan effectively balances growth ambitions with comprehensive risk
             >
               <Menu className="h-4 w-4 text-gray-600 dark:text-gray-400" />
             </Button>
-
-            {/* Dropdown Menu */}
-            {isMenuOpen && (
-              <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-black border shadow-lg z-50 py-1">
-                {/* Open PDF Option - Only show if PDF is available */}
-                {getFileUrl() && (
-                  <a
-                    href={getFileUrl()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    <ExternalLink className="h-4 w-4 text-blue-500" />
-                    <span>Open Original PDF</span>
-                  </a>
-
-                )}
-
-               
-
-                {/* Export Analysis to PDF Option */}
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false)
-                    exportToPDF()
-                  }}
-                  disabled={isExporting || (!results?.analysis && !isDemoMode && !bypassAPI)}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  {isExporting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                      <span>Exporting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-4 w-4 text-green-500" />
-                      <span>Analysis to PDF</span>
-                    </>
-                  )}
-                </button>
-                {getFileUrl() && (
-                <a
-                href={`/sendticket?docId=${results?.document_id}`}
-                className='w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700'
-                onClick={() => setIsMenuOpen(false)}
-                target='_parent'
-                >
-                  <MessageCircle className="h-4 w-4 text-blue-500" />
-                  <span className='text-sm'>Report Issue</span>
-                </a>
-                )}
-
-                {/* Divider */}
-                {getFileUrl() && (
-                  <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div>
-                )}
-
-                {/* Additional info item */}
-                <div className="px-4 py-2">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {isDemoMode ? (
-                      "Demo mode - sample data only"
-                    ) : bypassAPI ? (
-                      "Preview mode - mock responses"
-                    ) : (
-                      `${results?.word_count || 0} words analyzed`
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -2160,6 +2088,86 @@ This business plan effectively balances growth ambitions with comprehensive risk
         </Tabs>
       </div>
     </div>
+
+    {/* Portal Dropdown Menu - Outside main component tree to avoid z-index issues */}
+    {isMenuOpen && (
+      <div 
+        className="fixed inset-0 z-[99999]"
+        onClick={() => setIsMenuOpen(false)}
+      >
+        <div 
+          className="absolute top-16 right-4 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-2xl py-1 rounded-md"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Open PDF Option - Only show if PDF is available */}
+          {getFileUrl() && (
+            <a
+              href={getFileUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setIsMenuOpen(false)}
+              className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              <ExternalLink className="h-4 w-4 text-blue-500" />
+              <span>Open Original PDF</span>
+            </a>
+          )}
+
+          {/* Export Analysis to PDF Option */}
+          <button
+            onClick={() => {
+              setIsMenuOpen(false)
+              exportToPDF()
+            }}
+            disabled={isExporting || (!results?.analysis && !isDemoMode && !bypassAPI)}
+            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            {isExporting ? (
+              <>
+                <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                <span>Exporting...</span>
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4 text-green-500" />
+                <span>Analysis to PDF</span>
+              </>
+            )}
+          </button>
+
+          {getFileUrl() && (
+            <a
+              href={`/sendticket?docId=${results?.document_id}`}
+              className='w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700'
+              onClick={() => setIsMenuOpen(false)}
+              target='_parent'
+            >
+              <MessageCircle className="h-4 w-4 text-blue-500" />
+              <span className='text-sm'>Report Issue</span>
+            </a>
+          )}
+
+          {/* Divider */}
+          {getFileUrl() && (
+            <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div>
+          )}
+
+          {/* Additional info item */}
+          <div className="px-4 py-2">
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              {isDemoMode ? (
+                "Demo mode - sample data only"
+              ) : bypassAPI ? (
+                "Preview mode - mock responses"
+              ) : (
+                `${results?.word_count || 0} words analyzed`
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }
 
