@@ -1245,13 +1245,17 @@ This business plan effectively balances growth ambitions with comprehensive risk
   }
 
   const handleShowInDocument = (id) => {
+    console.log('=== SHOW IN DOCUMENT DEBUG START ===')
     console.log('handleShowInDocument called with id:', id)
+    console.log('Screen dimensions:', { width: window.innerWidth, height: window.innerHeight })
+    console.log('Is large screen:', window.innerWidth >= 1024)
     setActiveHighlight(id)
     setActiveTab('document')
 
     // Enhanced delay and retry mechanism to ensure reliable scrolling
     const attemptScroll = (attempts = 0, maxAttempts = 10) => {
-      console.log(`Attempting scroll ${attempts + 1}/${maxAttempts} for highlight:`, id)
+      console.log(`🔄 Attempting scroll ${attempts + 1}/${maxAttempts} for highlight:`, id)
+      console.log('Tab state:', { activeTab, documentTabVisible: !!tabContentRefs.current['document'] })
       
       // Try multiple selectors to find the highlight
       let element = document.querySelector(`[data-highlight-id="${id}"]`)
@@ -1268,73 +1272,203 @@ This business plan effectively balances growth ambitions with comprehensive risk
       }
       
       if (element) {
-        console.log('Found highlight element:', element)
+        console.log('✅ Found highlight element:', element)
+        console.log('Element details:', {
+          offsetTop: element.offsetTop,
+          offsetHeight: element.offsetHeight,
+          clientHeight: element.clientHeight,
+          scrollTop: element.scrollTop,
+          textContent: element.textContent?.substring(0, 50) + '...'
+        })
         
-        // Get the scrollable container (document tab)
-        const scrollContainer = tabContentRefs.current['document']
+        // Get the correct scrollable container - the inner div where highlights actually live
+        let scrollContainer = tabContentRefs.current['document']
+        
+        // The highlights are actually in a nested div with max-h-[60vh] overflow-y-auto
+        // Find the actual scrollable container that contains the highlights
+        if (scrollContainer) {
+          console.log('🔍 Searching for inner scroll container...')
+          
+          // Look for the inner container that has both max-height and overflow-y-auto
+          const possibleContainers = scrollContainer.querySelectorAll('div')
+          console.log(`Found ${possibleContainers.length} possible div containers`)
+          
+          for (let i = 0; i < possibleContainers.length; i++) {
+            const container = possibleContainers[i]
+            const computedStyle = getComputedStyle(container)
+            
+            const hasOverflow = container.classList.contains('overflow-y-auto') || 
+                               container.style.overflowY === 'auto' ||
+                               computedStyle.overflowY === 'auto'
+            const hasMaxHeight = container.className.includes('max-h-') || 
+                                 container.style.maxHeight ||
+                                 computedStyle.maxHeight !== 'none'
+            const containsElement = container.contains(element)
+            
+            const isScrollable = container.scrollHeight > container.clientHeight
+            
+            console.log(`Container ${i}:`, {
+              className: container.className,
+              hasOverflow,
+              hasMaxHeight,
+              containsElement,
+              isScrollable,
+              computedMaxHeight: computedStyle.maxHeight,
+              computedOverflowY: computedStyle.overflowY,
+              scrollHeight: container.scrollHeight,
+              clientHeight: container.clientHeight
+            })
+            
+            // Special logging for the max-h-[60vh] container
+            if (container.className.includes('max-h-[60vh]')) {
+              console.log('🎯 FOUND THE TARGET CONTAINER:', {
+                className: container.className,
+                scrollHeight: container.scrollHeight,
+                clientHeight: container.clientHeight,
+                isScrollable: container.scrollHeight > container.clientHeight,
+                hasContent: container.children.length
+              })
+            }
+            
+            // First priority: container that has all requirements including containing the element
+            if (hasOverflow && hasMaxHeight && containsElement) {
+              console.log('🎯 Found perfect inner scroll container that contains the highlight element!')
+              scrollContainer = container
+              break
+            }
+            
+            // Second priority: container that has scrollable content (scrollHeight > clientHeight)
+            // This catches cases where the element isn't rendered in the container yet
+            if (hasOverflow && hasMaxHeight && isScrollable) {
+              console.log('🎯 Found scrollable inner container with proper dimensions!')
+              scrollContainer = container
+              // Don't break here, keep looking for a perfect match
+            }
+          }
+          
+          console.log('🔍 Inner container search complete. Using container:', {
+            final: scrollContainer.className,
+            isOriginal: scrollContainer === tabContentRefs.current['document']
+          })
+        }
+        
+        console.log('📦 Final scroll container:', scrollContainer)
+        console.log('📦 Container selector info:', {
+          tagName: scrollContainer?.tagName,
+          className: scrollContainer?.className,
+          hasMaxHeight: scrollContainer?.style.maxHeight || scrollContainer?.classList.toString().includes('max-h')
+        })
         
         if (scrollContainer) {
+          console.log('Container details:', {
+            tagName: scrollContainer.tagName,
+            className: scrollContainer.className,
+            scrollTop: scrollContainer.scrollTop,
+            scrollHeight: scrollContainer.scrollHeight,
+            clientHeight: scrollContainer.clientHeight,
+            offsetHeight: scrollContainer.offsetHeight
+          })
+          
+          // Check if container has proper scrollable content
+          const hasScrollableContent = scrollContainer.scrollHeight > scrollContainer.clientHeight
+          const maxScrollTop = scrollContainer.scrollHeight - scrollContainer.clientHeight
+          
+          console.log('🔍 Scrollability check:', {
+            hasScrollableContent,
+            maxScrollTop,
+            shouldRetry: !hasScrollableContent && attempts < 5
+          })
+          
+          // If container doesn't have scrollable content yet, retry with delay
+          if (!hasScrollableContent && attempts < 5) {
+            console.log('⏳ Container not ready for scrolling, retrying in 300ms...')
+            setTimeout(() => attemptScroll(attempts + 1, maxAttempts), 300)
+            return
+          }
           // Method: Calculate scroll position using getBoundingClientRect for accuracy
           const elementRect = element.getBoundingClientRect()
           const containerRect = scrollContainer.getBoundingClientRect()
+          console.log('🔍 Rect measurements:', {
+            elementRect: {
+              top: elementRect.top,
+              bottom: elementRect.bottom,
+              height: elementRect.height
+            },
+            containerRect: {
+              top: containerRect.top,
+              bottom: containerRect.bottom,
+              height: containerRect.height
+            }
+          })
+          
           const containerHeight = scrollContainer.clientHeight
           const elementHeight = element.offsetHeight
           
           // Calculate relative position within the scrollable container
           let calculatedTop = elementRect.top - containerRect.top + scrollContainer.scrollTop
+          console.log('📐 Initial calculatedTop:', calculatedTop)
           
-          // If getBoundingClientRect fails, try offsetTop as fallback
-          if (calculatedTop <= 0) {
-            calculatedTop = element.offsetTop
+          // Check if element has valid dimensions
+          const elementHasValidDimensions = elementRect.height > 0 && elementRect.width > 0
+          console.log('🔧 Element dimensions check:', {
+            hasValidDimensions: elementHasValidDimensions,
+            elementRect,
+            elementOffsetHeight: element.offsetHeight,
+            elementOffsetWidth: element.offsetWidth
+          })
+          
+          // Fix for large screens: Use character position when element dimensions are invalid
+          // This is particularly important when elements are not fully rendered yet
+          if (calculatedTop <= 0 || isNaN(calculatedTop) || !elementHasValidDimensions) {
+            console.log('🚨 Using fallback calculation due to invalid position or dimensions')
             
-            // If offsetTop is also 0, try DOM traversal
-            if (calculatedTop === 0) {
-              let currentElement = element
-              while (currentElement && currentElement !== scrollContainer) {
-                calculatedTop += currentElement.offsetTop || 0
-                currentElement = currentElement.offsetParent
-                if (currentElement === scrollContainer) break
-              }
+            // Primary fallback: Use character position calculation
+            const highlight = highlights.find(h => h.id === id)
+            if (highlight && highlight.position && highlight.position.found) {
+              const documentText = (isDemoMode || bypassAPI) ? mockDocumentText : results?.document_text
               
-              // If still 0, use text-based position calculation from highlight data
+              if (scrollContainer && documentText) {
+                const charPosition = highlight.position.start
+                const totalTextLength = documentText.length
+                
+                // Use the scroll container's scrollHeight directly
+                const containerScrollHeight = scrollContainer.scrollHeight
+                const positionRatio = charPosition / totalTextLength
+                calculatedTop = Math.max(0, containerScrollHeight * positionRatio)
+                
+                console.log('✅ Character position calculation (primary):', {
+                  charPosition,
+                  totalTextLength,
+                  containerScrollHeight,
+                  positionRatio,
+                  calculatedTop
+                })
+              }
+            } else {
+              // Secondary fallback: Try DOM traversal
+              calculatedTop = element.offsetTop
+              
               if (calculatedTop === 0) {
-                // Find highlight data by id to get character position
-                const highlight = highlights.find(h => h.id === id)
-                if (highlight && highlight.position && highlight.position.found) {
-                  const documentText = (isDemoMode || bypassAPI) ? mockDocumentText : results?.document_text
-                  
-                  if (scrollContainer && documentText) {
-                    const charPosition = highlight.position.start
-                    const totalTextLength = documentText.length
-                    
-                    // Use the scroll container's scrollHeight directly
-                    const containerScrollHeight = scrollContainer.scrollHeight
-                    const positionRatio = charPosition / totalTextLength
-                    calculatedTop = Math.max(0, containerScrollHeight * positionRatio)
-                    
-                    console.log('Character position calculation debug:', {
-                      charPosition,
-                      totalTextLength,
-                      containerScrollHeight,
-                      positionRatio,
-                      calculatedBeforeMax: containerScrollHeight * positionRatio,
-                      calculatedTop,
-                      scrollContainerTag: scrollContainer.tagName,
-                      scrollContainerClass: scrollContainer.className
-                    })
-                  }
-                } else {
-                  // Fallback to original index-based estimation
+                let currentElement = element
+                while (currentElement && currentElement !== scrollContainer) {
+                  calculatedTop += currentElement.offsetTop || 0
+                  currentElement = currentElement.offsetParent
+                  if (currentElement === scrollContainer) break
+                }
+                
+                console.log('🔄 DOM traversal result:', calculatedTop)
+                
+                // Tertiary fallback: Index-based estimation
+                if (calculatedTop === 0) {
                   const textContainer = element.closest('.whitespace-pre-wrap, .prose, [data-highlight-container]')
                   if (textContainer) {
                     const allHighlights = Array.from(textContainer.querySelectorAll('[data-highlight-id]'))
                     const elementIndex = allHighlights.indexOf(element)
                     
                     if (elementIndex >= 0) {
-                      // Estimate position based on element index and average spacing
                       const avgSpacing = textContainer.scrollHeight / Math.max(allHighlights.length, 1)
                       calculatedTop = elementIndex * avgSpacing
-                      console.log('Used index-based estimation:', calculatedTop, 'for element', elementIndex, 'of', allHighlights.length)
+                      console.log('📊 Index-based estimation:', calculatedTop, 'for element', elementIndex, 'of', allHighlights.length)
                     }
                   }
                 }
@@ -1343,58 +1477,95 @@ This business plan effectively balances growth ambitions with comprehensive risk
           }
           
           // Calculate scroll position to center the element
-          // For small positions, don't try to center, just scroll to the element
+          // Improved logic for large screens
           let scrollTop
-          if (calculatedTop < containerHeight / 2) {
-            // Element is near the top, just scroll to show it
-            scrollTop = Math.max(0, calculatedTop - 100) // Leave some margin
+          
+          console.log('🎯 Calculating final scroll position:', {
+            calculatedTop,
+            containerHeight,
+            elementHeight,
+            useCharacterPosition: !elementHasValidDimensions
+          })
+          
+          if (!elementHasValidDimensions && calculatedTop > 0) {
+            // For elements without valid dimensions (common on large screens), 
+            // use a simpler centering calculation based on character position
+            scrollTop = calculatedTop - (containerHeight / 3) // Show element in upper third of viewport
+            console.log('🔧 Using character-based scroll position:', scrollTop)
           } else {
-            // Element is further down, try to center it
+            // Standard calculation for elements with valid dimensions
             scrollTop = calculatedTop - (containerHeight / 2) + (elementHeight / 2)
+            console.log('📐 Using dimension-based scroll position:', scrollTop)
           }
           
-          console.log('Scroll calculation details:', {
+          // Ensure scrollTop is within valid bounds (reuse the maxScrollTop calculated above)
+          scrollTop = Math.max(0, Math.min(scrollTop, maxScrollTop))
+          console.log('✅ Bounded scroll position:', scrollTop, '(max:', maxScrollTop, ')')
+          
+          // If the calculated position is very close to current position, add a small offset
+          if (Math.abs(scrollTop - scrollContainer.scrollTop) < 10) {
+            scrollTop = calculatedTop - 100 // Ensure we actually scroll to show the element
+            scrollTop = Math.max(0, Math.min(scrollTop, maxScrollTop))
+            console.log('🔄 Adjusted for small difference:', scrollTop)
+          }
+          
+          console.log('📊 Final scroll calculation details:', {
             elementRect: elementRect.top,
             calculatedTop,
             containerHeight,
             elementHeight,
-            scrollTop,
+            finalScrollTop: scrollTop,
+            currentScrollTop: scrollContainer.scrollTop,
+            scrollDistance: Math.abs(scrollTop - scrollContainer.scrollTop),
             scrollContainer: scrollContainer.tagName,
-            containerScrollTop: scrollContainer.scrollTop,
-            containerScrollHeight: scrollContainer.scrollHeight
+            containerScrollHeight: scrollContainer.scrollHeight,
+            isLargeScreen: window.innerWidth >= 1024
           })
           
           // Smooth scroll to the calculated position
+          console.log('⏰ About to execute scrollTo with:', {
+            top: scrollTop,
+            behavior: 'smooth',
+            timestamp: Date.now()
+          })
+          
           scrollContainer.scrollTo({
             top: scrollTop,
             behavior: 'smooth'
           })
           
-          console.log('Scrolled to position:', scrollTop)
+          console.log('✅ ScrollTo command executed at:', Date.now())
           
           // Verify scroll worked after a delay and provide fallback
           setTimeout(() => {
             const newScrollTop = scrollContainer.scrollTop
             console.log('Final scroll position:', newScrollTop, 'vs target:', scrollTop)
             
-            // If scroll didn't work well, try scrollIntoView as fallback
-            if (Math.abs(newScrollTop - scrollTop) > 20) {
+            // More aggressive fallback for large screens - if scroll didn't work well, try scrollIntoView
+            if (Math.abs(newScrollTop - scrollTop) > 50) {
               console.log('Primary scroll failed, using scrollIntoView fallback')
               element.scrollIntoView({
                 behavior: 'smooth',
                 block: 'center',
                 inline: 'nearest'
               })
-              
-              // Final verification
-              setTimeout(() => {
-                const finalScrollTop = scrollContainer.scrollTop
-                console.log('Final fallback scroll position:', finalScrollTop)
-              }, 300)
             } else {
               console.log('Scroll successful!')
             }
-          }, 300)
+          }, 500)
+          
+          // Additional immediate fallback for cases where smooth scrolling fails
+          setTimeout(() => {
+            const currentScrollTop = scrollContainer.scrollTop
+            if (Math.abs(currentScrollTop - scrollTop) > 100) {
+              console.log('Immediate fallback: forcing scroll with scrollIntoView')
+              element.scrollIntoView({
+                behavior: 'auto', // Use instant scroll as last resort
+                block: 'center',
+                inline: 'nearest'
+              })
+            }
+          }, 1000)
           
         } else {
           console.log('No scroll container found, using scrollIntoView')
