@@ -352,21 +352,27 @@ async def update_plan_manual(
                 subscription_start_date=subscription_start,
                 subscription_end_date=subscription_end,
                 custom_invoice_id=invoice_id,
-                user_timezone=user_timezone
+                user_timezone=user_timezone,
+                user_id=str(current_user.id),
+                db_session=db
             )
             
             if invoice_result and invoice_result[0]:
-                invoice_path, generated_invoice_id, invoice_filename = invoice_result
+                invoice_path, generated_invoice_id, invoice_filename, file_url = invoice_result
                 print(f"✅ Invoice generated: {invoice_path}")
+                if file_url:
+                    print(f"✅ Invoice stored in Supabase: {file_url}")
             else:
                 print("⚠️ Invoice generation failed")
                 invoice_path = None
                 invoice_filename = None
+                file_url = None
                 
         except Exception as e:
             print(f"❌ Error generating invoice: {e}")
             invoice_path = None
             invoice_filename = None
+            file_url = None
         
         # Send payment success email (only once!)
         print("📧 Sending payment confirmation email...")

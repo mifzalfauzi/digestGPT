@@ -8,9 +8,14 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
+from database import supabase
+from models import Invoice
 import logging
+import requests
 
 logger = logging.getLogger(__name__)
+
+INVOICE_BUCKET_NAME = os.getenv("INVOICE_BUCKET_NAME", "invoices")
 
 class InvoiceGenerator:
     def __init__(self):
@@ -35,7 +40,9 @@ class InvoiceGenerator:
                         subscription_start_date: datetime = None,
                         subscription_end_date: datetime = None,
                         custom_invoice_id: str = None,
-                        user_timezone: str = None) -> tuple:
+                        user_timezone: str = None,
+                        user_id: str = None,
+                        db_session = None) -> tuple:
         """Generate PDF invoice and return (file_path, invoice_id, filename)"""
         try:
             # Use custom invoice ID if provided, otherwise generate unique one
@@ -233,12 +240,21 @@ class InvoiceGenerator:
             # Build PDF
             doc.build(story)
             
+            # Store in Supabase if user_id and db_session provided
+            file_url = None
+            if user_id and db_session:
+                try:
+                    file_url = self._store_invoice_in_supabase(filepath, user_id, invoice_id, invoice_date, db_session)
+                    logger.info(f"✅ Invoice stored in Supabase: {file_url}")
+                except Exception as e:
+                    logger.error(f"❌ Failed to store invoice in Supabase: {str(e)}")
+            
             logger.info(f"✅ Invoice generated successfully: {filepath}")
-            return (filepath, invoice_id, filename)
+            return (filepath, invoice_id, filename, file_url)
             
         except Exception as e:
             logger.error(f"❌ Failed to generate invoice: {str(e)}")
-            return (None, None, None)
+            return (None, None, None, None)
     
     def get_invoice_data(self, user_name: str, user_email: str, plan_name: str, amount: str, **kwargs) -> dict:
         """Generate invoice data for display without creating PDF"""
@@ -258,6 +274,76 @@ class InvoiceGenerator:
             "payment_method": "Credit Card",
             **kwargs
         }
+
+    def _store_invoice_in_supabase(self, local_file_path: str, user_id: str, invoice_id: str, invoice_date: datetime, db_session) -> str:
+        """Store invoice in Supabase storage and database"""
+        try:
+            # Read the file
+            with open(local_file_path, 'rb') as file:
+                file_bytes = file.read()
+            
+            # Generate path in bucket
+            filename = os.path.basename(local_file_path)
+            file_path_in_bucket = f"{user_id}/{filename}"
+            
+            # Upload to Supabase storage
+            response = supabase.storage.from_(INVOICE_BUCKET_NAME).upload(
+                file_path_in_bucket,
+                file_bytes,
+                file_options={"content-type": "application/pdf"}
+            )
+            
+            if not response:
+                raise Exception("Failed to upload to Supabase storage")
+            
+            # Get public URL
+            file_url = None
+            try:
+                file_url_response = supabase.storage.from_(INVOICE_BUCKET_NAME).get_public_url(file_path_in_bucket)
+                file_url = file_url_response['publicUrl'] if isinstance(file_url_response, dict) else str(file_url_response)
+                file_url = file_url.rstrip('?')
+                
+                # Test URL accessibility
+                test_response = requests.head(file_url, timeout=5)
+                if test_response.status_code != 200:
+                    raise Exception(f"Public URL returned {test_response.status_code}")
+                    
+            except Exception as e:
+                logger.warning(f"Public URL failed: {e}, trying signed URL")
+                try:
+                    signed_url_response = supabase.storage.from_(INVOICE_BUCKET_NAME).create_signed_url(file_path_in_bucket, 86400)
+                    file_url = signed_url_response['signedURL'] if isinstance(signed_url_response, dict) else str(signed_url_response)
+                except Exception as signed_e:
+                    logger.error(f"Signed URL also failed: {signed_e}")
+                    file_url = None
+            
+            # Store in database (check if already exists)
+            existing_invoice = db_session.query(Invoice).filter(
+                Invoice.user_id == user_id,
+                Invoice.invoice_id == invoice_id
+            ).first()
+            
+            if not existing_invoice:
+                invoice = Invoice(
+                    user_id=user_id,
+                    invoice_id=invoice_id,
+                    invoice_date=invoice_date,
+                    file_url=file_url
+                )
+                db_session.add(invoice)
+                db_session.commit()
+                logger.info(f"✅ Invoice stored in database: {invoice_id}")
+            else:
+                # Update existing invoice with new file URL
+                existing_invoice.file_url = file_url
+                db_session.commit()
+                logger.info(f"✅ Invoice updated in database: {invoice_id}")
+            
+            return file_url
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to store invoice in Supabase: {str(e)}")
+            raise e
 
 # Global invoice generator instance
 invoice_generator = InvoiceGenerator() 
