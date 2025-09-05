@@ -30,7 +30,8 @@ class InvoiceListResponse(BaseModel):
 class StoreInvoiceRequest(BaseModel):
     invoice_id: str
     invoice_date: datetime
-    file_path: str  # Local file path
+    pdf_bytes: bytes  # PDF content as bytes
+    filename: str  # Original filename
 
 @router.post("/store-invoice", response_model=InvoiceResponse)
 async def store_invoice(
@@ -52,18 +53,11 @@ async def store_invoice(
                 detail="Invoice already exists"
             )
         
-        # Read the local invoice file
-        if not os.path.exists(request.file_path):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Invoice file not found"
-            )
-        
-        with open(request.file_path, 'rb') as file:
-            file_bytes = file.read()
+        # Use the provided PDF bytes
+        file_bytes = request.pdf_bytes
         
         # Generate unique filename for storage
-        filename = os.path.basename(request.file_path)
+        filename = request.filename
         file_path_in_bucket = f"{current_user.id}/{filename}"
         
         # Upload to Supabase storage

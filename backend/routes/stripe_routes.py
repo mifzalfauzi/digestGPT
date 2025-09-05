@@ -357,9 +357,9 @@ async def update_plan_manual(
                 db_session=db
             )
             
-            if invoice_result and invoice_result[0]:
+            if invoice_result and invoice_result[1]:  # Check invoice_id instead of path
                 invoice_path, generated_invoice_id, invoice_filename, file_url = invoice_result
-                print(f"✅ Invoice generated: {invoice_path}")
+                print(f"✅ Invoice generated: {generated_invoice_id}")
                 if file_url:
                     print(f"✅ Invoice stored in Supabase: {file_url}")
             else:
@@ -367,12 +367,14 @@ async def update_plan_manual(
                 invoice_path = None
                 invoice_filename = None
                 file_url = None
+                generated_invoice_id = None
                 
         except Exception as e:
             print(f"❌ Error generating invoice: {e}")
             invoice_path = None
             invoice_filename = None
             file_url = None
+            generated_invoice_id = None
         
         # Send payment success email (only once!)
         print("📧 Sending payment confirmation email...")
@@ -398,7 +400,7 @@ async def update_plan_manual(
                 invoice_id=invoice_id,
                 subscription_end_date=formatted_end_date,
                 invoice_download_url=invoice_download_url,
-                invoice_pdf_path=invoice_path,
+                invoice_pdf_path=file_url,
                 user_timezone=user_timezone
             )
             
@@ -1099,30 +1101,37 @@ async def fix_missing_stripe_data(
 @router.get("/download-invoice/{invoice_filename}")
 async def download_invoice(
     invoice_filename: str,
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
 ):
-    """Download invoice PDF"""
+    """Download invoice PDF from database"""
     try:
-        # Security: Only allow downloading invoices for the current user
-        # In a production system, you'd want to store invoice-user relationships in the database
+        from models import Invoice
+        from fastapi.responses import RedirectResponse
         
-        invoice_path = os.path.join(invoice_generator.invoices_dir, invoice_filename)
+        # Extract invoice ID from filename
+        if invoice_filename.startswith('invoice_'):
+            invoice_id = invoice_filename.replace('invoice_', '').replace('.pdf', '')
+        else:
+            invoice_id = invoice_filename.replace('.pdf', '')
         
-        if not os.path.exists(invoice_path):
+        # Find invoice in database
+        invoice = db.query(Invoice).filter(
+            Invoice.user_id == current_user.id,
+            Invoice.invoice_id == invoice_id
+        ).first()
+        
+        if not invoice:
             raise HTTPException(status_code=404, detail="Invoice not found")
         
-        # Additional security check - make sure filename is safe
-        if not invoice_filename.startswith('invoice_') or not invoice_filename.endswith('.pdf'):
-            raise HTTPException(status_code=400, detail="Invalid invoice filename")
+        if not invoice.file_url:
+            raise HTTPException(status_code=404, detail="Invoice file not available")
         
-        return FileResponse(
-            path=invoice_path,
-            filename=invoice_filename,
-            media_type='application/pdf'
-        )
+        # Redirect to Supabase URL
+        return RedirectResponse(url=invoice.file_url)
         
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Invoice file not found")
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"❌ Error downloading invoice: {str(e)}")
         raise HTTPException(

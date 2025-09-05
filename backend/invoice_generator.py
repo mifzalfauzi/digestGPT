@@ -1,4 +1,5 @@
 import os
+import io
 import uuid
 from datetime import datetime
 from timezone_service import timezone_service
@@ -19,8 +20,8 @@ INVOICE_BUCKET_NAME = os.getenv("INVOICE_BUCKET_NAME", "invoices")
 
 class InvoiceGenerator:
     def __init__(self):
-        self.invoices_dir = os.path.join(os.getcwd(), "invoices")
-        os.makedirs(self.invoices_dir, exist_ok=True)
+        # No longer need local directory
+        pass
         
         # Company details
         self.company_name = "DocuChat"
@@ -54,12 +55,12 @@ class InvoiceGenerator:
             invoice_id = custom_invoice_id or f"INV-{user_now.strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
             invoice_date = user_now
             
-            # Create PDF file path
+            # Create PDF in memory
             filename = f"invoice_{invoice_id}.pdf"
-            filepath = os.path.join(self.invoices_dir, filename)
+            pdf_buffer = io.BytesIO()
             
-            # Create PDF document
-            doc = SimpleDocTemplate(filepath, pagesize=A4, topMargin=0.5*inch)
+            # Create PDF document in memory
+            doc = SimpleDocTemplate(pdf_buffer, pagesize=A4, topMargin=0.5*inch)
             story = []
             
             # Styles
@@ -240,17 +241,22 @@ class InvoiceGenerator:
             # Build PDF
             doc.build(story)
             
+            # Get PDF bytes
+            pdf_buffer.seek(0)
+            pdf_bytes = pdf_buffer.getvalue()
+            pdf_buffer.close()
+            
             # Store in Supabase if user_id and db_session provided
             file_url = None
             if user_id and db_session:
                 try:
-                    file_url = self._store_invoice_in_supabase(filepath, user_id, invoice_id, invoice_date, db_session)
+                    file_url = self._store_invoice_in_supabase_direct(pdf_bytes, filename, user_id, invoice_id, invoice_date, db_session)
                     logger.info(f"✅ Invoice stored in Supabase: {file_url}")
                 except Exception as e:
                     logger.error(f"❌ Failed to store invoice in Supabase: {str(e)}")
             
-            logger.info(f"✅ Invoice generated successfully: {filepath}")
-            return (filepath, invoice_id, filename, file_url)
+            logger.info(f"✅ Invoice generated successfully in memory")
+            return (None, invoice_id, filename, file_url)  # No local filepath
             
         except Exception as e:
             logger.error(f"❌ Failed to generate invoice: {str(e)}")
@@ -275,21 +281,16 @@ class InvoiceGenerator:
             **kwargs
         }
 
-    def _store_invoice_in_supabase(self, local_file_path: str, user_id: str, invoice_id: str, invoice_date: datetime, db_session) -> str:
-        """Store invoice in Supabase storage and database"""
+    def _store_invoice_in_supabase_direct(self, pdf_bytes: bytes, filename: str, user_id: str, invoice_id: str, invoice_date: datetime, db_session) -> str:
+        """Store invoice bytes directly in Supabase storage and database"""
         try:
-            # Read the file
-            with open(local_file_path, 'rb') as file:
-                file_bytes = file.read()
-            
             # Generate path in bucket
-            filename = os.path.basename(local_file_path)
             file_path_in_bucket = f"{user_id}/{filename}"
             
             # Upload to Supabase storage
             response = supabase.storage.from_(INVOICE_BUCKET_NAME).upload(
                 file_path_in_bucket,
-                file_bytes,
+                pdf_bytes,
                 file_options={"content-type": "application/pdf"}
             )
             
