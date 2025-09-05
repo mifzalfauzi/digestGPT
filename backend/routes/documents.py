@@ -7,6 +7,7 @@ from io import BytesIO
 from datetime import datetime
 from database import supabase
 import uuid
+import os
 
 from database import get_db
 from models import User, Document, ChatHistory, Collection, PublicChatShare, PublicChatView
@@ -32,6 +33,8 @@ from document_utils import (
 )
 
 router = APIRouter(prefix="/documents", tags=["documents"])
+
+BUCKET_NAME = os.getenv("BUCKET_NAME")
 
 # Pydantic models
 class DocumentResponse(BaseModel):
@@ -98,7 +101,7 @@ async def upload_and_analyze_document(
             buckets = supabase.storage.list_buckets()
             print("Available Buckets:", buckets)
 
-            bucket_info = supabase.storage.get_bucket("documents-uploaded-digestifile")
+            bucket_info = supabase.storage.get_bucket(BUCKET_NAME)
             print("Bucket info:", bucket_info)
             print("Bucket public:", getattr(bucket_info, 'public', 'unknown'))
         except Exception as e:
@@ -113,7 +116,7 @@ async def upload_and_analyze_document(
         file_path = f"{current_user.id}/{safe_filename}"
         print(f"Upload path: {file_path}")
 
-        response = supabase.storage.from_("documents-uploaded-digestifile").upload(
+        response = supabase.storage.from_(BUCKET_NAME).upload(
             file_path,
             file_bytes,
             file_options={"content-type": file.content_type}
@@ -128,7 +131,9 @@ async def upload_and_analyze_document(
 
         try:
             # Try public URL first
-            file_url_response = supabase.storage.from_("documents-uploaded-digestifile").get_public_url(file_path)
+            file_url_response = supabase.storage.from_(BUCKET_NAME).get_public_url(file_path)
+            
+            print("file url response is : ", file_url_response)
             file_url = file_url_response['publicUrl'] if isinstance(file_url_response, dict) else str(file_url_response)
             
             # Clean up the URL - remove any trailing characters
@@ -147,7 +152,7 @@ async def upload_and_analyze_document(
             print(f"Public URL failed: {e}, trying signed URL")
             try:
                 # Fallback to signed URL (24 hour expiry)
-                signed_url_response = supabase.storage.from_("documents-uploaded-digestifile").create_signed_url(file_path, 86400)
+                signed_url_response = supabase.storage.from_(BUCKET_NAME).create_signed_url(file_path, 86400)
                 file_url = signed_url_response['signedURL'] if isinstance(signed_url_response, dict) else str(signed_url_response)
                 print(f"Signed URL: {file_url}")
             except Exception as signed_e:
@@ -636,7 +641,7 @@ async def delete_document(
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    bucket_name = "documents-uploaded-digestifile"
+    # bucket_name = "documents-uploaded-digestifile"
 
     # Extract storage key from file_url
     try:
@@ -715,7 +720,7 @@ async def delete_all_user_data(
         if storage_files_to_delete:
             try:
                 print(f"Deleting {len(storage_files_to_delete)} files from storage")
-                response = supabase.storage.from_("documents-uploaded-digestifile").remove(storage_files_to_delete)
+                response = supabase.storage.from_(BUCKET_NAME).remove(storage_files_to_delete)
                 
                 if isinstance(response, list):
                     for file_result in response:

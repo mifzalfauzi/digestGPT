@@ -226,7 +226,7 @@ class Invoice(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     invoice_id = Column(String, nullable=False)
     invoice_date = Column(DateTime(timezone=True), nullable=False)
-    file_url = Column(String, nullable=True)  # Add file URL for PDF viewing
+    file_url = Column(String, nullable=True)  
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Issues(Base):
