@@ -1029,13 +1029,6 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
     }
 
     if (chartType === 'bubble') {
-      // Transform data for scatter plot
-      const scatterData = chartData.flatMap(item => [
-        { category: item.category, impact: 'High', value: item.high, x: item.category, y: item.high, z: item.high * 10 },
-        { category: item.category, impact: 'Medium', value: item.medium, x: item.category, y: item.medium, z: item.medium * 8 },
-        { category: item.category, impact: 'Low', value: item.low, x: item.category, y: item.low, z: item.low * 6 }
-      ]).filter(item => item.value > 0)
-      
       return (
         <div className="bg-white dark:bg-gray-900 rounded-xl p-2 sm:p-4 border border-gray-200 dark:border-gray-700">
           <div className="space-y-4">
@@ -1059,39 +1052,56 @@ export default function SWOTAnalysis({ swot, isDemoMode = false, bypassAPI = fal
 
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                <ScatterChart 
+                  data={[
+                    { name: 'Strengths', x: 1, high: chartData[0]?.high || 0, medium: chartData[0]?.medium || 0, low: chartData[0]?.low || 0 },
+                    { name: 'Weaknesses', x: 2, high: chartData[1]?.high || 0, medium: chartData[1]?.medium || 0, low: chartData[1]?.low || 0 },
+                    { name: 'Opportunities', x: 3, high: chartData[2]?.high || 0, medium: chartData[2]?.medium || 0, low: chartData[2]?.low || 0 },
+                    { name: 'Threats', x: 4, high: chartData[3]?.high || 0, medium: chartData[3]?.medium || 0, low: chartData[3]?.low || 0 }
+                  ]}
+                  margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(156, 163, 175, 0.3)" />
                   <XAxis 
-                    dataKey="x" 
-                    type="category" 
+                    type="number" 
+                    dataKey="x"
+                    domain={[0.5, 4.5]}
+                    ticks={[1, 2, 3, 4]}
                     axisLine={false}
                     tickLine={false}
                     tick={{ fontSize: 12, fill: 'rgb(107, 114, 128)' }}
+                    tickFormatter={(value) => {
+                      const categories = ['Strengths', 'Weaknesses', 'Opportunities', 'Threats'];
+                      return categories[value - 1] || '';
+                    }}
                   />
                   <YAxis 
-                    dataKey="y" 
                     type="number"
+                    domain={[0, 'dataMax + 1']}
                     axisLine={false}
                     tickLine={false}
                     tick={{ fontSize: 12, fill: 'rgb(107, 114, 128)' }}
                     allowDecimals={false}
                   />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Scatter 
-                    name="High Impact" 
-                    data={scatterData.filter(d => d.impact === 'High')} 
-                    fill="#ef4444"
+                  <Tooltip 
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length > 0) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                            <p className="font-semibold text-gray-800 dark:text-gray-200">{data.name}</p>
+                            <p className="text-sm text-red-600">High: {data.high}</p>
+                            <p className="text-sm text-yellow-600">Medium: {data.medium}</p>
+                            <p className="text-sm text-green-600">Low: {data.low}</p>
+                          </div>
+                        )
+                      }
+                      return null
+                    }}
                   />
-                  <Scatter 
-                    name="Medium Impact" 
-                    data={scatterData.filter(d => d.impact === 'Medium')} 
-                    fill="#eab308"
-                  />
-                  <Scatter 
-                    name="Low Impact" 
-                    data={scatterData.filter(d => d.impact === 'Low')} 
-                    fill="#22c55e"
-                  />
+                  <Scatter dataKey="high" fill="#ef4444" />
+                  <Scatter dataKey="medium" fill="#eab308" />
+                  <Scatter dataKey="low" fill="#22c55e" />
                 </ScatterChart>
               </ResponsiveContainer>
             </div>
