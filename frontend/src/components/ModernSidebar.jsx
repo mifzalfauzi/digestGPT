@@ -882,7 +882,7 @@ useEffect(() => {
 
         {/* Dropdown Menu */}
         {isProfileDropdownOpen && (
-          <div className="absolute bottom-full mb-2 w-full bg-white dark:bg-background border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+          <div className={`absolute bottom-full mb-2 bg-white dark:bg-background border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 ${collapsed ? 'left-0 w-48' : 'w-full'}`}>
             <div className="px-1 py-1">
               <button
                 onClick={() => {
